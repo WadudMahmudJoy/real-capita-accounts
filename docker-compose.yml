@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: real-capita-accounts-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: real_capita_accounts
+      POSTGRES_USER: real_capita
+      POSTGRES_PASSWORD: real_capita_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U real_capita -d real_capita_accounts"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
