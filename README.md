@@ -4,6 +4,13 @@ Phase 1A foundation for a new accounting-first production system for Real Capita
 
 This repository is intentionally not a continuation of the previous Real Capita ERP prototype. Phase 1A adds multi-agent continuity, secure login, one confirmed Accountant role, and a protected app shell only.
 
+## Current Development Phase
+
+- Phase 1A is implemented.
+- Phase 1B documentation/specification lock is prepared.
+- No accounting business modules are implemented yet.
+- The next implementation requires explicit user confirmation before any business schema, API, or UI work begins.
+
 ## Stack
 
 - Node.js LTS
@@ -139,8 +146,8 @@ Future AI agents and developers should start with:
 
 Use `pnpm agent:start` for a quick local orientation report.
 
-## Strict Phase 1A Boundary
+## Strict Current Boundary
 
-Phase 1A does not include vouchers, chart of accounts, parties, projects, payroll, salary sheets, reports, ledgers, cash book, bank book, trial balance, dashboard analytics, file uploads, ERP modules, accounting screens, business seed data, or unconfirmed office roles.
+The current completed work does not include vouchers, chart of accounts, parties, projects, payroll, salary sheets, reports, ledgers, cash book, bank book, trial balance, dashboard analytics, file uploads, ERP modules, accounting screens, business seed data, or unconfirmed office roles.
 
-The next phase must be confirmed before implementation. A likely next step is Phase 1B: confirm the first accounting foundation requirements before adding any business modules.
+The next coding phase must be confirmed before implementation. The proposed next coding phase is Phase 2A: implement only the locked accounting foundation documented in `docs/requirements/phase-1b-accounting-foundation-lock.md`.

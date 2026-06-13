@@ -6,6 +6,8 @@ Phase 0 is complete and accepted.
 
 Phase 1A is implemented: multi-agent project continuity plus single-accountant authentication.
 
+Phase 1B requirement/specification lock is prepared. It documents the proposed accounting foundation scope for a future Phase 2A implementation without adding business modules.
+
 ## Implemented Features
 
 - pnpm workspace monorepo.
@@ -17,6 +19,7 @@ Phase 1A is implemented: multi-agent project continuity plus single-accountant a
 - PostgreSQL host-port isolation on `localhost:55432`.
 - Phase 0 documentation and handoff.
 - Phase 1A documentation, ADRs, scripts, and auth foundation.
+- Phase 1B requirement/spec lock documents for the next accounting foundation implementation.
 
 ## Confirmed Role Model
 
@@ -29,6 +32,8 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 ## Current Non-Features
 
 The repo intentionally does not include vouchers, chart of accounts, ledger, cash book, bank book, trial balance, reports, payroll, salary sheets, project finance, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+
+No accounting business modules are implemented yet.
 
 ## Database Port
 
@@ -44,4 +49,11 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Confirm the next phase with Real Capita before implementing business modules. A likely next phase is Phase 1B: define the first accounting foundation requirements and acceptance criteria.
+Next agent should read:
+
+- `docs/requirements/phase-1b-accounting-foundation-lock.md`
+- `docs/architecture/phase-1b-accounting-foundation-model-proposal.md`
+- `docs/acceptance/phase-1b-acceptance-criteria.md`
+- `docs/prompts/droid-cli-next-prompt.md`
+
+Confirm Phase 2A with the user before implementing business modules.

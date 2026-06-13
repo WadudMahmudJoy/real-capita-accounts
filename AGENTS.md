@@ -6,9 +6,11 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 1A: multi-agent continuity foundation plus secure single-accountant authentication.
+Phase 1B: accounting foundation requirement lock and next-agent handoff.
 
 Phase 0 is complete and accepted. Phase 1A adds only authentication, one confirmed role, a protected app shell, project operating documentation, ADRs, and verification scripts.
+
+Phase 1B is documentation/specification only. It locks requirements and acceptance criteria for the first accounting foundation implementation without adding business schema, API modules, UI pages, seed data, or roles.
 
 ## Stack
 
@@ -116,18 +118,29 @@ Co-authored-by: Md. Wadud Mahmud Joy <wadudjoy24@gmail.com>
 
 This is a new accounting-first system, not a continuation of the previous ERP prototype. The old ERP may be treated only as historical reference. Do not copy code, schema, seed data, fake modules, UI screens, or private data from it.
 
+## Phase 1B Requirement Lock
+
+Phase 1B is documentation/specification only. The next coding phase must not start until the user explicitly confirms Phase 2A implementation.
+
+Before any business schema/API/UI work, read:
+
+- `docs/requirements/phase-1b-accounting-foundation-lock.md`
+- `docs/architecture/phase-1b-accounting-foundation-model-proposal.md`
+- `docs/acceptance/phase-1b-acceptance-criteria.md`
+
+The Droid CLI / GLM / DeepSeek transition prompt is in `docs/prompts/droid-cli-next-prompt.md`.
+
 ## Agent Switching
 
 When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI, or a human developer:
 
 1. Start with `docs/ai/START_HERE.md`.
 2. Run `pnpm agent:start`.
-3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, and `docs/handoff.md`.
+3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 1B lock docs.
 4. Confirm `git status` is clean before new work.
 5. Continue only inside the current phase boundary.
 6. Update handoff docs before ending the session.
 
 ## Next Phase Guidance
 
-The exact next phase must be confirmed before implementation. A likely next step is Phase 1B: define the first non-auth accounting foundation requirements with Real Capita before adding any business schema or screens.
-
+The exact next coding phase must be confirmed before implementation. The proposed next coding phase is Phase 2A: implement only the locked accounting foundation after user confirmation.

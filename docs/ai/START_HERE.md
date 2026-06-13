@@ -8,6 +8,8 @@ Phase 0 is complete and accepted. Phase 1A adds multi-agent continuity plus sing
 
 Phase 1A is implemented in this repository.
 
+Phase 1B documentation/specification lock is prepared. It does not implement business modules.
+
 The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represents AGM sir as the main accounting operator for now. Do not add other roles until Real Capita confirms exact responsibilities.
 
 ## Where To Look First
@@ -18,6 +20,8 @@ The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represent
 4. `docs/handoff.md` for the latest project handoff.
 5. `prisma/schema.prisma` for the current database model.
 6. `apps/api/src` and `apps/web/src` for implementation.
+7. `docs/requirements/phase-1b-accounting-foundation-lock.md` before any business-module coding.
+8. `docs/prompts/droid-cli-next-prompt.md` if continuing in Droid CLI or another agent after Codex limit.
 
 ## Local Setup
 
@@ -57,3 +61,5 @@ Do not rely on hidden chat memory. Reconstruct state from this repo:
 3. Check `git log --oneline --max-count=8`.
 4. Check `git status --short --branch`.
 5. Continue only from documented requirements.
+
+If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/prompts/droid-cli-next-prompt.md` before coding.

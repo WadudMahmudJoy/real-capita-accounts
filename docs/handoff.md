@@ -2,9 +2,11 @@
 
 ## Current Phase
 
-Phase 1A: multi-agent continuity foundation plus single-accountant authentication.
+Phase 1B: accounting foundation requirement lock and next-agent handoff.
 
 Phase 0 is complete and accepted. Phase 1A keeps the product boundary narrow: secure login, one confirmed Accountant role, one development Accountant user, protected app shell, durable agent documentation, ADRs, and verification scripts.
+
+Phase 1B documentation/specification lock has been prepared. No business modules were implemented.
 
 ## Completed
 
@@ -31,6 +33,11 @@ Phase 0 is complete and accepted. Phase 1A keeps the product boundary narrow: se
 - Added reusable backend role decorator/guard for `@Roles("ACCOUNTANT")`.
 - Added frontend routes `/login` and `/app`.
 - Added agent helper scripts: `pnpm agent:start`, `pnpm check:all`, and `pnpm doctor`.
+- Added Phase 1B requirement lock: `docs/requirements/phase-1b-accounting-foundation-lock.md`.
+- Added Phase 1B model proposal: `docs/architecture/phase-1b-accounting-foundation-model-proposal.md`.
+- Added Phase 1B acceptance criteria: `docs/acceptance/phase-1b-acceptance-criteria.md`.
+- Added Droid CLI next-agent prompt: `docs/prompts/droid-cli-next-prompt.md`.
+- Added ADR-0006: `docs/decisions/ADR-0006-phase-1b-doc-lock-before-business-schema.md`.
 
 ## Intentionally Not Added
 
@@ -45,10 +52,21 @@ Phase 0 is complete and accepted. Phase 1A keeps the product boundary narrow: se
 - Unconfirmed office roles
 - Real company documents or private operational data
 - Code copied from the previous Real Capita ERP prototype
+- Company, fiscal year, project, cost center, account, cash/bank, voucher, ledger, report, payroll, party, dashboard, or file upload modules in Phase 1B
 
 ## Next Planned Phase
 
-Confirm the next phase with Real Capita before implementation. A likely next phase is Phase 1B: confirm the first accounting foundation requirements and acceptance criteria before adding any business modules.
+User must explicitly confirm Phase 2A implementation before any business schema, API, or UI work begins.
+
+Proposed Phase 2A scope is documented, but not implemented:
+
+- Company setup
+- Fiscal year setup
+- Accounting period setup
+- Project setup
+- Cost center setup under projects
+- Basic account class/group/account-head foundation
+- Cash/bank account setup linked to account heads
 
 ## Current GitHub Repository
 
@@ -79,3 +97,4 @@ Verification date: 2026-06-14.
 - API runtime check: passed on `http://localhost:4000/health`, returning `status: "ok"` and `service: "real-capita-accounts-api"`.
 - API auth runtime check: passed with `accountant@realcapita.local` / `ChangeMe123!`; login returned no token in the JSON body, set the `rcg_auth` HttpOnly `SameSite=Lax` cookie, `/auth/me` returned `Accountant User` with role `Accountant`, logout cleared the cookie, and post-logout `/auth/me` returned `401`.
 - Web auth browser check: passed on `http://localhost:3010` because local port `3000` is occupied. `/login` rendered, login succeeded, `/app` showed `Accountant User`, `accountant@realcapita.local`, role `Accountant`, the Phase 1A secure shell message, and only the allowed placeholder navigation labels.
+- Phase 1B docs/spec lock: prepared without Prisma schema changes, migrations, API business modules, frontend business pages, business seed data, or new roles.
