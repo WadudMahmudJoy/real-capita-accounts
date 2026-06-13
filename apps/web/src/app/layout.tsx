@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Real Capita Accounting & Project Finance System",
-  description: "Phase 0 technical foundation for the Real Capita accounting-first system.",
+  description:
+    "Phase 1A secure login foundation for the Real Capita accounting-first system.",
 };
 
 export default function RootLayout({
