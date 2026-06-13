@@ -81,3 +81,171 @@ model AuditEvent {
   @@index([createdAt])
   @@map("audit_events")
 }
+
+// ---------------------------------------------------------------------------
+// Phase 2A: Accounting Foundation
+// ---------------------------------------------------------------------------
+
+enum AccountClassCode {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+enum NormalBalanceSide {
+  DEBIT
+  CREDIT
+}
+
+enum AccountingPeriodStatus {
+  OPEN
+  LOCKED
+  CLOSED
+}
+
+enum CashBankAccountType {
+  CASH
+  BANK
+}
+
+model Company {
+  id           String       @id @default(cuid())
+  singletonKey String       @unique @default("PRIMARY")
+  name         String
+  legalName    String?
+  address      String?
+  phone        String?
+  email        String?
+  currency     String       @default("BDT")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  fiscalYears  FiscalYear[]
+
+  @@map("companies")
+}
+
+model FiscalYear {
+  id        String              @id @default(cuid())
+  companyId String
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean             @default(false)
+  isClosed  Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  company   Company             @relation(fields: [companyId], references: [id])
+  periods   AccountingPeriod[]
+
+  // A fiscal year should not be both active and closed at the same time.
+  // Application logic must maintain this invariant.
+
+  @@map("fiscal_years")
+}
+
+model AccountingPeriod {
+  id           String                 @id @default(cuid())
+  fiscalYearId String
+  name         String
+  startDate    DateTime
+  endDate      DateTime
+  status       AccountingPeriodStatus @default(OPEN)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  fiscalYear   FiscalYear             @relation(fields: [fiscalYearId], references: [id])
+
+  @@map("accounting_periods")
+}
+
+model Project {
+  id        String      @id @default(cuid())
+  code      String      @unique
+  name      String
+  location  String?
+  isActive  Boolean     @default(true)
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  costCenters CostCenter[]
+
+  @@map("projects")
+}
+
+model CostCenter {
+  id          String   @id @default(cuid())
+  projectId   String
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, code])
+  @@map("cost_centers")
+}
+
+model AccountClass {
+  id            String            @id @default(cuid())
+  code          AccountClassCode  @unique
+  name          String
+  normalBalance NormalBalanceSide
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  groups        AccountGroup[]
+
+  @@map("account_classes")
+}
+
+model AccountGroup {
+  id             String          @id @default(cuid())
+  accountClassId String
+  code           String          @unique
+  name           String
+  description    String?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  accountClass   AccountClass    @relation(fields: [accountClassId], references: [id])
+  ledgerAccounts LedgerAccount[]
+
+  @@map("account_groups")
+}
+
+model LedgerAccount {
+  id                 String            @id @default(cuid())
+  accountGroupId     String
+  code               String            @unique
+  name               String
+  normalBalance      NormalBalanceSide
+  requiresProject    Boolean           @default(false)
+  requiresCostCenter Boolean           @default(false)
+  isCashBank         Boolean           @default(false)
+  isActive           Boolean           @default(true)
+  description        String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  accountGroup       AccountGroup      @relation(fields: [accountGroupId], references: [id])
+  cashBankAccounts   CashBankAccount[]
+
+  @@map("ledger_accounts")
+}
+
+model CashBankAccount {
+  id              String               @id @default(cuid())
+  ledgerAccountId String               @unique
+  displayName     String
+  accountType     CashBankAccountType
+  bankName        String?
+  branch          String?
+  accountNumber   String?
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  ledgerAccount   LedgerAccount        @relation(fields: [ledgerAccountId], references: [id])
+
+  @@map("cash_bank_accounts")
+}

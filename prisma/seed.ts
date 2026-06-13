@@ -6,7 +6,37 @@ import { PrismaClient } from "../apps/api/src/generated/prisma/client";
 
 const ACCOUNTANT_ROLE_CODE = "ACCOUNTANT";
 const ACCOUNTANT_EMAIL = "accountant@realcapita.local";
-const DEVELOPMENT_PASSWORD = "ChangeMe123!";
+const DEVELOPMENT_PASSWORD = "***********!";
+
+const SYSTEM_ACCOUNT_CLASSES = [
+  { code: "ASSET" as const, name: "Asset", normalBalance: "DEBIT" as const },
+  { code: "LIABILITY" as const, name: "Liability", normalBalance: "CREDIT" as const },
+  { code: "EQUITY" as const, name: "Equity", normalBalance: "CREDIT" as const },
+  { code: "INCOME" as const, name: "Income", normalBalance: "CREDIT" as const },
+  { code: "EXPENSE" as const, name: "Expense", normalBalance: "DEBIT" as const },
+];
+
+async function seedAccountClasses(prisma: PrismaClient) {
+  let created = 0;
+
+  for (const acc of SYSTEM_ACCOUNT_CLASSES) {
+    await prisma.accountClass.upsert({
+      create: {
+        code: acc.code,
+        name: acc.name,
+        normalBalance: acc.normalBalance,
+      },
+      update: {
+        name: acc.name,
+        normalBalance: acc.normalBalance,
+      },
+      where: { code: acc.code },
+    });
+    created++;
+  }
+
+  console.log(`Seeded ${created} system AccountClass records.`);
+}
 
 async function main() {
   if (process.env.NODE_ENV === "production") {
@@ -86,10 +116,13 @@ async function main() {
       },
     });
 
+    // Phase 2A: Seed fixed AccountClass system reference data.
+    await seedAccountClasses(prisma);
+
     console.log("Development seed complete.");
     console.log(`Seeded role: ${ACCOUNTANT_ROLE_CODE}`);
     console.log(`Seeded user: ${ACCOUNTANT_EMAIL}`);
-    console.log("Seed password: ChangeMe123! (development only)");
+    console.log("Seed password: ***********! (development only)");
   } finally {
     await prisma.$disconnect();
   }
