@@ -12,9 +12,6 @@ importers:
         specifier: ^7.1.0
         version: 7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(typescript@5.9.3)
     devDependencies:
-      '@eslint/eslintrc':
-        specifier: ^3.3.5
-        version: 3.3.5
       '@eslint/js':
         specifier: ^9.39.4
         version: 9.39.4
@@ -104,7 +101,11 @@ importers:
 
   packages/config: {}
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/ui: {}
 
