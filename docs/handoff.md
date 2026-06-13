@@ -2,7 +2,9 @@
 
 ## Current Phase
 
-Phase 0 skeleton. Phase 0 was accepted with a database-port isolation fix.
+Phase 1A: multi-agent continuity foundation plus single-accountant authentication.
+
+Phase 0 is complete and accepted. Phase 1A keeps the product boundary narrow: secure login, one confirmed Accountant role, one development Accountant user, protected app shell, durable agent documentation, ADRs, and verification scripts.
 
 ## Completed
 
@@ -19,11 +21,19 @@ Phase 0 skeleton. Phase 0 was accepted with a database-port isolation fix.
 - Isolated the project database on host port `55432`; PostgreSQL still runs inside the container on port `5432`.
 - Added Prisma 7 datasource/generator setup with no business-domain models.
 - Added Phase 0 documentation.
+- Added Phase 1A AI/developer continuity docs in `AGENTS.md`, `.github/copilot-instructions.md`, `docs/ai/*`, and `docs/decisions/*`.
+- Added auth-only Prisma models: `User`, `Role`, `UserRole`, `AuthSession`, and `AuditEvent`.
+- Added one confirmed role only: `ACCOUNTANT`, displayed as `Accountant`.
+- Added one development-only seed user: `accountant@realcapita.local` with full name `Accountant User`.
+- Added HttpOnly cookie JWT/session authentication with database-backed session validation.
+- Added protected API endpoints: `GET /auth/me`, `GET /auth/session`, and `POST /auth/logout`.
+- Added public API endpoint: `POST /auth/login`.
+- Added reusable backend role decorator/guard for `@Roles("ACCOUNTANT")`.
+- Added frontend routes `/login` and `/app`.
+- Added agent helper scripts: `pnpm agent:start`, `pnpm check:all`, and `pnpm doctor`.
 
 ## Intentionally Not Added
 
-- Authentication
-- Role-based access
 - Dashboard
 - Voucher screens
 - Accounting modules
@@ -32,12 +42,13 @@ Phase 0 skeleton. Phase 0 was accepted with a database-port isolation fix.
 - Payroll, HR, CRM, project, party, customer, or vendor modules
 - File uploads
 - Business seed data
+- Unconfirmed office roles
 - Real company documents or private operational data
 - Code copied from the previous Real Capita ERP prototype
 
 ## Next Planned Phase
 
-Phase 1 authentication and role-based access.
+Confirm the next phase with Real Capita before implementation. A likely next phase is Phase 1B: confirm the first accounting foundation requirements and acceptance criteria before adding any business modules.
 
 ## Current GitHub Repository
 
@@ -49,10 +60,14 @@ Verification date: 2026-06-14.
 
 - `pnpm install`: passed.
 - `pnpm prisma:generate`: passed with the local development `DATABASE_URL`.
+- `pnpm prisma migrate dev --name phase_1a_auth`: passed, creating `20260613193905_phase_1a_auth`.
+- `pnpm seed`: passed, seeding only `ACCOUNTANT` and `accountant@realcapita.local`.
 - `pnpm build:web`: passed.
 - `pnpm build:api`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
+- `pnpm check:all`: passed.
+- `pnpm doctor`: passed with one local warning: port `3000` is occupied, so use web port `3010` and start the API with `WEB_ORIGIN=http://localhost:3010` for that test setup.
 - `docker compose config`: passed.
 - `docker compose down`: passed.
 - `docker compose up -d postgres`: passed with `real-capita-accounts-postgres` recreated.
@@ -62,4 +77,5 @@ Verification date: 2026-06-14.
 - Database-port isolation fix: this project now publishes PostgreSQL on host port `55432`, avoiding accidental connections to the old ERP Postgres container on `localhost:5432`.
 - PostgreSQL container version check: passed inside the container, reporting PostgreSQL 17.10.
 - API runtime check: passed on `http://localhost:4000/health`, returning `status: "ok"` and `service: "real-capita-accounts-api"`.
-- Web render check: passed on `http://localhost:3010` because local port `3000` is already allocated by an existing `newproject-web-1` container.
+- API auth runtime check: passed with `accountant@realcapita.local` / `ChangeMe123!`; login returned no token in the JSON body, set the `rcg_auth` HttpOnly `SameSite=Lax` cookie, `/auth/me` returned `Accountant User` with role `Accountant`, logout cleared the cookie, and post-logout `/auth/me` returned `401`.
+- Web auth browser check: passed on `http://localhost:3010` because local port `3000` is occupied. `/login` rendered, login succeeded, `/app` showed `Accountant User`, `accountant@realcapita.local`, role `Accountant`, the Phase 1A secure shell message, and only the allowed placeholder navigation labels.

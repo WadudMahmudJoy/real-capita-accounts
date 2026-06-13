@@ -1,8 +1,8 @@
 # Real Capita Accounting & Project Finance System
 
-Phase 0 technical foundation for a new accounting-first production system for Real Capita Group.
+Phase 1A foundation for a new accounting-first production system for Real Capita Group.
 
-This repository is intentionally not a continuation of the previous Real Capita ERP prototype. Phase 0 establishes the clean technical base only.
+This repository is intentionally not a continuation of the previous Real Capita ERP prototype. Phase 1A adds multi-agent continuity, secure login, one confirmed Accountant role, and a protected app shell only.
 
 ## Stack
 
@@ -30,7 +30,10 @@ This repository is intentionally not a continuation of the previous Real Capita 
 cd D:\real-capita-accounts
 pnpm install
 Copy-Item .env.example .env
+docker compose up -d postgres
 pnpm prisma:generate
+pnpm prisma:migrate
+pnpm seed
 ```
 
 ## Environment
@@ -41,6 +44,11 @@ pnpm prisma:generate
 DATABASE_URL=postgresql://real_capita:real_capita_password@localhost:55432/real_capita_accounts?schema=public
 API_PORT=4000
 WEB_PORT=3000
+WEB_ORIGIN=http://localhost:3000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
+JWT_SECRET=replace-with-a-secure-secret
+JWT_EXPIRES_IN=8h
+COOKIE_NAME=rcg_auth
 NODE_ENV=development
 ```
 
@@ -58,11 +66,37 @@ Frontend default: `http://localhost:3000`
 
 API default: `http://localhost:4000`
 
+If port `3000` is occupied locally, run the web app on `3010` without changing the architecture:
+
+```powershell
+$env:WEB_ORIGIN="http://localhost:3010"
+pnpm dev:api
+pnpm --filter @real-capita-accounts/web exec next dev -p 3010
+```
+
 Health endpoint:
 
 ```powershell
 Invoke-RestMethod http://localhost:4000/health
 ```
+
+## Phase 1A Authentication
+
+Authentication uses an HttpOnly cookie named `rcg_auth` with `SameSite=Lax`. The cookie is marked `Secure` only when `NODE_ENV=production`. Tokens are not stored in localStorage.
+
+Protected API routes verify the JWT and the database-backed `AuthSession`; logout revokes the current session and clears the cookie.
+
+Development seed account:
+
+```text
+Email: accountant@realcapita.local
+Password: ChangeMe123!
+Role: Accountant
+```
+
+This seed is development-only. Do not use real employee names, real passwords, salaries, customer data, voucher amounts, or private business data.
+
+Only one role is confirmed in Phase 1A: `ACCOUNTANT`, displayed as `Accountant`. Future roles are to be confirmed later and must not be invented.
 
 ## Docker and PostgreSQL
 
@@ -80,16 +114,33 @@ The Compose service uses `postgres:17`, a persistent `postgres_data` volume, and
 ```powershell
 pnpm install
 pnpm prisma:generate
+pnpm prisma:migrate
+pnpm seed
 pnpm build:web
 pnpm build:api
 pnpm typecheck
 pnpm lint
 docker compose config
 docker compose up -d postgres
+pnpm check:all
+pnpm doctor
 ```
 
-## Strict Phase 0 Boundary
+## Agent Continuity
 
-Phase 0 does not include authentication, role-based access, dashboards, vouchers, chart of accounts, parties, projects, payroll, salary sheets, reports, ledgers, cash book, bank book, trial balance, file uploads, ERP modules, fake business screens, or seed business data.
+Future AI agents and developers should start with:
 
-The next planned phase is Phase 1 authentication and role-based access.
+- `AGENTS.md`
+- `docs/ai/START_HERE.md`
+- `docs/ai/CURRENT_STATE.md`
+- `docs/ai/WORKFLOW.md`
+- `docs/handoff.md`
+- `docs/decisions/`
+
+Use `pnpm agent:start` for a quick local orientation report.
+
+## Strict Phase 1A Boundary
+
+Phase 1A does not include vouchers, chart of accounts, parties, projects, payroll, salary sheets, reports, ledgers, cash book, bank book, trial balance, dashboard analytics, file uploads, ERP modules, accounting screens, business seed data, or unconfirmed office roles.
+
+The next phase must be confirmed before implementation. A likely next step is Phase 1B: confirm the first accounting foundation requirements before adding any business modules.
