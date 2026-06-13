@@ -32,3 +32,4 @@ Thumbs.db
 prisma/dev.db
 prisma/dev.db-journal
 prisma/generated/
+apps/api/src/generated/
