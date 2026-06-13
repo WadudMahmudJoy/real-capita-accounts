@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 0 skeleton.
+Phase 0 skeleton. Phase 0 was accepted with a database-port isolation fix.
 
 ## Completed
 
@@ -16,6 +16,7 @@ Phase 0 skeleton.
 - Added minimal `packages/shared`, `packages/ui`, and `packages/config` TypeScript packages.
 - Installed Zod through `packages/shared` for future shared validation without adding business schemas.
 - Added PostgreSQL 17 Docker Compose setup.
+- Isolated the project database on host port `55432`; PostgreSQL still runs inside the container on port `5432`.
 - Added Prisma 7 datasource/generator setup with no business-domain models.
 - Added Phase 0 documentation.
 
@@ -53,7 +54,12 @@ Verification date: 2026-06-14.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
 - `docker compose config`: passed.
-- `docker compose up -d postgres`: initial attempt was blocked because port `5432` was already allocated by an existing `newproject-postgres-1` container using `postgres:15-alpine`. A retry started this project's `real-capita-accounts-postgres` container and Docker health is `healthy`, but localhost `5432` is still owned by the existing `newproject-postgres-1` container. Host-port access for this new database should be rechecked after stopping the unrelated old container and recreating this service.
+- `docker compose down`: passed.
+- `docker compose up -d postgres`: passed with `real-capita-accounts-postgres` recreated.
+- `docker compose ps`: passed, reporting `0.0.0.0:55432->5432/tcp` and Docker health `healthy`.
+- `docker compose logs postgres --tail=50`: passed, reporting PostgreSQL 17.10 ready to accept connections on container port `5432`.
+- Prisma database connectivity check through `pnpm prisma db execute --stdin`: passed against the configured `DATABASE_URL`.
+- Database-port isolation fix: this project now publishes PostgreSQL on host port `55432`, avoiding accidental connections to the old ERP Postgres container on `localhost:5432`.
 - PostgreSQL container version check: passed inside the container, reporting PostgreSQL 17.10.
 - API runtime check: passed on `http://localhost:4000/health`, returning `status: "ok"` and `service: "real-capita-accounts-api"`.
 - Web render check: passed on `http://localhost:3010` because local port `3000` is already allocated by an existing `newproject-web-1` container.

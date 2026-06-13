@@ -38,7 +38,7 @@ pnpm prisma:generate
 `.env.example` contains local development defaults only:
 
 ```env
-DATABASE_URL=postgresql://real_capita:real_capita_password@localhost:5432/real_capita_accounts?schema=public
+DATABASE_URL=postgresql://real_capita:real_capita_password@localhost:55432/real_capita_accounts?schema=public
 API_PORT=4000
 WEB_PORT=3000
 NODE_ENV=development
@@ -73,7 +73,7 @@ docker compose logs -f postgres
 docker compose down
 ```
 
-The Compose service uses `postgres:17`, a persistent `postgres_data` volume, and localhost port `5432`.
+The Compose service uses `postgres:17`, a persistent `postgres_data` volume, and project-specific localhost port `55432` to avoid conflicts with the old ERP database. PostgreSQL still runs inside the container on port `5432`; connect from host tools with `localhost:55432`.
 
 ## Verification Commands
 
