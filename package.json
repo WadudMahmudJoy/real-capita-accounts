@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "pnpm --parallel --filter @real-capita-accounts/web --filter @real-capita-accounts/api dev",
     "dev:web": "pnpm --filter @real-capita-accounts/web dev",
@@ -17,8 +20,13 @@
     "prisma:studio": "prisma studio --schema prisma/schema.prisma"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@eslint/eslintrc": "^3.3.5",
+    "@types/node": "^25.9.3",
+    "eslint": "^10.5.0",
     "prisma": "^7.1.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.61.0"
   },
   "dependencies": {
     "@prisma/client": "^7.1.0"
