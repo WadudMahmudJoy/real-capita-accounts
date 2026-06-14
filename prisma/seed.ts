@@ -6,7 +6,7 @@ import { PrismaClient } from "../apps/api/src/generated/prisma/client";
 
 const ACCOUNTANT_ROLE_CODE = "ACCOUNTANT";
 const ACCOUNTANT_EMAIL = "accountant@realcapita.local";
-const DEVELOPMENT_PASSWORD = "***********!";
+const DEVELOPMENT_PASSWORD = "ChangeMe123!";
 
 const SYSTEM_ACCOUNT_CLASSES = [
   { code: "ASSET" as const, name: "Asset", normalBalance: "DEBIT" as const },
@@ -122,7 +122,7 @@ async function main() {
     console.log("Development seed complete.");
     console.log(`Seeded role: ${ACCOUNTANT_ROLE_CODE}`);
     console.log(`Seeded user: ${ACCOUNTANT_EMAIL}`);
-    console.log("Seed password: ***********! (development only)");
+    console.log("Seed password: ChangeMe123! (development only)");
   } finally {
     await prisma.$disconnect();
   }
