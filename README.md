@@ -10,6 +10,7 @@ This repository is intentionally not a continuation of the previous Real Capita 
 - Phase 1B documentation/specification lock is prepared.
 - Phase 2A accounting foundation is implemented and accepted.
 - Phase 2B voucher requirement documentation/specification lock is prepared.
+- Phase 2C voucher implementation plan is prepared (6 chunks: schema, backend draft API, posting service, frontend UI, post/print UI, integration review).
 - No voucher implementation exists yet.
 - The next implementation requires explicit user confirmation before any voucher schema, API, or UI work begins.
 
@@ -152,4 +153,4 @@ Use `pnpm agent:start` for a quick local orientation report.
 
 The current completed work does not include voucher implementation, journal posting, parties, payroll, salary sheets, reports, ledgers, cash book, bank book, trial balance, dashboard analytics, file uploads, ERP modules, accounting transaction screens, business seed data, or unconfirmed office roles.
 
-The next coding phase must be confirmed before implementation. The proposed next coding phase is voucher engine implementation documented in `docs/requirements/phase-2b-voucher-requirement-lock.md`.
+The next coding phase must be confirmed before implementation. The proposed next coding phase is voucher engine Chunk 2C-1 (schema only) documented in `docs/plans/phase-2c-voucher-implementation-plan.md`.

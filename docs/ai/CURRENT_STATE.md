@@ -12,17 +12,23 @@ Phase 2A accounting foundation is complete and accepted.
 
 Phase 2B voucher requirement/specification lock is complete.
 
-## Phase 2B Documentation Lock
+Phase 2C voucher implementation planning is complete.
 
-Phase 2B adds only documentation. It locks voucher module requirements before any voucher implementation:
+## Phase 2C Implementation Planning
 
-- `docs/requirements/phase-2b-voucher-requirement-lock.md`: voucher module purpose, six voucher types, overlap clarification, system number, physical SI No, date, period linkage, draft/posted workflow, lines, validation rules, audit trail, deferred items.
-- `docs/architecture/phase-2b-voucher-model-proposal.md`: Voucher, VoucherLine, VoucherType, VoucherStatus, VoucherNumberSequence model proposals, validation/posting/reversal/deletion policies, derived reports principle.
-- `docs/acceptance/phase-2b-acceptance-criteria.md`: acceptance for documentation lock, future backend/frontend, posting validation, security, audit trail, smoke tests, out-of-scope list.
-- `docs/decisions/ADR-0007-phase-2b-voucher-requirement-lock.md`: decision to lock voucher requirements before implementation.
-- `docs/prompts/droid-cli-phase-2b-next-prompt.md`: review-only prompt for next agent, no implementation, check consistency with Phase 2A.
+Phase 2C adds only planning documentation. It splits voucher implementation into 6 chunks:
 
-No Prisma schema changes, no migrations, no backend changes, no frontend changes in Phase 2B.
+- Chunk 2C-1: Voucher schema only (enums, Voucher, VoucherLine, VoucherNumberSequence; no API, no frontend, no posting).
+- Chunk 2C-2: Backend draft voucher API (CRUD for drafts, ACCOUNTANT guard, no posting).
+- Chunk 2C-3: Posting validation service (all validation rules, immutability, audit events).
+- Chunk 2C-4: Frontend draft/create UI (voucher list, line editor, validation display).
+- Chunk 2C-5: Posting UI and print foundation (post action, read-only view, browser print layout).
+- Chunk 2C-6: Final integration and acceptance review (smoke tests, audit checks, docs update).
+
+- `docs/plans/phase-2c-voucher-implementation-plan.md`: full chunk plan with objectives, files, out-of-scope, verification, smoke tests, model routing, risk levels, and stop conditions.
+- `docs/prompts/phase-2c-chunk-1-voucher-schema-prompt.md`: prompt for schema-only Chunk 2C-1 implementation.
+
+No Prisma schema changes, no migrations, no backend changes, no frontend changes in Phase 2C planning.
 
 ## Implemented Features
 
@@ -65,7 +71,7 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 The repo intentionally does not include vouchers, journals, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. Voucher implementation, transaction workflows, and reporting are still intentionally outside scope.
+The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Voucher implementation, transaction workflows, and reporting are still intentionally outside scope until user confirms Chunk 2C-1.
 
 ## Database Port
 
@@ -81,12 +87,13 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-The next task should be a review of the Phase 2B documentation for consistency with Phase 2A, then explicit user confirmation before any voucher implementation phase begins.
+The next task should be explicit user confirmation to start Chunk 2C-1 (voucher schema only), using `docs/prompts/phase-2c-chunk-1-voucher-schema-prompt.md` as the agent prompt.
 
 Reference docs before continuing:
 
+- `docs/plans/phase-2c-voucher-implementation-plan.md`
 - `docs/requirements/phase-2b-voucher-requirement-lock.md`
 - `docs/architecture/phase-2b-voucher-model-proposal.md`
 - `docs/acceptance/phase-2b-acceptance-criteria.md`
 
-Do not start voucher implementation, reports, dashboard analytics, payroll, parties/customers/vendors, additional roles, file uploads, or business seed data without explicit user approval for a new phase.
+Do not start voucher implementation without explicit user approval for Phase 2C. Each chunk requires separate acceptance before the next begins.

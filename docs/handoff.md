@@ -2,9 +2,16 @@
 
 ## Current Phase
 
-Phase 2B: voucher requirement documentation/specification lock.
+Phase 2C: voucher implementation planning.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locks voucher requirements before any voucher implementation.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C plans the voucher implementation chunks.
+
+## Phase 2C Voucher Implementation Planning - completed this session
+
+- Created `docs/plans/phase-2c-voucher-implementation-plan.md`: splits voucher implementation into 6 chunks (2C-1 schema only, 2C-2 backend draft API, 2C-3 posting validation service, 2C-4 frontend draft/create UI, 2C-5 posting UI and print foundation, 2C-6 final integration review). Each chunk includes objective, files likely to change, strict out-of-scope, verification commands, manual smoke tests, recommended model, fallback model, risk level, and stop condition.
+- Created `docs/prompts/phase-2c-chunk-1-voucher-schema-prompt.md`: future prompt for schema-only implementation of Chunk 2C-1, explicitly stating no API, no frontend, no posting service, no reports, no new roles, no parties/customers/vendors, no file uploads.
+- Updated `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`, `README.md` to reflect Phase 2C planning.
+- No Prisma schema changes, migrations, backend changes, frontend changes, roles, business seed data, file uploads, vouchers, reports, dashboard analytics, payroll, parties, customers, or vendors were added in this planning session.
 
 ## Phase 2B Voucher Requirement Lock - completed this session
 
@@ -84,7 +91,7 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 
 ## Next Planned Phase
 
-Phase 2B voucher requirement lock is complete. The next task should be a review of the Phase 2B documentation for consistency with Phase 2A, then a separate user-confirmed plan for voucher implementation (Phase 2C or equivalent).
+Phase 2C voucher implementation planning is complete. The next task should be explicit user confirmation to start Chunk 2C-1 (voucher schema only), using `docs/prompts/phase-2c-chunk-1-voucher-schema-prompt.md` as the agent prompt.
 
 Still not implemented:
 
