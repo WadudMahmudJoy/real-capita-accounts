@@ -18,6 +18,8 @@ Phase 2C Chunk 2C-1 voucher schema foundation is complete.
 
 Phase 2C Chunk 2C-2 backend draft voucher API is complete.
 
+Phase 2C Chunk 2C-3 backend posting validation service is complete.
+
 ## Phase 2C Implementation Planning
 
 Phase 2C adds only planning documentation. It splits voucher implementation into 6 chunks:
@@ -65,6 +67,34 @@ Deferred to Chunk 2C-3: debit total must equal credit total before posting, acco
 
 No frontend, posting service, posting endpoint, reports, dashboard analytics, payroll, parties/customers/vendors, roles, file uploads, seed data, or tooling were added. No Prisma schema change or migration was made.
 
+## Phase 2C Chunk 2C-3 Backend Posting Validation Service
+
+Chunk 2C-3 extended the existing backend voucher module with `POST /vouchers/:id/post`. The endpoint uses the same class-level `AuthGuard` + `RolesGuard` + `ACCOUNTANT` protection as the other `/vouchers` routes.
+
+Posting behavior:
+
+- Only active, non-deleted `DRAFT` vouchers can be posted.
+- On success, posting runs inside a Prisma transaction, sets `status=POSTED`, sets `postingDate`, sets `postedById` from the authenticated user, recalculates `totalDebit` and `totalCredit` from existing voucher lines, preserves `systemVoucherNo`, leaves voucher lines unchanged, and records `VOUCHER_POSTED` in `AuditEvent`.
+- Posted vouchers remain immutable through the existing PATCH/DELETE draft-only checks.
+
+Posting validations implemented:
+
+- Voucher exists and is not soft-deleted.
+- Voucher status is `DRAFT`.
+- Voucher has at least two lines.
+- Header narration is present and not blank.
+- Debit total equals credit total and total amount is greater than zero.
+- Fiscal year exists, is active, and is not closed.
+- Accounting period exists, belongs to the voucher fiscal year, and has status `OPEN`.
+- Voucher date is inside both fiscal year and accounting period ranges.
+- Every ledger account is active.
+- `requiresProject`, `requiresCostCenter`, active Project, active CostCenter, and CostCenter-to-Project consistency are enforced.
+- Cash/bank account references must be active, belong to the same line ledger account, and only appear with cash/bank ledger accounts.
+- Cash/bank ledger accounts require `cashBankAccountId` at posting time.
+- Payment, Receipt, and Contra cash/bank side rules are enforced at posting time.
+
+No frontend, reports, dashboard analytics, payroll, parties/customers/vendors, roles, file uploads, seed data, tooling, Prisma schema changes, migrations, or financial statement/report tables were added.
+
 ## Implemented Features
 
 - pnpm workspace monorepo.
@@ -104,9 +134,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include voucher API endpoints, voucher frontend UI, posting, journals, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+The repo intentionally does not include voucher frontend UI, journals beyond the voucher draft/post workflow, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Phase 2C-1 added the voucher schema foundation, and Phase 2C-2 added the backend draft voucher API (list/detail/create/update/soft-delete). Voucher posting, frontend voucher UI, and reporting are still intentionally outside scope until the user confirms the next chunk.
+The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Phase 2C-1 added the voucher schema foundation, Phase 2C-2 added the backend draft voucher API (list/detail/create/update/soft-delete), and Phase 2C-3 added the backend posting validation service. Frontend voucher UI and reporting are still intentionally outside scope until the user confirms the next chunk.
 
 ## Database Port
 
@@ -122,7 +152,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-The next task is a Chunk 2C-2 backend review of the draft voucher API, then explicit user confirmation before starting Chunk 2C-3 posting validation service.
+The next task is a Chunk 2C-3 backend review of the posting validation service, then explicit user confirmation before starting Chunk 2C-4 frontend voucher draft/create UI.
 
 Reference docs before continuing:
 

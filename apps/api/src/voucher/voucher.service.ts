@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
+  AccountingPeriodStatus,
   Prisma,
   VoucherStatus,
   type VoucherType,
@@ -32,6 +33,21 @@ type ValidatedLines = {
   totalDebit: Prisma.Decimal;
   totalCredit: Prisma.Decimal;
 };
+
+type VoucherForPosting = Prisma.VoucherGetPayload<{
+  include: {
+    accountingPeriod: true;
+    fiscalYear: true;
+    lines: {
+      include: {
+        cashBankAccount: true;
+        costCenter: true;
+        ledgerAccount: true;
+        project: true;
+      };
+    };
+  };
+}>;
 
 const createdBySelect = {
   select: { id: true, fullName: true, email: true },
@@ -287,6 +303,60 @@ export class VoucherService {
     };
   }
 
+  async postVoucher(id: string, context: VoucherActionContext) {
+    await this.prisma.$transaction(async (tx) => {
+      const voucher = await tx.voucher.findFirst({
+        where: { id, isDeleted: false },
+        include: {
+          accountingPeriod: true,
+          fiscalYear: true,
+          lines: {
+            orderBy: { lineNo: "asc" },
+            include: {
+              cashBankAccount: true,
+              costCenter: true,
+              ledgerAccount: true,
+              project: true,
+            },
+          },
+        },
+      });
+
+      if (!voucher) {
+        throw new NotFoundException("Voucher was not found.");
+      }
+
+      const totals = this.validatePostingRules(voucher);
+      const postingDate = new Date();
+      const updated = await tx.voucher.updateMany({
+        where: { id, isDeleted: false, status: VoucherStatus.DRAFT },
+        data: {
+          postingDate,
+          postedById: context.userId,
+          status: VoucherStatus.POSTED,
+          totalCredit: totals.totalCredit,
+          totalDebit: totals.totalDebit,
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new BadRequestException(
+          "Voucher can no longer be posted because it is not an active draft.",
+        );
+      }
+
+      await this.recordAudit(tx, "VOUCHER_POSTED", id, context, {
+        postingDate: postingDate.toISOString(),
+        systemVoucherNo: voucher.systemVoucherNo,
+        totalCredit: totals.totalCredit.toString(),
+        totalDebit: totals.totalDebit.toString(),
+        voucherType: voucher.voucherType,
+      });
+    });
+
+    return this.findOne(id);
+  }
+
   // -------------------------------------------------------------------------
   // Internal helpers
   // -------------------------------------------------------------------------
@@ -438,6 +508,197 @@ export class VoucherService {
     }
 
     return { lines, totalDebit, totalCredit };
+  }
+
+  private validatePostingRules(voucher: VoucherForPosting): {
+    totalDebit: Prisma.Decimal;
+    totalCredit: Prisma.Decimal;
+  } {
+    if (voucher.status !== VoucherStatus.DRAFT) {
+      throw new BadRequestException(
+        "Only draft vouchers can be posted. Posted vouchers cannot be posted again.",
+      );
+    }
+
+    if (!voucher.narration || voucher.narration.trim().length === 0) {
+      throw new BadRequestException("Voucher narration is required before posting.");
+    }
+
+    if (voucher.lines.length < 2) {
+      throw new BadRequestException("Voucher must have at least two lines before posting.");
+    }
+
+    this.validatePostingDateContext(voucher);
+
+    let totalDebit = new Prisma.Decimal(0);
+    let totalCredit = new Prisma.Decimal(0);
+
+    for (const line of voucher.lines) {
+      this.validatePostingLine(line);
+
+      if (line.side === "DEBIT") {
+        totalDebit = totalDebit.plus(line.amount);
+      } else {
+        totalCredit = totalCredit.plus(line.amount);
+      }
+    }
+
+    if (totalDebit.lessThanOrEqualTo(0) || totalCredit.lessThanOrEqualTo(0)) {
+      throw new BadRequestException("Voucher total must be greater than zero before posting.");
+    }
+
+    if (!totalDebit.equals(totalCredit)) {
+      throw new BadRequestException(
+        "Debit total must equal credit total before posting.",
+      );
+    }
+
+    this.validateVoucherTypeCashBankRules(voucher);
+
+    return { totalDebit, totalCredit };
+  }
+
+  private validatePostingDateContext(voucher: VoucherForPosting): void {
+    if (voucher.fiscalYear.isClosed) {
+      throw new BadRequestException("Fiscal year is closed and cannot accept posted vouchers.");
+    }
+
+    if (!voucher.fiscalYear.isActive) {
+      throw new BadRequestException("Fiscal year must be active before posting vouchers.");
+    }
+
+    if (voucher.accountingPeriod.fiscalYearId !== voucher.fiscalYearId) {
+      throw new BadRequestException(
+        "Accounting period does not belong to the voucher fiscal year.",
+      );
+    }
+
+    if (voucher.accountingPeriod.status !== AccountingPeriodStatus.OPEN) {
+      throw new BadRequestException("Accounting period must be OPEN before posting.");
+    }
+
+    if (
+      voucher.voucherDate < voucher.fiscalYear.startDate ||
+      voucher.voucherDate > voucher.fiscalYear.endDate
+    ) {
+      throw new BadRequestException(
+        "Voucher date must fall inside the fiscal year date range before posting.",
+      );
+    }
+
+    if (
+      voucher.voucherDate < voucher.accountingPeriod.startDate ||
+      voucher.voucherDate > voucher.accountingPeriod.endDate
+    ) {
+      throw new BadRequestException(
+        "Voucher date must fall inside the accounting period date range before posting.",
+      );
+    }
+  }
+
+  private validatePostingLine(
+    line: VoucherForPosting["lines"][number],
+  ): void {
+    const label = `Line ${line.lineNo}`;
+
+    if (line.amount.lessThanOrEqualTo(0)) {
+      throw new BadRequestException(`${label}: amount must be greater than zero.`);
+    }
+
+    if (!line.ledgerAccount.isActive) {
+      throw new BadRequestException(`${label}: ledger account is not active.`);
+    }
+
+    if (line.ledgerAccount.requiresProject && !line.projectId) {
+      throw new BadRequestException(`${label}: project is required for this ledger account.`);
+    }
+
+    if (line.projectId) {
+      if (!line.project) {
+        throw new NotFoundException(`${label}: project was not found.`);
+      }
+
+      if (!line.project.isActive) {
+        throw new BadRequestException(`${label}: project is not active.`);
+      }
+    }
+
+    if (line.ledgerAccount.requiresCostCenter && !line.costCenterId) {
+      throw new BadRequestException(
+        `${label}: cost center is required for this ledger account.`,
+      );
+    }
+
+    if (line.costCenterId) {
+      if (!line.costCenter) {
+        throw new NotFoundException(`${label}: cost center was not found.`);
+      }
+
+      if (!line.costCenter.isActive) {
+        throw new BadRequestException(`${label}: cost center is not active.`);
+      }
+
+      if (line.projectId && line.costCenter.projectId !== line.projectId) {
+        throw new BadRequestException(
+          `${label}: cost center must belong to the selected project.`,
+        );
+      }
+    }
+
+    if (line.cashBankAccountId) {
+      if (!line.cashBankAccount) {
+        throw new NotFoundException(`${label}: cash/bank account was not found.`);
+      }
+
+      if (!line.cashBankAccount.isActive) {
+        throw new BadRequestException(`${label}: cash/bank account is not active.`);
+      }
+
+      if (!line.ledgerAccount.isCashBank) {
+        throw new BadRequestException(
+          `${label}: cash/bank account can only be used with a cash/bank ledger account.`,
+        );
+      }
+
+      if (line.cashBankAccount.ledgerAccountId !== line.ledgerAccountId) {
+        throw new BadRequestException(
+          `${label}: cash/bank account must belong to the line ledger account.`,
+        );
+      }
+    }
+
+    if (line.ledgerAccount.isCashBank && !line.cashBankAccountId) {
+      throw new BadRequestException(
+        `${label}: cash/bank account is required for cash/bank ledger accounts.`,
+      );
+    }
+  }
+
+  private validateVoucherTypeCashBankRules(voucher: VoucherForPosting): void {
+    const cashBankLines = voucher.lines.filter((line) => line.ledgerAccount.isCashBank);
+    const hasDebitCashBankLine = cashBankLines.some((line) => line.side === "DEBIT");
+    const hasCreditCashBankLine = cashBankLines.some((line) => line.side === "CREDIT");
+
+    if (voucher.voucherType === "PAYMENT" && !hasCreditCashBankLine) {
+      throw new BadRequestException(
+        "Payment vouchers require at least one cash/bank credit line before posting.",
+      );
+    }
+
+    if (voucher.voucherType === "RECEIPT" && !hasDebitCashBankLine) {
+      throw new BadRequestException(
+        "Receipt vouchers require at least one cash/bank debit line before posting.",
+      );
+    }
+
+    if (
+      voucher.voucherType === "CONTRA" &&
+      (cashBankLines.length !== 2 || !hasDebitCashBankLine || !hasCreditCashBankLine)
+    ) {
+      throw new BadRequestException(
+        "Contra vouchers require exactly two cash/bank lines, one debit and one credit, before posting.",
+      );
+    }
   }
 
   // Atomically reserves the next sequential number for the

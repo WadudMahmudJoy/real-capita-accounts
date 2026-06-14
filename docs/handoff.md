@@ -2,9 +2,21 @@
 
 ## Current Phase
 
-Phase 2C: backend draft voucher API review.
+Phase 2C: backend posting validation service review.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, and Chunk 2C-2 added the backend draft voucher API.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, Chunk 2C-2 added the backend draft voucher API, and Chunk 2C-3 added the backend posting validation service.
+
+## Phase 2C Chunk 2C-3 Backend Posting Validation Service - completed this session
+
+- Extended the existing NestJS voucher module with `POST /vouchers/:id/post`, guarded by the existing class-level `AuthGuard` + `RolesGuard` for the `ACCOUNTANT` role.
+- Posting runs inside a Prisma transaction. On success it sets `status=POSTED`, sets `postingDate`, sets `postedById` from the authenticated user, recalculates `totalDebit` and `totalCredit` from existing voucher lines, preserves `systemVoucherNo`, leaves voucher lines unchanged, and records `VOUCHER_POSTED` in `AuditEvent`.
+- Posting validations implemented: active non-deleted draft voucher only; at least two lines; nonblank narration; debit total equals credit total; total amount greater than zero; active and not-closed fiscal year; `OPEN` accounting period; fiscal year/period ownership and date-range checks; active ledger accounts; `requiresProject`; `requiresCostCenter`; active project/cost center references; cost center belongs to selected project when both are provided; cash/bank account active, belongs to the line ledger account, and only used with cash/bank ledger accounts; cash/bank ledger lines require `cashBankAccountId`; Payment/Receipt/Contra cash-bank side rules.
+- Manual API smoke tests passed against `http://localhost:4011`: login; unauthenticated post returns 401; balanced draft posts successfully; returned voucher is `POSTED`; `postingDate` and `postedById` are set; `VOUCHER_POSTED` audit event exists; PATCH and DELETE on posted voucher fail; unbalanced voucher fails; LOCKED and CLOSED period posting fails; missing required project fails; missing required cost center fails; cash/bank ledger line without `cashBankAccountId` fails; cost center from a different project fails. Smoke-test rows were cleaned up afterward.
+- No frontend, reports, dashboard analytics, payroll, parties/customers/vendors, roles, file uploads, seed data, tooling, Prisma schema changes, migrations, or financial statement/report tables were added.
+
+## Next Stop Point
+
+Review the Phase 2C-3 backend posting validation service. The next proposed task is Chunk 2C-4 frontend voucher draft/create UI, but it must not begin until explicitly confirmed by the user.
 
 ## Phase 2C Chunk 2C-2 Backend Draft Voucher API - completed this session
 
@@ -24,9 +36,9 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:api`, `pnpm build:web`, `pnpm check:all`, `pnpm doctor`.
 - Manual API smoke tests passed against `http://localhost:4000`: unauthenticated `GET /vouchers` returns 401; login as `accountant@realcapita.local` succeeds; draft create returns a generated `systemVoucherNo` (`PAYMENT-00001`) with server-computed totals; list and detail return the draft with lines; PATCH updates narration/lines and recalculates totals while keeping the voucher number; client `status`/`systemVoucherNo`/totals/posting fields are rejected (400); blank narration, bad date range, inactive/nonexistent references, negative amount, and single-line drafts are rejected; unbalanced drafts are allowed with computed totals; per-type numbering increments correctly; soft-delete hides the voucher and PATCH/GET on it return 404; the consumed number is not reused. Smoke-test voucher rows were cleaned up afterward.
 
-## Next Stop Point
+## Phase 2C Chunk 2C-2 Next Stop Point (superseded)
 
-Review the Phase 2C-2 backend draft voucher API. The next proposed task is Chunk 2C-3 posting validation service, but it must not begin until explicitly confirmed by the user.
+Reviewing the Phase 2C-2 backend draft voucher API was the stop point before posting work. Chunk 2C-3 backend posting validation service is now complete; see the section above.
 
 ## Phase 2C Chunk 2C-1 Voucher Schema Foundation - completed this session
 
@@ -126,11 +138,11 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2C Chunk 2C-2 backend draft voucher API is complete. The next task is a backend review of the draft voucher API, then explicit user confirmation before starting Chunk 2C-3 posting validation service.
+Phase 2C Chunk 2C-3 backend posting validation service is complete. The next task is a backend review of the posting validation service, then explicit user confirmation before starting Chunk 2C-4 frontend voucher draft/create UI.
 
 Still not implemented:
 
-- Voucher posting endpoint/service, voucher frontend UI, journals posting, or transaction workflows beyond draft CRUD.
+- Voucher frontend UI, printable voucher UI, or transaction workflows beyond the backend draft/post voucher workflow.
 - Ledger reports, cash book, bank book, trial balance, financial statements, or dashboard analytics.
 - Payroll or salary sheets.
 - Parties, customers, vendors, HR, CRM, or ERP modules.

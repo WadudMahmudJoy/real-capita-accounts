@@ -38,6 +38,11 @@ export class VoucherController {
     return this.voucherService.findOne(id);
   }
 
+  @Post(":id/post")
+  postVoucher(@Param("id") id: string, @Req() request: AuthenticatedRequest) {
+    return this.voucherService.postVoucher(id, buildContext(request));
+  }
+
   @Post()
   create(
     @Body() dto: CreateVoucherDto,
