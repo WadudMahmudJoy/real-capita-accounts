@@ -2,16 +2,19 @@
 
 ## Current Phase
 
-Phase 2A: accounting foundation frontend implementation complete through Chunk 3B.
+Phase 2B: voucher requirement documentation/specification lock.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locks voucher requirements before any voucher implementation.
 
-Phase 2A was implemented in chunks:
+## Phase 2B Voucher Requirement Lock - completed this session
 
-- Chunk 1: accounting-foundation Prisma schema, migration, and the fixed five-class `AccountClass` system seed - complete.
-- Chunk 2: backend accounting foundation API guarded by the `ACCOUNTANT` role - complete, reviewed, pushed, and accepted.
-- Chunk 3A: frontend accounting foundation pages - complete.
-- Chunk 3B: remaining frontend pages and final integration verification - complete.
+- Created `docs/requirements/phase-2b-voucher-requirement-lock.md`: defines voucher module purpose, six voucher types (Debit, Credit, Journal, Contra, Payment, Receipt) with overlap clarification, system-generated voucher number, physical SI No, voucher date, fiscal year/period linkage, draft vs posted workflow, posting date, narration/description, debit-credit line structure, LedgerAccount selection, project/cost center requirement validation, cash/bank behavior, audit trail, print/export deferred, attachment deferred, no reports, no parties/customers/vendors.
+- Created `docs/architecture/phase-2b-voucher-model-proposal.md`: proposes Voucher, VoucherLine, VoucherType enum, VoucherStatus enum, VoucherNumberSequence models with relations to Phase 2A foundation entities, validation rules, posting rules, reversal/correction policy, deletion policy (no hard delete after posting), draft editing policy, posted editing policy, accounting period lock/close behavior, idempotency/concurrency concerns, and the principle that reports derive from posted VoucherLine records.
+- Created `docs/acceptance/phase-2b-acceptance-criteria.md`: defines acceptance for documentation lock, future backend, future frontend, posting validation, security, audit trail, smoke tests, and an explicit out-of-scope list.
+- Created `docs/decisions/ADR-0007-phase-2b-voucher-requirement-lock.md`: documents the decision to lock voucher requirements before implementation.
+- Created `docs/prompts/droid-cli-phase-2b-next-prompt.md`: future prompt for the next agent to review the Phase 2B docs only, explicitly stating no implementation, no schema changes, no voucher code yet, check consistency with Phase 2A foundation.
+- Updated `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`, `README.md` to reflect Phase 2B docs lock.
+- No Prisma schema changes, migrations, backend changes, frontend changes, roles, business seed data, file uploads, vouchers, reports, dashboard analytics, payroll, parties, customers, or vendors were added in Phase 2B.
 
 ## Phase 2A Chunk 3B (remaining frontend foundation) - completed this session
 
@@ -70,7 +73,7 @@ Phase 2A was implemented in chunks:
 ## Intentionally Not Added
 
 - Dashboard analytics.
-- Voucher screens, journals, posting, or transaction workflows.
+- Voucher screens, journals, posting, or transaction workflows (locked in Phase 2B docs only).
 - Ledger reports, cash book, bank book, trial balance, or financial statements.
 - Payroll, salary sheets, HR, CRM, party, customer, or vendor modules.
 - File uploads.
@@ -81,7 +84,7 @@ Phase 2A was implemented in chunks:
 
 ## Next Planned Phase
 
-Phase 2A Chunk 3B is complete. The next task should be a focused review/acceptance pass for Chunk 3B, then a separate user-confirmed plan for any future phase.
+Phase 2B voucher requirement lock is complete. The next task should be a review of the Phase 2B documentation for consistency with Phase 2A, then a separate user-confirmed plan for voucher implementation (Phase 2C or equivalent).
 
 Still not implemented:
 

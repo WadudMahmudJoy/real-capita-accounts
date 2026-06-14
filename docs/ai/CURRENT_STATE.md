@@ -8,12 +8,21 @@ Phase 1A is implemented: multi-agent project continuity plus single-accountant a
 
 Phase 1B requirement/specification lock is complete.
 
-Phase 2A accounting foundation frontend is implemented through Chunk 3B:
+Phase 2A accounting foundation is complete and accepted.
 
-- Chunk 1 (Prisma schema, migration, system `AccountClass` seed) is complete.
-- Chunk 2 (backend accounting foundation API) is complete, reviewed, and accepted.
-- Chunk 3A (frontend accounting foundation pages) is complete.
-- Chunk 3B (remaining frontend pages and final integration verification) is complete.
+Phase 2B voucher requirement/specification lock is complete.
+
+## Phase 2B Documentation Lock
+
+Phase 2B adds only documentation. It locks voucher module requirements before any voucher implementation:
+
+- `docs/requirements/phase-2b-voucher-requirement-lock.md`: voucher module purpose, six voucher types, overlap clarification, system number, physical SI No, date, period linkage, draft/posted workflow, lines, validation rules, audit trail, deferred items.
+- `docs/architecture/phase-2b-voucher-model-proposal.md`: Voucher, VoucherLine, VoucherType, VoucherStatus, VoucherNumberSequence model proposals, validation/posting/reversal/deletion policies, derived reports principle.
+- `docs/acceptance/phase-2b-acceptance-criteria.md`: acceptance for documentation lock, future backend/frontend, posting validation, security, audit trail, smoke tests, out-of-scope list.
+- `docs/decisions/ADR-0007-phase-2b-voucher-requirement-lock.md`: decision to lock voucher requirements before implementation.
+- `docs/prompts/droid-cli-phase-2b-next-prompt.md`: review-only prompt for next agent, no implementation, check consistency with Phase 2A.
+
+No Prisma schema changes, no migrations, no backend changes, no frontend changes in Phase 2B.
 
 ## Implemented Features
 
@@ -56,7 +65,7 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 The repo intentionally does not include vouchers, journals, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented, but transaction workflows and reporting are still intentionally outside scope.
+The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. Voucher implementation, transaction workflows, and reporting are still intentionally outside scope.
 
 ## Database Port
 
@@ -72,12 +81,12 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-The next task should be a focused review/acceptance pass for Phase 2A Chunk 3B, then a separate user-confirmed plan for any future phase.
+The next task should be a review of the Phase 2B documentation for consistency with Phase 2A, then explicit user confirmation before any voucher implementation phase begins.
 
 Reference docs before continuing:
 
-- `docs/requirements/phase-1b-accounting-foundation-lock.md`
-- `docs/architecture/phase-1b-accounting-foundation-model-proposal.md`
-- `docs/acceptance/phase-1b-acceptance-criteria.md`
+- `docs/requirements/phase-2b-voucher-requirement-lock.md`
+- `docs/architecture/phase-2b-voucher-model-proposal.md`
+- `docs/acceptance/phase-2b-acceptance-criteria.md`
 
-Do not start vouchers, reports, dashboard analytics, payroll, parties/customers/vendors, additional roles, file uploads, or business seed data without explicit user approval for a new phase.
+Do not start voucher implementation, reports, dashboard analytics, payroll, parties/customers/vendors, additional roles, file uploads, or business seed data without explicit user approval for a new phase.
