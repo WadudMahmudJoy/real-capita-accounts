@@ -2,9 +2,29 @@
 
 ## Current Phase
 
-Phase 2C-5: posting UI and print foundation completed.
+Phase 2C: voucher draft/post workflow and print foundation accepted after integration review.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, Chunk 2C-2 added the backend draft voucher API, Chunk 2C-3 added the backend posting validation service, Chunk 2C-4 added the frontend voucher draft/create UI, and Chunk 2C-5 added the posting UI and print foundation.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine in six chunks: 2C-1 (schema foundation), 2C-2 (backend draft API), 2C-3 (posting validation service), 2C-4 (frontend draft/create UI), 2C-5 (posting UI and print foundation), and 2C-6 (integration and acceptance review). Phase 2C is now complete and accepted.
+
+## Phase 2C Chunk 2C-6 Final Integration and Acceptance Review - completed this session
+
+- Full integration review across all five prior chunks: schema, backend draft API, posting validation, frontend draft/create UI, and posting UI/print foundation.
+- Verified scope boundaries: only voucher schema, backend draft API, posting service, frontend draft/create UI, and posting UI/print were implemented. No reports, dashboard analytics, payroll, parties/customers/vendors, extra roles, file uploads, business seed data, financial statement/report tables, or copied old ERP code were added in Phase 2C.
+- Confirmed all `/vouchers` routes are guarded by `AuthGuard` + `RolesGuard` + `ACCOUNTANT` role. Unauthenticated access returns 401.
+- Confirmed draft create, update, and soft-delete still work. System voucher number is generated atomically per company+fiscalYear+voucherType and never reused.
+- Confirmed `POST /vouchers/:id/post` transitions draft to POSTED, sets `postingDate` and `postedById`, records `VOUCHER_POSTED` audit event. Posted vouchers are immutable (PATCH and DELETE blocked with 400).
+- Confirmed posting validation: debit=credit balance required, OPEN period required, active fiscal year required, ledger account active check, project/cost center requirement enforcement, cost center-to-project consistency, cash/bank account consistency, Payment/Receipt/Contra type-specific rules.
+- Confirmed audit events exist for `VOUCHER_CREATED`, `VOUCHER_EDITED`, `VOUCHER_DELETED`, and `VOUCHER_POSTED`.
+- Confirmed frontend `/app` navigation includes Vouchers link. Voucher list renders with draft/posted distinction, "View" action for posted, "Open" action for drafts (Pencil icon).
+- Confirmed voucher draft create/edit form with line editor, debit/credit totals, balance indicator, unbalanced draft warning. Only active references are selectable.
+- Confirmed posting confirmation panel with rules summary. Posting transitions to read-only posted view with `postedBy` and `postingDate` info.
+- Confirmed posted voucher read-only view: all inputs disabled, no edit/delete/post controls, "Print voucher" button present.
+- Confirmed `VoucherPrintLayout` component renders Real Capita Group header, voucher type, system voucher number, physical SI no, date, fiscal year, accounting period, narration, debit/credit line table, totals, amount in words (Bangladeshi-style English, Taka/Paisa, Lac/Crore), prepared-by/posted-by/authorised-by signature areas, and footer. Uses `@media print` CSS with `window.print()`; no PDF generation, no file uploads.
+- Manual API smoke tests passed: unauthenticated access blocked (401), login works, draft creation with server-computed totals and system voucher number, unbalanced draft posting blocked (400), balanced draft posting successful with immutable posted voucher, PATCH/DELETE on posted blocked (400), soft-delete of drafts works.
+- Manual browser smoke tests passed: login → `/app` shell, voucher list with correct status badges and actions, posted voucher detail shows `postedBy`/`postingDate`, read-only inputs, Print button, no edit/delete controls, unauthenticated navigation to voucher pages redirects to login.
+- No Prisma schema changes, no migrations, no backend API changes, no frontend feature additions, no reports, no dashboard analytics, no payroll, no parties/customers/vendors, no roles, no file uploads, no seed data, and no tooling were added in 2C-6.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `pnpm check:all`, and `pnpm doctor` (doctor warns only that ports 3000/4000 are occupied by running apps used for smoke tests).
+- Docs updated: `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`, `README.md`, and `AGENTS.md` reflect Phase 2C completion.
 
 ## Phase 2C Chunk 2C-5 Posting UI and Print Foundation - completed this session
 
@@ -170,7 +190,7 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2C-5 posting UI and print foundation is complete. The next task is a review of the posting UI and print foundation, then explicit user confirmation before starting Chunk 2C-6 final integration and acceptance review.
+Phase 2C voucher draft/post workflow and print foundation is complete and accepted after full integration review. The next phase must be confirmed before implementation.
 
 Still not implemented:
 
@@ -180,6 +200,8 @@ Still not implemented:
 - Additional roles beyond `ACCOUNTANT`.
 - File uploads.
 - Business seed data or private operational data.
+- Voucher reversal or correction features.
+- Approval workflow, checker role, or multi-level authorization.
 
 ## Current GitHub Repository
 
@@ -187,7 +209,7 @@ Still not implemented:
 
 ## Last Verification Results
 
-Verification date: 2026-06-14, Phase 2C Chunk 2C-5.
+Verification date: 2026-06-14, Phase 2C Chunk 2C-6.
 
 - `pnpm prisma:generate`: passed.
 - `pnpm typecheck`: passed.
@@ -196,5 +218,7 @@ Verification date: 2026-06-14, Phase 2C Chunk 2C-5.
 - `pnpm build:api`: passed.
 - `docker compose config`: passed.
 - `pnpm check:all`: passed.
-- `pnpm doctor`: passed with the known warning that port 4000 is occupied by the running API used for smoke tests.
-- Manual browser/API smoke tests on `http://localhost:3000` and `http://localhost:4000`: passed login, draft voucher create, post voucher with confirmation, posted read-only view, print layout rendering, voucher list with draft/posted distinction, posted-by/posting-date display.
+- `pnpm doctor`: passed with the known warning that ports 3000 and 4000 are occupied by the running apps used for smoke tests.
+- No unconfirmed roles found in Prisma/source files.
+- Manual API smoke tests: passed login, draft create, post, immutability check, unbalanced rejection, soft-delete.
+- Manual browser smoke tests: passed login, voucher list, posted read-only view, print button, postedBy/postingDate display, unauthenticated redirect.

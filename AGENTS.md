@@ -6,13 +6,13 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2B: voucher requirement documentation/specification lock.
+Phase 2C: voucher draft/post workflow and print foundation accepted after integration review.
 
 Phase 0 is complete and accepted. Phase 1A adds only authentication, one confirmed role, a protected app shell, project operating documentation, ADRs, and verification scripts.
 
-Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locks voucher requirements before any voucher implementation.
+Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locks voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine: schema foundation, backend draft API, posting validation service, frontend draft/create UI, and posting UI with print foundation. Phase 2C-6 final integration and acceptance review is complete.
 
-If continuing in Droid CLI or another agent, read `docs/prompts/droid-cli-phase-2b-next-prompt.md`.
+If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`.
 
 ## Stack
 
@@ -145,4 +145,4 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 ## Next Phase Guidance
 
-The exact next coding phase must be confirmed before implementation. The proposed next coding phase is the voucher engine implementation locked in `docs/requirements/phase-2b-voucher-requirement-lock.md`.
+The next coding phase must be confirmed before implementation. Phase 2C voucher engine is complete and accepted. No reports, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.

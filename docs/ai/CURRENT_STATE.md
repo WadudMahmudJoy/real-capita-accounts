@@ -24,6 +24,8 @@ Phase 2C Chunk 2C-4 frontend voucher draft/create UI is complete.
 
 Phase 2C Chunk 2C-5 posting UI and print foundation is complete.
 
+Phase 2C Chunk 2C-6 final integration and acceptance review is complete. Phase 2C is now accepted.
+
 ## Phase 2C Implementation Planning
 
 Phase 2C adds only planning documentation. It splits voucher implementation into 6 chunks:
@@ -154,7 +156,7 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 The repo intentionally does not include journals beyond the voucher draft/post workflow, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Phase 2C-1 added the voucher schema foundation, Phase 2C-2 added the backend draft voucher API (list/detail/create/update/soft-delete), Phase 2C-3 added the backend posting validation service, Phase 2C-4 added the frontend voucher draft/create UI (list, draft create/edit, line editor, totals), and Phase 2C-5 added the posting UI and print foundation (post action with confirmation panel, posted read-only view, browser print layout with amount-in-words). Phase 2C-6 final integration and acceptance review is still intentionally outside scope until the user confirms the next chunk.
+The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete: 2C-1 (schema foundation), 2C-2 (backend draft API), 2C-3 (posting validation service), 2C-4 (frontend draft/create UI), 2C-5 (posting UI and print foundation), and 2C-6 (final integration and acceptance review). The next phase should be separately confirmed.
 
 ## Database Port
 
@@ -170,13 +172,4 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-The next task is a Chunk 2C-5 review of the posting UI and print foundation, then explicit user confirmation before starting Chunk 2C-6 final integration and acceptance review.
-
-Reference docs before continuing:
-
-- `docs/plans/phase-2c-voucher-implementation-plan.md`
-- `docs/requirements/phase-2b-voucher-requirement-lock.md`
-- `docs/architecture/phase-2b-voucher-model-proposal.md`
-- `docs/acceptance/phase-2b-acceptance-criteria.md`
-
-Do not start voucher implementation without explicit user approval for Phase 2C. Each chunk requires separate acceptance before the next begins.
+Phase 2C voucher draft/post workflow and print foundation is complete and accepted after full integration review (2C-6). The next coding phase must be confirmed before implementation. No reports, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
