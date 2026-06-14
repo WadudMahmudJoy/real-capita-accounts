@@ -216,8 +216,8 @@ export class VoucherService {
       : undefined;
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.voucher.update({
-        where: { id },
+      const updated = await tx.voucher.updateMany({
+        where: { id, isDeleted: false, status: VoucherStatus.DRAFT },
         data: {
           companyId,
           fiscalYearId,
@@ -237,6 +237,12 @@ export class VoucherService {
             : {}),
         },
       });
+
+      if (updated.count !== 1) {
+        throw new BadRequestException(
+          "Voucher can no longer be updated because it is not an active draft.",
+        );
+      }
 
       // When lines are supplied, the draft's lines are fully replaced and the
       // totals recalculated. The systemVoucherNo is never changed.
@@ -285,10 +291,16 @@ export class VoucherService {
     // Soft-delete only. The consumed systemVoucherNo is never reused, so the
     // VoucherNumberSequence is intentionally left untouched.
     await this.prisma.$transaction(async (tx) => {
-      await tx.voucher.update({
-        where: { id },
+      const deleted = await tx.voucher.updateMany({
+        where: { id, isDeleted: false, status: VoucherStatus.DRAFT },
         data: { isDeleted: true, deletedAt: new Date() },
       });
+
+      if (deleted.count !== 1) {
+        throw new BadRequestException(
+          "Voucher can no longer be deleted because it is not an active draft.",
+        );
+      }
 
       await this.recordAudit(tx, "VOUCHER_DELETED", id, context, {
         systemVoucherNo: existing.systemVoucherNo,
@@ -305,6 +317,8 @@ export class VoucherService {
 
   async postVoucher(id: string, context: VoucherActionContext) {
     await this.prisma.$transaction(async (tx) => {
+      await this.lockVoucherForPosting(tx, id);
+
       const voucher = await tx.voucher.findFirst({
         where: { id, isDeleted: false },
         include: {
@@ -699,6 +713,19 @@ export class VoucherService {
         "Contra vouchers require exactly two cash/bank lines, one debit and one credit, before posting.",
       );
     }
+  }
+
+  private async lockVoucherForPosting(
+    tx: Prisma.TransactionClient,
+    id: string,
+  ): Promise<void> {
+    await tx.$queryRaw<{ id: string }[]>`
+      SELECT id
+      FROM "vouchers"
+      WHERE id = ${id}
+        AND "isDeleted" = false
+      FOR UPDATE
+    `;
   }
 
   // Atomically reserves the next sequential number for the
