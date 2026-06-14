@@ -509,6 +509,6 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function isDefined(value: string | undefined): value is string {
-  return value !== undefined;
+function isDefined(value: string | null | undefined): value is string {
+  return typeof value === "string";
 }
