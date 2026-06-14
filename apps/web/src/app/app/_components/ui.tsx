@@ -2,6 +2,7 @@ import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
@@ -130,6 +131,15 @@ export function TextArea(
         "min-h-24 resize-y py-2.5 leading-6",
         props.className,
       )}
+    />
+  );
+}
+
+export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      {...props}
+      className={cn(inputClassName, "cursor-pointer pr-9", props.className)}
     />
   );
 }

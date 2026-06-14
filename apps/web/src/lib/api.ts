@@ -78,6 +78,77 @@ export type AccountClass = {
   updatedAt: string;
 };
 
+export type AccountingPeriodStatus = "OPEN" | "LOCKED" | "CLOSED";
+
+export type CashBankAccountType = "CASH" | "BANK";
+
+export type AccountingPeriod = {
+  id: string;
+  fiscalYearId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: AccountingPeriodStatus;
+  createdAt: string;
+  updatedAt: string;
+  fiscalYear?: FiscalYear;
+};
+
+export type CostCenter = {
+  id: string;
+  projectId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  project?: Project;
+};
+
+export type AccountGroup = {
+  id: string;
+  accountClassId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  accountClass?: AccountClass;
+};
+
+export type LedgerAccount = {
+  id: string;
+  accountGroupId: string;
+  code: string;
+  name: string;
+  normalBalance: NormalBalanceSide;
+  requiresProject: boolean;
+  requiresCostCenter: boolean;
+  isCashBank: boolean;
+  isActive: boolean;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  accountGroup?: AccountGroup;
+  cashBankAccounts?: CashBankAccount[];
+};
+
+export type CashBankAccount = {
+  id: string;
+  ledgerAccountId: string;
+  displayName: string;
+  accountType: CashBankAccountType;
+  bankName: string | null;
+  branch: string | null;
+  accountNumber: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  ledgerAccount?: LedgerAccount;
+};
+
 // ---------------------------------------------------------------------------
 // Typed request payloads (must match backend DTO whitelists exactly)
 // ---------------------------------------------------------------------------
@@ -110,6 +181,60 @@ export type ProjectInput = {
   name: string;
   location?: string;
   notes?: string;
+  isActive?: boolean;
+};
+
+export type CreateAccountingPeriodInput = {
+  fiscalYearId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status?: AccountingPeriodStatus;
+};
+
+export type UpdateAccountingPeriodInput = {
+  fiscalYearId?: string;
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: AccountingPeriodStatus;
+};
+
+export type CostCenterInput = {
+  projectId: string;
+  code: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+};
+
+export type AccountGroupInput = {
+  accountClassId: string;
+  code: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+};
+
+export type LedgerAccountInput = {
+  accountGroupId: string;
+  code: string;
+  name: string;
+  normalBalance: NormalBalanceSide;
+  requiresProject?: boolean;
+  requiresCostCenter?: boolean;
+  isCashBank?: boolean;
+  isActive?: boolean;
+  description?: string;
+};
+
+export type CashBankAccountInput = {
+  ledgerAccountId: string;
+  displayName: string;
+  accountType: CashBankAccountType;
+  bankName?: string;
+  branch?: string;
+  accountNumber?: string;
   isActive?: boolean;
 };
 
@@ -290,6 +415,122 @@ export function updateProject(
 
 export function getAccountClasses(signal?: AbortSignal): Promise<AccountClass[]> {
   return apiFetch<AccountClass[]>("/account-classes", { signal });
+}
+
+export function getAccountingPeriods(
+  signal?: AbortSignal,
+): Promise<AccountingPeriod[]> {
+  return apiFetch<AccountingPeriod[]>("/accounting-periods", { signal });
+}
+
+export function createAccountingPeriod(
+  input: CreateAccountingPeriodInput,
+): Promise<AccountingPeriod> {
+  return apiFetch<AccountingPeriod>("/accounting-periods", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateAccountingPeriod(
+  id: string,
+  input: UpdateAccountingPeriodInput,
+): Promise<AccountingPeriod> {
+  return apiFetch<AccountingPeriod>(`/accounting-periods/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getCostCenters(signal?: AbortSignal): Promise<CostCenter[]> {
+  return apiFetch<CostCenter[]>("/cost-centers", { signal });
+}
+
+export function createCostCenter(input: CostCenterInput): Promise<CostCenter> {
+  return apiFetch<CostCenter>("/cost-centers", { body: input, method: "POST" });
+}
+
+export function updateCostCenter(
+  id: string,
+  input: Partial<CostCenterInput>,
+): Promise<CostCenter> {
+  return apiFetch<CostCenter>(`/cost-centers/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getAccountGroups(signal?: AbortSignal): Promise<AccountGroup[]> {
+  return apiFetch<AccountGroup[]>("/account-groups", { signal });
+}
+
+export function createAccountGroup(
+  input: AccountGroupInput,
+): Promise<AccountGroup> {
+  return apiFetch<AccountGroup>("/account-groups", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateAccountGroup(
+  id: string,
+  input: Partial<AccountGroupInput>,
+): Promise<AccountGroup> {
+  return apiFetch<AccountGroup>(`/account-groups/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getLedgerAccounts(
+  signal?: AbortSignal,
+): Promise<LedgerAccount[]> {
+  return apiFetch<LedgerAccount[]>("/ledger-accounts", { signal });
+}
+
+export function createLedgerAccount(
+  input: LedgerAccountInput,
+): Promise<LedgerAccount> {
+  return apiFetch<LedgerAccount>("/ledger-accounts", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateLedgerAccount(
+  id: string,
+  input: Partial<LedgerAccountInput>,
+): Promise<LedgerAccount> {
+  return apiFetch<LedgerAccount>(`/ledger-accounts/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getCashBankAccounts(
+  signal?: AbortSignal,
+): Promise<CashBankAccount[]> {
+  return apiFetch<CashBankAccount[]>("/cash-bank-accounts", { signal });
+}
+
+export function createCashBankAccount(
+  input: CashBankAccountInput,
+): Promise<CashBankAccount> {
+  return apiFetch<CashBankAccount>("/cash-bank-accounts", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateCashBankAccount(
+  id: string,
+  input: Partial<CashBankAccountInput>,
+): Promise<CashBankAccount> {
+  return apiFetch<CashBankAccount>(`/cash-bank-accounts/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
 }
 
 /**

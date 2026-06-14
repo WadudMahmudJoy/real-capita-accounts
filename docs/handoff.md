@@ -2,22 +2,33 @@
 
 ## Current Phase
 
-Phase 2A: accounting foundation implementation, in progress.
+Phase 2A: accounting foundation frontend implementation complete through Chunk 3B.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria.
 
-Phase 2A is being implemented in chunks:
+Phase 2A was implemented in chunks:
 
-- Chunk 1: accounting-foundation Prisma schema, migration, and the fixed five-class `AccountClass` system seed — complete.
-- Chunk 2: backend accounting foundation API guarded by the `ACCOUNTANT` role — complete, reviewed, pushed, and accepted.
-- Chunk 3A: frontend accounting foundation pages — complete (this session).
-- Chunk 3B: remaining frontend pages and final integration verification — not started.
+- Chunk 1: accounting-foundation Prisma schema, migration, and the fixed five-class `AccountClass` system seed - complete.
+- Chunk 2: backend accounting foundation API guarded by the `ACCOUNTANT` role - complete, reviewed, pushed, and accepted.
+- Chunk 3A: frontend accounting foundation pages - complete.
+- Chunk 3B: remaining frontend pages and final integration verification - complete.
 
-## Phase 2A Chunk 3A (frontend foundation) — completed this session
+## Phase 2A Chunk 3B (remaining frontend foundation) - completed this session
+
+- Reused the partial Chunk 3B frontend work already in progress: the shared `Select` primitive, expanded typed API helpers, and active navigation links for the remaining accounting foundation pages.
+- Added `apps/web/src/app/app/accounting-periods/page.tsx`: list, create, and edit accounting periods under fiscal years with OPEN, LOCKED, and CLOSED status.
+- Added `apps/web/src/app/app/cost-centers/page.tsx`: list, create, edit, and deactivate cost centers under projects.
+- Added `apps/web/src/app/app/accounts/groups/page.tsx`: list, create, edit, and deactivate account groups under fixed account classes.
+- Added `apps/web/src/app/app/accounts/ledger/page.tsx`: list, create, edit, and deactivate ledger accounts with normal balance, project/cost-center requirement flags, and Cash/Bank eligibility.
+- Added `apps/web/src/app/app/cash-bank/page.tsx`: list, create, edit, and deactivate cash/bank accounts linked only to ledger accounts marked as Cash/Bank.
+- Phase 2A accounting foundation frontend is now implemented.
+- No Prisma schema changes, migrations, backend changes, roles, business seed data, file uploads, vouchers, reports, dashboard analytics, payroll, parties, customers, or vendors were added in Chunk 3B.
+
+## Phase 2A Chunk 3A (frontend foundation) - completed
 
 - Extended `apps/web/src/lib/api.ts` into a typed, cookie-authenticated API helper: `apiFetch` always sends `credentials: "include"`, surfaces clear auth/connection errors through an `ApiError` type, and never stores tokens in `localStorage`. Added resource helpers and types for company, fiscal years, projects, and account classes.
 - Added `apps/web/src/app/app/_components/ui.tsx` shared presentation primitives (cards, fields, buttons, status badges, notices) for a calm, professional accountant UI.
-- Added `apps/web/src/app/app/layout.tsx`: a protected app shell that gates on `GET /auth/me`, shows the signed-in user and role, provides sign out, and renders real navigation (Company Setup, Fiscal Years, Projects, Account Classes) with disabled "Later" entries for the Chunk 3B pages.
+- Added `apps/web/src/app/app/layout.tsx`: a protected app shell that gates on `GET /auth/me`, shows the signed-in user and role, provides sign out, and renders real navigation.
 - Reworked `apps/web/src/app/app/page.tsx` into a calm overview/landing page with quick links (no analytics, no charts).
 - Added `apps/web/src/app/app/company/page.tsx`: create or edit the singleton company profile (name, legalName, address, phone, email, currency default BDT).
 - Added `apps/web/src/app/app/fiscal-years/page.tsx`: list, create, edit, and activate fiscal years with active/closed status; uses the singleton company id for creation.
@@ -58,31 +69,29 @@ Phase 2A is being implemented in chunks:
 
 ## Intentionally Not Added
 
-- Dashboard
-- Voucher screens
-- Accounting modules
-- Chart of accounts
-- Ledger, cash book, bank book, trial balance, or reports
-- Payroll, HR, CRM, project, party, customer, or vendor modules
-- File uploads
-- Business seed data
-- Unconfirmed office roles
-- Real company documents or private operational data
-- Code copied from the previous Real Capita ERP prototype
-- Company, fiscal year, project, cost center, account, cash/bank, voucher, ledger, report, payroll, party, dashboard, or file upload modules in Phase 1B
+- Dashboard analytics.
+- Voucher screens, journals, posting, or transaction workflows.
+- Ledger reports, cash book, bank book, trial balance, or financial statements.
+- Payroll, salary sheets, HR, CRM, party, customer, or vendor modules.
+- File uploads.
+- Business seed data.
+- Unconfirmed office roles.
+- Real company documents or private operational data.
+- Code copied from the previous Real Capita ERP prototype.
 
 ## Next Planned Phase
 
-The next task is Phase 2A Chunk 3B (frontend only), building the remaining accounting foundation pages on top of the existing Chunk 2 backend API:
+Phase 2A Chunk 3B is complete. The next task should be a focused review/acceptance pass for Chunk 3B, then a separate user-confirmed plan for any future phase.
 
-- Accounting Periods page (periods under a fiscal year).
-- Cost Centers page (cost centers under projects).
-- Account Groups page.
-- Ledger Accounts page.
-- Cash/Bank Accounts page (linked to ledger accounts marked as cash/bank).
-- Final integration verification across all foundation pages.
+Still not implemented:
 
-Chunk 3B must remain frontend-only: do not change the Prisma schema, create migrations, change the backend (unless a blocking integration bug is found and reported first), add roles, add business seed data, or add vouchers, reports, payroll, parties, file uploads, or dashboard analytics.
+- Vouchers, journals, posting, or transaction workflows.
+- Ledger reports, cash book, bank book, trial balance, financial statements, or dashboard analytics.
+- Payroll or salary sheets.
+- Parties, customers, vendors, HR, CRM, or ERP modules.
+- Additional roles beyond `ACCOUNTANT`.
+- File uploads.
+- Business seed data or private operational data.
 
 ## Current GitHub Repository
 
@@ -90,27 +99,15 @@ Chunk 3B must remain frontend-only: do not change the Prisma schema, create migr
 
 ## Last Verification Results
 
-Verification date: 2026-06-14.
+Verification date: 2026-06-14, Phase 2A Chunk 3B.
 
-- `pnpm install`: passed.
-- `pnpm prisma:generate`: passed with the local development `DATABASE_URL`.
-- `pnpm prisma migrate dev --name phase_1a_auth`: passed, creating `20260613193905_phase_1a_auth`.
-- `pnpm seed`: passed, seeding only `ACCOUNTANT` and `accountant@realcapita.local`.
-- `pnpm build:web`: passed.
-- `pnpm build:api`: passed.
+- `pnpm prisma:generate`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
+- `pnpm build:web`: passed.
+- `pnpm build:api`: passed.
 - `pnpm check:all`: passed.
-- `pnpm doctor`: passed with one local warning: port `3000` is occupied, so use web port `3010` and start the API with `WEB_ORIGIN=http://localhost:3010` for that test setup.
-- `docker compose config`: passed.
-- `docker compose down`: passed.
-- `docker compose up -d postgres`: passed with `real-capita-accounts-postgres` recreated.
-- `docker compose ps`: passed, reporting `0.0.0.0:55432->5432/tcp` and Docker health `healthy`.
-- `docker compose logs postgres --tail=50`: passed, reporting PostgreSQL 17.10 ready to accept connections on container port `5432`.
-- Prisma database connectivity check through `pnpm prisma db execute --stdin`: passed against the configured `DATABASE_URL`.
-- Database-port isolation fix: this project now publishes PostgreSQL on host port `55432`, avoiding accidental connections to the old ERP Postgres container on `localhost:5432`.
-- PostgreSQL container version check: passed inside the container, reporting PostgreSQL 17.10.
-- API runtime check: passed on `http://localhost:4000/health`, returning `status: "ok"` and `service: "real-capita-accounts-api"`.
-- API auth runtime check: passed with `accountant@realcapita.local` / `ChangeMe123!`; login returned no token in the JSON body, set the `rcg_auth` HttpOnly `SameSite=Lax` cookie, `/auth/me` returned `Accountant User` with role `Accountant`, logout cleared the cookie, and post-logout `/auth/me` returned `401`.
-- Web auth browser check: passed on `http://localhost:3010` because local port `3000` is occupied. `/login` rendered, login succeeded, `/app` showed `Accountant User`, `accountant@realcapita.local`, role `Accountant`, the Phase 1A secure shell message, and only the allowed placeholder navigation labels.
-- Phase 1B docs/spec lock: prepared without Prisma schema changes, migrations, API business modules, frontend business pages, business seed data, or new roles.
+- `pnpm doctor`: passed with the known local warning that port `3000` is occupied; use web port `3010` and start the API with `WEB_ORIGIN=http://localhost:3010` for local smoke tests.
+- Final quick `pnpm typecheck`: passed after restoring the generated Next.js route-types import.
+- Manual browser/API smoke tests on `http://localhost:3010` and `http://localhost:4000`: passed login, unauthenticated protected-page redirect, `/app` foundation navigation, and create/update checks for accounting periods, cost centers, account groups, ledger accounts, and cash/bank accounts.
+- Cash & Bank page verified that only ledger accounts marked `isCashBank=true` appear in the linked ledger dropdown; a non-cash-bank ledger account was not selectable.

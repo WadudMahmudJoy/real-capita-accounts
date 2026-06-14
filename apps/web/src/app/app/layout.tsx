@@ -48,25 +48,47 @@ const primaryLinks: NavLink[] = [
     match: (pathname) => pathname.startsWith("/app/fiscal-years"),
   },
   {
+    href: "/app/accounting-periods",
+    icon: CalendarClock,
+    label: "Accounting Periods",
+    match: (pathname) => pathname.startsWith("/app/accounting-periods"),
+  },
+  {
     href: "/app/projects",
     icon: FolderKanban,
     label: "Projects",
     match: (pathname) => pathname.startsWith("/app/projects"),
   },
   {
+    href: "/app/cost-centers",
+    icon: Network,
+    label: "Cost Centers",
+    match: (pathname) => pathname.startsWith("/app/cost-centers"),
+  },
+  {
     href: "/app/accounts/classes",
     icon: Layers,
     label: "Account Classes",
-    match: (pathname) => pathname.startsWith("/app/accounts"),
+    match: (pathname) => pathname.startsWith("/app/accounts/classes"),
   },
-];
-
-const upcomingLinks: { label: string; icon: LucideIcon }[] = [
-  { icon: ListTree, label: "Account Groups" },
-  { icon: Coins, label: "Ledger Accounts" },
-  { icon: Wallet, label: "Cash & Bank" },
-  { icon: Network, label: "Cost Centers" },
-  { icon: CalendarClock, label: "Accounting Periods" },
+  {
+    href: "/app/accounts/groups",
+    icon: ListTree,
+    label: "Account Groups",
+    match: (pathname) => pathname.startsWith("/app/accounts/groups"),
+  },
+  {
+    href: "/app/accounts/ledger",
+    icon: Coins,
+    label: "Ledger Accounts",
+    match: (pathname) => pathname.startsWith("/app/accounts/ledger"),
+  },
+  {
+    href: "/app/cash-bank",
+    icon: Wallet,
+    label: "Cash & Bank",
+    match: (pathname) => pathname.startsWith("/app/cash-bank"),
+  },
 ];
 
 export default function AppLayout({
@@ -215,32 +237,6 @@ export default function AppLayout({
                   </Link>
                 );
               })}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Coming next
-              </p>
-              <div className="flex flex-col gap-1">
-                {upcomingLinks.map((link) => {
-                  const Icon = link.icon;
-
-                  return (
-                    <div
-                      className="flex h-10 cursor-default items-center justify-between gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground/70"
-                      key={link.label}
-                    >
-                      <span className="flex items-center gap-3">
-                        <Icon aria-hidden="true" className="size-4" />
-                        {link.label}
-                      </span>
-                      <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Later
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </nav>
 
