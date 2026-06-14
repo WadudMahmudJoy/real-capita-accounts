@@ -2,9 +2,24 @@
 
 ## Current Phase
 
-Phase 2C: voucher draft/post workflow and print foundation accepted after integration review.
+Phase 2D: accounting reports requirement lock prepared. No implementation yet.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine in six chunks: 2C-1 (schema foundation), 2C-2 (backend draft API), 2C-3 (posting validation service), 2C-4 (frontend draft/create UI), 2C-5 (posting UI and print foundation), and 2C-6 (integration and acceptance review). Phase 2C is now complete and accepted.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locks accounting report requirements before any report implementation.
+
+## Phase 2D Accounting Reports Requirement Lock - completed this session
+
+- Created `docs/requirements/phase-2d-accounting-reports-requirement-lock.md`: defines eight accounting reports (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), core report principle (derived from posted vouchers only, no primary report tables), debit/credit behavior and balance presentation, opening balance policy (opening journal vouchers, no separate table), report date filtering (fiscal year, period, custom range, project, cost center, ledger account), cash/bank behavior, print/export expectations (browser print foundation, PDF/Excel deferred), security (ACCOUNTANT only), and explicit out-of-scope list.
+- Created `docs/architecture/phase-2d-report-query-model-proposal.md`: proposes report architecture with no new primary report tables, service layer (report module, report service, ledger/cash-bank/trial-balance/financial-statement services), shared report query DTO, proposed API endpoints (8 GET endpoints under `/reports/`), accounting formulas (debit/credit movement, opening/closing balance, normal-balance-aware presentation), financial statement grouping by AccountClass, report query validation, performance considerations (existing indexes sufficient, aggregation queries, future materialized views deferred), and print/export architecture (browser print first, PDF/Excel later only if confirmed).
+- Created `docs/acceptance/phase-2d-acceptance-criteria.md`: acceptance for documentation lock, future backend report API, future frontend report UI, report correctness (traceability to posted VoucherLine, trial balance balance check, ledger/cash/bank running balance, income statement net profit, balance sheet balance check), security, print/export, smoke tests, and explicit out-of-scope list.
+- Created `docs/decisions/ADR-0008-phase-2d-report-requirement-lock.md`: documents the decision to lock report requirements before implementation, reports derive from posted VoucherLine records, no report tables as primary source, eight reports defined, opening balances through opening journal vouchers, browser print foundation, ACCOUNTANT role only.
+- Created `docs/plans/phase-2d-accounting-reports-implementation-plan.md`: splits report implementation into 7 chunks (2D-1 requirement lock review, 2D-2 backend ledger/cash-book/bank-book API, 2D-3 backend trial balance API, 2D-4 backend income statement and balance sheet API, 2D-5 frontend ledger/cash-book/bank-book/trial-balance pages, 2D-6 frontend financial statement pages and print foundation, 2D-7 final integration and acceptance review). Each chunk includes objective, files, out-of-scope, verification, smoke tests, recommended/fallback models, risk level, and stop conditions.
+- Created `docs/prompts/phase-2d-next-prompt.md`: future prompt for the next agent to review Phase 2D docs only, explicitly stating no implementation, no schema changes, no report API, no frontend pages, check consistency with Phase 2C posted voucher workflow.
+- Updated `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`, `README.md`, `AGENTS.md`, `docs/ai/START_HERE.md` to reflect Phase 2D requirement lock.
+- No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no reports, no dashboard analytics, no payroll, no parties/customers/vendors, no roles, no file uploads, no seed data, and no tooling were added in Phase 2D.
+
+## Next Stop Point (2D)
+
+Review the Phase 2D accounting reports requirement lock. The next proposed task is Chunk 2D-1 requirement lock review, but it must not begin until explicitly confirmed by the user.
 
 ## Phase 2C Chunk 2C-6 Final Integration and Acceptance Review - completed this session
 
@@ -190,35 +205,33 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2C voucher draft/post workflow and print foundation is complete and accepted after full integration review. The next phase must be confirmed before implementation.
+Phase 2D accounting reports requirement lock is prepared. The next task is a review of the Phase 2D docs, then explicit user confirmation before starting report implementation (Chunk 2D-1).
 
 Still not implemented:
 
-- Reports, ledgers, cash book, bank book, trial balance, financial statements, or dashboard analytics.
+- Accounting reports (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary).
+- Report API endpoints.
+- Report frontend pages.
+- Report print layouts.
+- Reports, ledgers, cash book, bank book, trial balance, financial statements, or dashboard analytics (no runtime code yet).
 - Payroll or salary sheets.
 - Parties, customers, vendors, HR, CRM, or ERP modules.
 - Additional roles beyond `ACCOUNTANT`.
 - File uploads.
 - Business seed data or private operational data.
 - Voucher reversal or correction features.
-- Approval workflow, checker role, or multi-level authorization.
+- PDF/Excel export.
+
+## Last Verification Results
+
+Verification date: 2026-06-15, Phase 2D documentation lock.
+
+- `pnpm typecheck`: passed.
+- `pnpm lint`: passed.
+- `pnpm check:all`: passed.
+- `pnpm doctor`: passed.
+- No Prisma schema changes, no migrations, no backend or frontend code changes in Phase 2D.
 
 ## Current GitHub Repository
 
 `https://github.com/MaruflRana/real-capita-accounts`
-
-## Last Verification Results
-
-Verification date: 2026-06-14, Phase 2C Chunk 2C-6.
-
-- `pnpm prisma:generate`: passed.
-- `pnpm typecheck`: passed.
-- `pnpm lint`: passed.
-- `pnpm build:web`: passed.
-- `pnpm build:api`: passed.
-- `docker compose config`: passed.
-- `pnpm check:all`: passed.
-- `pnpm doctor`: passed with the known warning that ports 3000 and 4000 are occupied by the running apps used for smoke tests.
-- No unconfirmed roles found in Prisma/source files.
-- Manual API smoke tests: passed login, draft create, post, immutability check, unbalanced rejection, soft-delete.
-- Manual browser smoke tests: passed login, voucher list, posted read-only view, print button, postedBy/postingDate display, unauthenticated redirect.
