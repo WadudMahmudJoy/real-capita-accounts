@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2D: accounting reports requirement lock prepared. No implementation yet.
+Phase 2D: accounting reports requirement lock reviewed (Chunk 2D-1 complete). No implementation yet.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locks accounting report requirements before any report implementation.
 
@@ -17,9 +17,18 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - Updated `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`, `README.md`, `AGENTS.md`, `docs/ai/START_HERE.md` to reflect Phase 2D requirement lock.
 - No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no reports, no dashboard analytics, no payroll, no parties/customers/vendors, no roles, no file uploads, no seed data, and no tooling were added in Phase 2D.
 
-## Next Stop Point (2D)
+## Phase 2D Chunk 2D-1 Requirement Lock Review - completed this session
 
-Review the Phase 2D accounting reports requirement lock. The next proposed task is Chunk 2D-1 requirement lock review, but it must not begin until explicitly confirmed by the user.
+- Reviewed all Phase 2D documentation (requirement lock, architecture proposal, acceptance criteria, ADR, implementation plan, next prompt) for consistency with the Phase 2C posted voucher workflow and Phase 2A accounting foundation.
+- Confirmed 13 review goals all pass: docs are specification-only, reports derive from posted VoucherLine only, DRAFT and soft-deleted vouchers excluded, no primary report tables, eight reports clearly defined, normal-balance-aware logic explained, opening balance policy clear (opening journal vouchers, no separate table), Cash Book/Bank Book derive from posted cash/bank-linked voucher lines, report filters defined, ACCOUNTANT role only, out-of-scope list clear, implementation chunks safe and ordered (2D-1 through 2D-7).
+- Fixed stale Phase 2B/1A guidance in `AGENTS.md`: updated "Strict Current Boundary" from Phase 1A boundary to Phase 2D boundary, updated "Confirmed Role Model" to remove Phase 1A qualifier, updated "Phase 2B Requirement Lock" section to reference Phase 2D docs, updated "Agent Switching" step 3 to reference Phase 2D docs.
+- Updated `docs/ai/CURRENT_STATE.md`: added Chunk 2D-1 completion note, updated "Next Recommended Task" to point to Chunk 2D-2.
+- Updated `docs/handoff.md`: updated current phase header.
+- No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no reports, no dashboard analytics, no payroll, no parties/customers/vendors, no roles, no file uploads, no seed data, and no tooling were added.
+
+## Next Stop Point (2D-1)
+
+Review the Phase 2D-1 requirement lock review. The next proposed task is Chunk 2D-2 backend ledger/cash-book/bank-book API, but it must not begin until explicitly confirmed by the user.
 
 ## Phase 2C Chunk 2C-6 Final Integration and Acceptance Review - completed this session
 

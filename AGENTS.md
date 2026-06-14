@@ -26,13 +26,13 @@ If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` 
 
 ## Strict Current Boundary
 
-Do not build accounting business modules in Phase 1A.
+Phase 2D is documentation/specification only. No report APIs, report UI, dashboard analytics, payroll, parties, customers, vendors, file uploads, business seed data, or unconfirmed office roles should be started without explicit user confirmation.
 
-Do not implement vouchers, chart of accounts, ledger, cash book, bank book, trial balance, reports, payroll, salary sheets, project finance, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+Do not implement report endpoints, report frontend pages, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, or business seed data until the user confirms the next implementation phase.
 
 ## Confirmed Role Model
 
-Only one role is confirmed in Phase 1A:
+Only one role is confirmed:
 
 - `ACCOUNTANT`, displayed in the UI as `Accountant`
 
@@ -120,17 +120,17 @@ Co-authored-by: Md. Wadud Mahmud Joy <wadudjoy24@gmail.com>
 
 This is a new accounting-first system, not a continuation of the previous ERP prototype. The old ERP may be treated only as historical reference. Do not copy code, schema, seed data, fake modules, UI screens, or private data from it.
 
-## Phase 2B Requirement Lock
+## Phase 2D Requirement Lock
 
-Phase 2B is documentation/specification only. The next coding phase must not start until the user explicitly confirms the voucher implementation phase.
+Phase 2D is documentation/specification only. The next coding phase must not start until the user explicitly confirms the report implementation phase.
 
-Before any voucher schema/API/UI work, read:
+Before any report schema/API/UI work, read:
 
-- `docs/requirements/phase-2b-voucher-requirement-lock.md`
-- `docs/architecture/phase-2b-voucher-model-proposal.md`
-- `docs/acceptance/phase-2b-acceptance-criteria.md`
+- `docs/requirements/phase-2d-accounting-reports-requirement-lock.md`
+- `docs/architecture/phase-2d-report-query-model-proposal.md`
+- `docs/acceptance/phase-2d-acceptance-criteria.md`
 
-See `docs/prompts/droid-cli-phase-2b-next-prompt.md` for the next-agent transition prompt.
+See `docs/prompts/phase-2d-next-prompt.md` for the next-agent transition prompt.
 
 ## Agent Switching
 
@@ -138,7 +138,7 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 1. Start with `docs/ai/START_HERE.md`.
 2. Run `pnpm agent:start`.
-3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2B lock docs.
+3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2D lock docs.
 4. Confirm `git status` is clean before new work.
 5. Continue only inside the current phase boundary.
 6. Update handoff docs before ending the session.

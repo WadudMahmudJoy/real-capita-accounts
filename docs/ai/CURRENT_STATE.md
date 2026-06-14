@@ -27,6 +27,7 @@ Phase 2C Chunk 2C-5 posting UI and print foundation is complete.
 Phase 2C Chunk 2C-6 final integration and acceptance review is complete. Phase 2C is now accepted.
 
 Phase 2D accounting reports requirement/specification lock is complete.
+Phase 2D Chunk 2D-1 requirement lock review is complete.
 
 ## Phase 2C Implementation Planning
 
@@ -174,7 +175,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D accounting reports requirement lock is prepared. The next task is a review of the Phase 2D docs, then explicit user confirmation before starting Chunk 2D-1 (requirement lock review) and subsequent report implementation chunks. No report API, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2D accounting reports requirement lock is reviewed (Chunk 2D-1 complete). The next task is explicit user confirmation before starting Chunk 2D-2 (backend ledger/cash-book/bank-book API). No report API, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 
