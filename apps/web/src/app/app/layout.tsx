@@ -13,6 +13,7 @@ import {
   ListTree,
   LogOut,
   Network,
+  ReceiptText,
   ShieldCheck,
   Wallet,
   type LucideIcon,
@@ -88,6 +89,12 @@ const primaryLinks: NavLink[] = [
     icon: Wallet,
     label: "Cash & Bank",
     match: (pathname) => pathname.startsWith("/app/cash-bank"),
+  },
+  {
+    href: "/app/vouchers",
+    icon: ReceiptText,
+    label: "Vouchers",
+    match: (pathname) => pathname.startsWith("/app/vouchers"),
   },
 ];
 

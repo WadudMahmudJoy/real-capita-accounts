@@ -20,6 +20,8 @@ Phase 2C Chunk 2C-2 backend draft voucher API is complete.
 
 Phase 2C Chunk 2C-3 backend posting validation service is complete.
 
+Phase 2C Chunk 2C-4 frontend voucher draft/create UI is complete.
+
 ## Phase 2C Implementation Planning
 
 Phase 2C adds only planning documentation. It splits voucher implementation into 6 chunks:
@@ -95,6 +97,20 @@ Posting validations implemented:
 
 No frontend, reports, dashboard analytics, payroll, parties/customers/vendors, roles, file uploads, seed data, tooling, Prisma schema changes, migrations, or financial statement/report tables were added.
 
+## Phase 2C Chunk 2C-4 Frontend Voucher Draft/Create UI
+
+Chunk 2C-4 added the accountant-facing voucher draft UI on top of the existing backend, with no backend, schema, or migration changes.
+
+- Extended `apps/web/src/lib/api.ts` with voucher types (`Voucher`, `VoucherLine`, `VoucherType`, `VoucherStatus`, `VoucherLineSide`, `VoucherUserRef`, `VoucherListFilters`), request payload types (`CreateVoucherInput`, `UpdateVoucherInput`, `CreateVoucherLineInput`), and cookie-authenticated helpers `getVouchers`, `getVoucher`, `createVoucher`, `updateVoucher`, and `deleteVoucher`. All use the existing `apiFetch` with `credentials: "include"`; no tokens are stored in `localStorage`. Decimal fields (`amount`, `totalDebit`, `totalCredit`) are typed as strings to match the API serialization.
+- Added a `Vouchers` navigation link to `apps/web/src/app/app/layout.tsx` pointing at `/app/vouchers`.
+- Added `apps/web/src/app/app/vouchers/page.tsx`: a voucher list with `systemVoucherNo`, type, voucher date, accounting period, status badge, debit/credit totals, and `createdBy`. Filters for voucher type, status, fiscal year, and accounting period (period choices are scoped to the selected fiscal year). A New voucher action and per-row Open (draft) / View (posted) action. No posting button and no reports.
+- Added `apps/web/src/app/app/vouchers/new/page.tsx` and `apps/web/src/app/app/vouchers/[id]/page.tsx` backed by a shared `VoucherForm` component and a `useVoucherReference` loader hook in `apps/web/src/app/app/vouchers/_lib/`. The form has the header (voucher type, fiscal year, accounting period filtered by fiscal year, voucher date, physical SI no., narration) and a debit/credit line editor (side, ledger account, project, cost center, cash/bank account shown only for cash/bank ledgers, description, amount). It enforces at least two lines, supports add/remove line, shows server line numbers, and displays debit total, credit total, and difference with a balance indicator.
+- Draft behavior: unbalanced drafts can be saved with a clear, non-blocking warning that posting will require matching debit and credit totals. The UI still blocks obviously invalid submissions (missing fiscal year/period/date, missing ledger account, amount <= 0, more than two decimals, blank narration) and surfaces backend validation errors through the shared `Notice`.
+- Posted vouchers opened from the list render read-only (all inputs disabled, no save/delete) with an informational notice. No posting action is included; posting UI and print layout remain Chunk 2C-5.
+- Only active ledger accounts, projects, cost centers, and cash/bank accounts are offered for new line selections; an already-selected inactive ledger account is preserved on an existing line.
+
+No posting UI, print layout, reports, dashboard analytics, payroll, parties/customers/vendors, roles, file uploads, seed data, tooling, Prisma schema changes, migrations, or backend API changes were added.
+
 ## Implemented Features
 
 - pnpm workspace monorepo.
@@ -136,7 +152,7 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 The repo intentionally does not include voucher frontend UI, journals beyond the voucher draft/post workflow, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Phase 2C-1 added the voucher schema foundation, Phase 2C-2 added the backend draft voucher API (list/detail/create/update/soft-delete), and Phase 2C-3 added the backend posting validation service. Frontend voucher UI and reporting are still intentionally outside scope until the user confirms the next chunk.
+The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Phase 2C-1 added the voucher schema foundation, Phase 2C-2 added the backend draft voucher API (list/detail/create/update/soft-delete), Phase 2C-3 added the backend posting validation service, and Phase 2C-4 added the frontend voucher draft/create UI (list, draft create/edit, line editor, totals). Posting UI, print layout, and reporting are still intentionally outside scope until the user confirms the next chunk.
 
 ## Database Port
 
@@ -152,7 +168,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-The next task is a Chunk 2C-3 backend review of the posting validation service, then explicit user confirmation before starting Chunk 2C-4 frontend voucher draft/create UI.
+The next task is a Chunk 2C-4 frontend review of the voucher draft/create UI, then explicit user confirmation before starting Chunk 2C-5 posting UI and print foundation.
 
 Reference docs before continuing:
 

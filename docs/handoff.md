@@ -2,9 +2,24 @@
 
 ## Current Phase
 
-Phase 2C: backend posting validation service review.
+Phase 2C: frontend voucher draft/create UI review.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, Chunk 2C-2 added the backend draft voucher API, and Chunk 2C-3 added the backend posting validation service.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, Chunk 2C-2 added the backend draft voucher API, Chunk 2C-3 added the backend posting validation service, and Chunk 2C-4 added the frontend voucher draft/create UI.
+
+## Phase 2C Chunk 2C-4 Frontend Voucher Draft/Create UI - completed this session
+
+- Extended `apps/web/src/lib/api.ts` with voucher resource types and request payloads (`Voucher`, `VoucherLine`, `VoucherType`, `VoucherStatus`, `VoucherLineSide`, `VoucherListFilters`, `CreateVoucherInput`, `UpdateVoucherInput`, `CreateVoucherLineInput`) and cookie-authenticated helpers `getVouchers`, `getVoucher`, `createVoucher`, `updateVoucher`, `deleteVoucher`, all using the existing `apiFetch` with `credentials: "include"` and no `localStorage` tokens. Decimal fields are typed as strings to match API serialization.
+- Added a `Vouchers` navigation link in `apps/web/src/app/app/layout.tsx` for `/app/vouchers`.
+- Added `apps/web/src/app/app/vouchers/page.tsx`: voucher list with `systemVoucherNo`, type, voucher date, accounting period, status, debit/credit totals, and `createdBy`; filters for voucher type, status, fiscal year, and accounting period (period choices scoped to the chosen fiscal year); New voucher action and per-row Open (draft) / View (posted). No posting button, no reports.
+- Added `apps/web/src/app/app/vouchers/new/page.tsx` and `apps/web/src/app/app/vouchers/[id]/page.tsx`, backed by a shared `VoucherForm` and a `useVoucherReference` loader in `apps/web/src/app/app/vouchers/_lib/`. The form covers the header (voucher type, fiscal year, fiscal-year-filtered accounting period, voucher date, physical SI no., narration) and a debit/credit line editor (side, ledger account, project, cost center, cash/bank account shown only for cash/bank ledgers, description, amount) with add/remove line, at-least-two-lines enforcement, server line numbers, and debit/credit/difference totals with a balance indicator.
+- Unbalanced drafts can be saved with a clear non-blocking warning; the UI still blocks missing required header fields, missing ledger account, amount <= 0, more than two decimals, and blank narration, and surfaces backend validation errors. Posted vouchers open read-only with no posting action.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `pnpm check:all`, and `pnpm doctor` (doctor warns only that port 4000 is occupied by the running API used for smoke tests).
+- Manual API smoke tests passed against `http://localhost:4000`: unauthenticated `GET /vouchers` returns 401; login as `accountant@realcapita.local` succeeds; the UI create payload produced a draft with generated `systemVoucherNo` `PAYMENT-00001` and server-computed totals (debit 500 / credit 300 for an unbalanced draft); PATCH rebalanced the lines to 400/400 and kept the voucher number; the type/status filters returned the draft with `createdBy.fullName`; a negative-amount create was rejected with a clear message; DELETE soft-deleted the draft and the list returned to empty. Smoke-test voucher rows were cleaned up afterward.
+- No posting UI, print layout, reports, dashboard analytics, payroll, parties/customers/vendors, roles, file uploads, seed data, tooling, Prisma schema changes, migrations, or backend API changes were added.
+
+## Next Stop Point (2C-4)
+
+Review the Phase 2C-4 frontend voucher draft/create UI. The next proposed task is Chunk 2C-5 posting UI and print foundation, but it must not begin until explicitly confirmed by the user.
 
 ## Phase 2C Chunk 2C-3 Backend Posting Validation Service - completed this session
 

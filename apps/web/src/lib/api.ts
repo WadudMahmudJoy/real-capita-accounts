@@ -150,6 +150,85 @@ export type CashBankAccount = {
 };
 
 // ---------------------------------------------------------------------------
+// Voucher resource types (Phase 2C)
+// ---------------------------------------------------------------------------
+
+export type VoucherType =
+  | "DEBIT"
+  | "CREDIT"
+  | "JOURNAL"
+  | "CONTRA"
+  | "PAYMENT"
+  | "RECEIPT";
+
+export type VoucherStatus = "DRAFT" | "POSTED";
+
+export type VoucherLineSide = "DEBIT" | "CREDIT";
+
+/** Basic user info embedded on voucher records (createdBy / postedBy). */
+export type VoucherUserRef = {
+  id: string;
+  fullName: string;
+  email: string;
+};
+
+export type VoucherLine = {
+  id: string;
+  voucherId: string;
+  lineNo: number;
+  side: VoucherLineSide;
+  ledgerAccountId: string;
+  projectId: string | null;
+  costCenterId: string | null;
+  cashBankAccountId: string | null;
+  description: string | null;
+  // Decimal values are serialised as strings by the API.
+  amount: string;
+  createdAt: string;
+  updatedAt: string;
+  ledgerAccount?: LedgerAccount;
+  project?: Project | null;
+  costCenter?: CostCenter | null;
+  cashBankAccount?: CashBankAccount | null;
+};
+
+export type Voucher = {
+  id: string;
+  companyId: string;
+  fiscalYearId: string;
+  accountingPeriodId: string;
+  voucherType: VoucherType;
+  status: VoucherStatus;
+  systemVoucherNo: string;
+  physicalSiNo: string | null;
+  voucherDate: string;
+  postingDate: string | null;
+  narration: string | null;
+  // Decimal values are serialised as strings by the API.
+  totalDebit: string;
+  totalCredit: string;
+  createdById: string;
+  postedById: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  fiscalYear?: FiscalYear;
+  accountingPeriod?: AccountingPeriod;
+  createdBy?: VoucherUserRef;
+  postedBy?: VoucherUserRef | null;
+  lines?: VoucherLine[];
+  _count?: { lines: number };
+};
+
+export type VoucherListFilters = {
+  voucherType?: VoucherType;
+  status?: VoucherStatus;
+  fiscalYearId?: string;
+  accountingPeriodId?: string;
+};
+
+// ---------------------------------------------------------------------------
 // Typed request payloads (must match backend DTO whitelists exactly)
 // ---------------------------------------------------------------------------
 
@@ -236,6 +315,39 @@ export type CashBankAccountInput = {
   branch?: string;
   accountNumber?: string;
   isActive?: boolean;
+};
+
+// The client never supplies status, systemVoucherNo, companyId, totals, or
+// posting fields; the backend derives them. Totals are recomputed server-side
+// from the line amounts.
+export type CreateVoucherLineInput = {
+  side: VoucherLineSide;
+  ledgerAccountId: string;
+  amount: number;
+  projectId?: string;
+  costCenterId?: string;
+  cashBankAccountId?: string;
+  description?: string;
+};
+
+export type CreateVoucherInput = {
+  fiscalYearId: string;
+  accountingPeriodId: string;
+  voucherType: VoucherType;
+  voucherDate: string;
+  narration: string;
+  physicalSiNo?: string;
+  lines: CreateVoucherLineInput[];
+};
+
+export type UpdateVoucherInput = {
+  fiscalYearId?: string;
+  accountingPeriodId?: string;
+  voucherType?: VoucherType;
+  voucherDate?: string;
+  narration?: string;
+  physicalSiNo?: string;
+  lines?: CreateVoucherLineInput[];
 };
 
 // ---------------------------------------------------------------------------
@@ -531,6 +643,70 @@ export function updateCashBankAccount(
     body: input,
     method: "PATCH",
   });
+}
+
+// ---------------------------------------------------------------------------
+// Voucher resource helpers (Phase 2C)
+// ---------------------------------------------------------------------------
+
+function buildVoucherQuery(filters?: VoucherListFilters): string {
+  if (!filters) {
+    return "";
+  }
+
+  const params = new URLSearchParams();
+
+  if (filters.voucherType) {
+    params.set("voucherType", filters.voucherType);
+  }
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+  if (filters.fiscalYearId) {
+    params.set("fiscalYearId", filters.fiscalYearId);
+  }
+  if (filters.accountingPeriodId) {
+    params.set("accountingPeriodId", filters.accountingPeriodId);
+  }
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+export function getVouchers(
+  filters?: VoucherListFilters,
+  signal?: AbortSignal,
+): Promise<Voucher[]> {
+  return apiFetch<Voucher[]>(`/vouchers${buildVoucherQuery(filters)}`, {
+    signal,
+  });
+}
+
+export function getVoucher(
+  id: string,
+  signal?: AbortSignal,
+): Promise<Voucher> {
+  return apiFetch<Voucher>(`/vouchers/${id}`, { signal });
+}
+
+export function createVoucher(input: CreateVoucherInput): Promise<Voucher> {
+  return apiFetch<Voucher>("/vouchers", { body: input, method: "POST" });
+}
+
+export function updateVoucher(
+  id: string,
+  input: UpdateVoucherInput,
+): Promise<Voucher> {
+  return apiFetch<Voucher>(`/vouchers/${id}`, { body: input, method: "PATCH" });
+}
+
+export function deleteVoucher(
+  id: string,
+): Promise<{ id: string; status: VoucherStatus; isDeleted: boolean }> {
+  return apiFetch<{ id: string; status: VoucherStatus; isDeleted: boolean }>(
+    `/vouchers/${id}`,
+    { method: "DELETE" },
+  );
 }
 
 /**
