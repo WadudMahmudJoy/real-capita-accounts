@@ -6,11 +6,13 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 1B: accounting foundation requirement lock and next-agent handoff.
+Phase 2B: voucher requirement documentation/specification lock.
 
 Phase 0 is complete and accepted. Phase 1A adds only authentication, one confirmed role, a protected app shell, project operating documentation, ADRs, and verification scripts.
 
-Phase 1B is documentation/specification only. It locks requirements and acceptance criteria for the first accounting foundation implementation without adding business schema, API modules, UI pages, seed data, or roles.
+Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locks voucher requirements before any voucher implementation.
+
+If continuing in Droid CLI or another agent, read `docs/prompts/droid-cli-phase-2b-next-prompt.md`.
 
 ## Stack
 
@@ -118,17 +120,17 @@ Co-authored-by: Md. Wadud Mahmud Joy <wadudjoy24@gmail.com>
 
 This is a new accounting-first system, not a continuation of the previous ERP prototype. The old ERP may be treated only as historical reference. Do not copy code, schema, seed data, fake modules, UI screens, or private data from it.
 
-## Phase 1B Requirement Lock
+## Phase 2B Requirement Lock
 
-Phase 1B is documentation/specification only. The next coding phase must not start until the user explicitly confirms Phase 2A implementation.
+Phase 2B is documentation/specification only. The next coding phase must not start until the user explicitly confirms the voucher implementation phase.
 
-Before any business schema/API/UI work, read:
+Before any voucher schema/API/UI work, read:
 
-- `docs/requirements/phase-1b-accounting-foundation-lock.md`
-- `docs/architecture/phase-1b-accounting-foundation-model-proposal.md`
-- `docs/acceptance/phase-1b-acceptance-criteria.md`
+- `docs/requirements/phase-2b-voucher-requirement-lock.md`
+- `docs/architecture/phase-2b-voucher-model-proposal.md`
+- `docs/acceptance/phase-2b-acceptance-criteria.md`
 
-The Droid CLI / GLM / DeepSeek transition prompt is in `docs/prompts/droid-cli-next-prompt.md`.
+See `docs/prompts/droid-cli-phase-2b-next-prompt.md` for the next-agent transition prompt.
 
 ## Agent Switching
 
@@ -136,11 +138,11 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 1. Start with `docs/ai/START_HERE.md`.
 2. Run `pnpm agent:start`.
-3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 1B lock docs.
+3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2B lock docs.
 4. Confirm `git status` is clean before new work.
 5. Continue only inside the current phase boundary.
 6. Update handoff docs before ending the session.
 
 ## Next Phase Guidance
 
-The exact next coding phase must be confirmed before implementation. The proposed next coding phase is Phase 2A: implement only the locked accounting foundation after user confirmation.
+The exact next coding phase must be confirmed before implementation. The proposed next coding phase is the voucher engine implementation locked in `docs/requirements/phase-2b-voucher-requirement-lock.md`.
