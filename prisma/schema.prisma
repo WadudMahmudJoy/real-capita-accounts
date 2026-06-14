@@ -9,17 +9,19 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  fullName     String
-  passwordHash String
-  isActive     Boolean       @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  roles        UserRole[]
-  sessions     AuthSession[]
-  auditEvents  AuditEvent[]
+  id              String        @id @default(cuid())
+  email           String        @unique
+  fullName        String
+  passwordHash    String
+  isActive        Boolean       @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  roles           UserRole[]
+  sessions        AuthSession[]
+  auditEvents     AuditEvent[]
+  createdVouchers Voucher[]     @relation("VoucherCreatedBy")
+  postedVouchers  Voucher[]     @relation("VoucherPostedBy")
 
   @@map("users")
 }
@@ -110,34 +112,61 @@ enum CashBankAccountType {
   BANK
 }
 
+// ---------------------------------------------------------------------------
+// Phase 2C: Voucher Schema Foundation
+// ---------------------------------------------------------------------------
+
+enum VoucherType {
+  DEBIT
+  CREDIT
+  JOURNAL
+  CONTRA
+  PAYMENT
+  RECEIPT
+}
+
+enum VoucherStatus {
+  DRAFT
+  POSTED
+}
+
+enum VoucherLineSide {
+  DEBIT
+  CREDIT
+}
+
 model Company {
-  id           String       @id @default(cuid())
-  singletonKey String       @unique @default("PRIMARY")
-  name         String
-  legalName    String?
-  address      String?
-  phone        String?
-  email        String?
-  currency     String       @default("BDT")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  fiscalYears  FiscalYear[]
+  id                     String                  @id @default(cuid())
+  singletonKey           String                  @unique @default("PRIMARY")
+  name                   String
+  legalName              String?
+  address                String?
+  phone                  String?
+  email                  String?
+  currency               String                  @default("BDT")
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  fiscalYears            FiscalYear[]
+  vouchers               Voucher[]
+  voucherNumberSequences VoucherNumberSequence[]
 
   @@map("companies")
 }
 
 model FiscalYear {
-  id        String              @id @default(cuid())
-  companyId String
-  name      String
-  startDate DateTime
-  endDate   DateTime
-  isActive  Boolean             @default(false)
-  isClosed  Boolean             @default(false)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  company   Company             @relation(fields: [companyId], references: [id])
-  periods   AccountingPeriod[]
+  id                     String                  @id @default(cuid())
+  companyId              String
+  name                   String
+  startDate              DateTime
+  endDate                DateTime
+  isActive               Boolean                 @default(false)
+  isClosed               Boolean                 @default(false)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  company                Company                 @relation(fields: [companyId], references: [id])
+  periods                AccountingPeriod[]
+  vouchers               Voucher[]
+  voucherNumberSequences VoucherNumberSequence[]
 
   // A fiscal year should not be both active and closed at the same time.
   // Application logic must maintain this invariant.
@@ -155,34 +184,37 @@ model AccountingPeriod {
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   fiscalYear   FiscalYear             @relation(fields: [fiscalYearId], references: [id])
+  vouchers     Voucher[]
 
   @@map("accounting_periods")
 }
 
 model Project {
-  id        String      @id @default(cuid())
-  code      String      @unique
-  name      String
-  location  String?
-  isActive  Boolean     @default(true)
-  notes     String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  costCenters CostCenter[]
+  id           String        @id @default(cuid())
+  code         String        @unique
+  name         String
+  location     String?
+  isActive     Boolean       @default(true)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  costCenters  CostCenter[]
+  voucherLines VoucherLine[]
 
   @@map("projects")
 }
 
 model CostCenter {
-  id          String   @id @default(cuid())
-  projectId   String
-  code        String
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  project     Project  @relation(fields: [projectId], references: [id])
+  id           String        @id @default(cuid())
+  projectId    String
+  code         String
+  name         String
+  description  String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  project      Project       @relation(fields: [projectId], references: [id])
+  voucherLines VoucherLine[]
 
   @@unique([projectId, code])
   @@map("cost_centers")
@@ -230,22 +262,104 @@ model LedgerAccount {
   updatedAt          DateTime          @updatedAt
   accountGroup       AccountGroup      @relation(fields: [accountGroupId], references: [id])
   cashBankAccounts   CashBankAccount[]
+  voucherLines       VoucherLine[]
 
   @@map("ledger_accounts")
 }
 
 model CashBankAccount {
-  id              String               @id @default(cuid())
-  ledgerAccountId String               @unique
+  id              String              @id @default(cuid())
+  ledgerAccountId String              @unique
   displayName     String
   accountType     CashBankAccountType
   bankName        String?
   branch          String?
   accountNumber   String?
-  isActive        Boolean              @default(true)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  ledgerAccount   LedgerAccount        @relation(fields: [ledgerAccountId], references: [id])
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  ledgerAccount   LedgerAccount       @relation(fields: [ledgerAccountId], references: [id])
+  voucherLines    VoucherLine[]
 
   @@map("cash_bank_accounts")
+}
+
+model Voucher {
+  id                 String           @id @default(cuid())
+  companyId          String
+  fiscalYearId       String
+  accountingPeriodId String
+  voucherType        VoucherType
+  status             VoucherStatus    @default(DRAFT)
+  systemVoucherNo    String
+  physicalSiNo       String?
+  voucherDate        DateTime
+  postingDate        DateTime?
+  narration          String?
+  totalDebit         Decimal          @db.Decimal(18, 2)
+  totalCredit        Decimal          @db.Decimal(18, 2)
+  createdById        String
+  postedById         String?
+  isDeleted          Boolean          @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  company            Company          @relation(fields: [companyId], references: [id])
+  fiscalYear         FiscalYear       @relation(fields: [fiscalYearId], references: [id])
+  accountingPeriod   AccountingPeriod @relation(fields: [accountingPeriodId], references: [id])
+  createdBy          User             @relation("VoucherCreatedBy", fields: [createdById], references: [id])
+  postedBy           User?            @relation("VoucherPostedBy", fields: [postedById], references: [id], onDelete: SetNull)
+  lines              VoucherLine[]
+
+  @@unique([companyId, fiscalYearId, systemVoucherNo])
+  @@index([companyId])
+  @@index([fiscalYearId])
+  @@index([accountingPeriodId])
+  @@index([voucherDate])
+  @@index([status])
+  @@index([voucherType])
+  @@map("vouchers")
+}
+
+model VoucherLine {
+  id                String           @id @default(cuid())
+  voucherId         String
+  lineNo            Int
+  side              VoucherLineSide
+  ledgerAccountId   String
+  projectId         String?
+  costCenterId      String?
+  cashBankAccountId String?
+  description       String?
+  amount            Decimal          @db.Decimal(18, 2)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  voucher           Voucher          @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  ledgerAccount     LedgerAccount    @relation(fields: [ledgerAccountId], references: [id])
+  project           Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  costCenter        CostCenter?      @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  cashBankAccount   CashBankAccount? @relation(fields: [cashBankAccountId], references: [id], onDelete: SetNull)
+
+  @@unique([voucherId, lineNo])
+  @@index([ledgerAccountId])
+  @@index([projectId])
+  @@index([costCenterId])
+  @@index([cashBankAccountId])
+  @@map("voucher_lines")
+}
+
+model VoucherNumberSequence {
+  id           String      @id @default(cuid())
+  companyId    String
+  fiscalYearId String
+  voucherType  VoucherType
+  prefix       String?
+  nextNumber   Int         @default(1)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  company      Company     @relation(fields: [companyId], references: [id])
+  fiscalYear   FiscalYear  @relation(fields: [fiscalYearId], references: [id])
+
+  @@unique([companyId, fiscalYearId, voucherType])
+  @@map("voucher_number_sequences")
 }

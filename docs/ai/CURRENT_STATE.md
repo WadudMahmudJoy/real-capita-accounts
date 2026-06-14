@@ -14,6 +14,8 @@ Phase 2B voucher requirement/specification lock is complete.
 
 Phase 2C voucher implementation planning is complete.
 
+Phase 2C Chunk 2C-1 voucher schema foundation is complete.
+
 ## Phase 2C Implementation Planning
 
 Phase 2C adds only planning documentation. It splits voucher implementation into 6 chunks:
@@ -29,6 +31,19 @@ Phase 2C adds only planning documentation. It splits voucher implementation into
 - `docs/prompts/phase-2c-chunk-1-voucher-schema-prompt.md`: prompt for schema-only Chunk 2C-1 implementation.
 
 No Prisma schema changes, no migrations, no backend changes, no frontend changes in Phase 2C planning.
+
+## Phase 2C Chunk 2C-1 Voucher Schema Foundation
+
+Chunk 2C-1 added only the Prisma voucher schema foundation and migration:
+
+- `VoucherType`: `DEBIT`, `CREDIT`, `JOURNAL`, `CONTRA`, `PAYMENT`, `RECEIPT`.
+- `VoucherStatus`: `DRAFT`, `POSTED`.
+- `VoucherLineSide`: `DEBIT`, `CREDIT`.
+- `Voucher`, `VoucherLine`, and `VoucherNumberSequence` models.
+- Back-relations on existing Company, FiscalYear, AccountingPeriod, LedgerAccount, Project, CostCenter, CashBankAccount, and User models.
+- Migration: `20260614163238_phase_2c_voucher_schema_foundation`.
+
+No API, frontend UI, posting service, reports, parties, customers, vendors, file uploads, roles, or seed data were added.
 
 ## Implemented Features
 
@@ -69,9 +84,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include vouchers, journals, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+The repo intentionally does not include voucher API endpoints, voucher frontend UI, posting, journals, ledger reports, cash book, bank book, trial balance, financial statements, reports, payroll, salary sheets, project finance reports, parties, customers, vendors, dashboard analytics, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Voucher implementation, transaction workflows, and reporting are still intentionally outside scope until user confirms Chunk 2C-1.
+The Phase 2A accounting foundation frontend is implemented. The Phase 2B voucher requirement lock is documented. The Phase 2C voucher implementation plan is documented. Phase 2C-1 added the voucher schema foundation only. Voucher API, transaction workflows, frontend voucher UI, and reporting are still intentionally outside scope until the user confirms the next chunk.
 
 ## Database Port
 
@@ -87,7 +102,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-The next task should be explicit user confirmation to start Chunk 2C-1 (voucher schema only), using `docs/prompts/phase-2c-chunk-1-voucher-schema-prompt.md` as the agent prompt.
+The next task should be schema review, then explicit user confirmation before starting Chunk 2C-2 backend draft voucher API.
 
 Reference docs before continuing:
 

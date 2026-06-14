@@ -2,9 +2,22 @@
 
 ## Current Phase
 
-Phase 2C: voucher implementation planning.
+Phase 2C: voucher schema foundation review.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C plans the voucher implementation chunks.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, and Chunk 2C-1 added the voucher schema foundation only.
+
+## Phase 2C Chunk 2C-1 Voucher Schema Foundation - completed this session
+
+- Updated `prisma/schema.prisma` with voucher-only schema additions: `VoucherType`, `VoucherStatus`, `VoucherLineSide`, `Voucher`, `VoucherLine`, and `VoucherNumberSequence`.
+- Added voucher back-relations on existing `Company`, `FiscalYear`, `AccountingPeriod`, `LedgerAccount`, `Project`, `CostCenter`, `CashBankAccount`, and `User` models.
+- Created and applied migration `20260614163238_phase_2c_voucher_schema_foundation`.
+- Migration SQL adds only voucher-related enums, tables, indexes, unique constraints, and foreign keys.
+- No API, frontend UI, posting service, reports, parties, customers, vendors, file uploads, roles, or seed data were added.
+- Verification passed: `pnpm prisma`, `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build` twice, `pnpm check:all`, `pnpm doctor`, and migration sync check.
+
+## Next Stop Point
+
+Review the Phase 2C-1 schema foundation before starting backend work. The next proposed task is Chunk 2C-2 backend draft voucher API, but it must not begin until explicitly confirmed by the user.
 
 ## Phase 2C Voucher Implementation Planning - completed this session
 
@@ -91,11 +104,11 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 
 ## Next Planned Phase
 
-Phase 2C voucher implementation planning is complete. The next task should be explicit user confirmation to start Chunk 2C-1 (voucher schema only), using `docs/prompts/phase-2c-chunk-1-voucher-schema-prompt.md` as the agent prompt.
+Phase 2C Chunk 2C-1 voucher schema foundation is complete. The next task should be schema review, then explicit user confirmation before starting Chunk 2C-2 backend draft voucher API.
 
 Still not implemented:
 
-- Vouchers, journals, posting, or transaction workflows.
+- Voucher API, voucher frontend UI, posting, journals, or transaction workflows.
 - Ledger reports, cash book, bank book, trial balance, financial statements, or dashboard analytics.
 - Payroll or salary sheets.
 - Parties, customers, vendors, HR, CRM, or ERP modules.
