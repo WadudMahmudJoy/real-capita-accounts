@@ -2,9 +2,26 @@
 
 ## Current Phase
 
-Phase 2C: frontend voucher draft/create UI review.
+Phase 2C-5: posting UI and print foundation completed.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, Chunk 2C-2 added the backend draft voucher API, Chunk 2C-3 added the backend posting validation service, and Chunk 2C-4 added the frontend voucher draft/create UI.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, Chunk 2C-2 added the backend draft voucher API, Chunk 2C-3 added the backend posting validation service, Chunk 2C-4 added the frontend voucher draft/create UI, and Chunk 2C-5 added the posting UI and print foundation.
+
+## Phase 2C Chunk 2C-5 Posting UI and Print Foundation - completed this session
+
+- Added `postVoucher` helper in `apps/web/src/lib/api.ts`: calls `POST /vouchers/:id/post` with `credentials: "include"`, returns the posted `Voucher`. No token storage, no report helpers.
+- Enhanced `VoucherForm` in `apps/web/src/app/app/vouchers/_lib/VoucherForm.tsx`:
+  - **Posting action for DRAFT vouchers**: a "Post voucher" button appears on draft edit pages. Clicking it opens an inline confirmation panel explaining posting is permanent, immutable, and validates all rules (debit/credit balance, fiscal year/period status, ledger/project/cost-center/cash-bank rules). The "Confirm and post" button calls the backend and on success navigates to the same URL to refresh the view with posted data. On failure, backend validation errors are shown clearly without losing form data.
+  - **Posted voucher read-only view**: shows `systemVoucherNo` prominently in the title, voucher type, date, fiscal year, accounting period, narration, status badge, debit/credit lines in a clean table, totals, and difference. Shows `postedBy` full name and `postingDate` in the notice when available. All inputs are disabled; no edit, delete, or post controls are shown.
+  - **Print foundation**: a "Print voucher" button appears on posted voucher detail. A `VoucherPrintLayout` component renders a professional, print-only voucher layout with Real Capita Group header, voucher type, system voucher number, physical SI no, date, fiscal year, accounting period, narration, debit/credit line table, totals, amount in words (Bangladeshi-style English), prepared-by/posted-by/authorised-by signature areas, and footer. Uses `@media print` CSS and `window.print()` for browser print; no PDF generation.
+  - **Amount-to-words helper**: converts numbers to Bangladeshi-style English words (Taka/Paisa, Lac/Crore) for the print layout.
+- Voucher list improvements in `/app/vouchers`: POSTED vouchers show "View" action (with Eye icon), DRAFT vouchers show "Open" action (with Pencil icon). Status badges visually distinguish Draft (amber) from Posted (green). No posting action from the list; posting is only from the detail page.
+- No Prisma schema changes, no migrations, no backend API changes, no reports, no dashboard analytics, no payroll, no parties/customers/vendors, no roles, no file uploads, no seed data, and no tooling were added.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `pnpm check:all`, and `pnpm doctor`.
+- Manual browser smoke tests passed: login as accountant; `/app/vouchers` renders with draft and posted voucher distinction; draft detail shows "Post voucher" button; confirmation panel appears with correct rules summary; posting succeeds and navigates to read-only posted view; posted view shows `postedBy` and `postingDate`; editing controls are disabled; "Print voucher" button appears for posted vouchers; print layout contains header, lines, totals, amount in words, and signature areas. Unauthenticated access to voucher pages redirects to login.
+
+## Next Stop Point (2C-5)
+
+Review the Phase 2C-5 posting UI and print foundation. The next proposed task is Chunk 2C-6 final integration and acceptance review, but it must not begin until explicitly confirmed by the user.
 
 ## Phase 2C Chunk 2C-4 Frontend Voucher Draft/Create UI - completed this session
 
@@ -153,12 +170,11 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2C Chunk 2C-3 backend posting validation service is complete. The next task is a backend review of the posting validation service, then explicit user confirmation before starting Chunk 2C-4 frontend voucher draft/create UI.
+Phase 2C-5 posting UI and print foundation is complete. The next task is a review of the posting UI and print foundation, then explicit user confirmation before starting Chunk 2C-6 final integration and acceptance review.
 
 Still not implemented:
 
-- Voucher frontend UI, printable voucher UI, or transaction workflows beyond the backend draft/post voucher workflow.
-- Ledger reports, cash book, bank book, trial balance, financial statements, or dashboard analytics.
+- Reports, ledgers, cash book, bank book, trial balance, financial statements, or dashboard analytics.
 - Payroll or salary sheets.
 - Parties, customers, vendors, HR, CRM, or ERP modules.
 - Additional roles beyond `ACCOUNTANT`.
@@ -171,15 +187,14 @@ Still not implemented:
 
 ## Last Verification Results
 
-Verification date: 2026-06-14, Phase 2A Chunk 3B.
+Verification date: 2026-06-14, Phase 2C Chunk 2C-5.
 
 - `pnpm prisma:generate`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
 - `pnpm build:web`: passed.
 - `pnpm build:api`: passed.
+- `docker compose config`: passed.
 - `pnpm check:all`: passed.
-- `pnpm doctor`: passed with the known local warning that port `3000` is occupied; use web port `3010` and start the API with `WEB_ORIGIN=http://localhost:3010` for local smoke tests.
-- Final quick `pnpm typecheck`: passed after restoring the generated Next.js route-types import.
-- Manual browser/API smoke tests on `http://localhost:3010` and `http://localhost:4000`: passed login, unauthenticated protected-page redirect, `/app` foundation navigation, and create/update checks for accounting periods, cost centers, account groups, ledger accounts, and cash/bank accounts.
-- Cash & Bank page verified that only ledger accounts marked `isCashBank=true` appear in the linked ledger dropdown; a non-cash-bank ledger account was not selectable.
+- `pnpm doctor`: passed with the known warning that port 4000 is occupied by the running API used for smoke tests.
+- Manual browser/API smoke tests on `http://localhost:3000` and `http://localhost:4000`: passed login, draft voucher create, post voucher with confirmation, posted read-only view, print layout rendering, voucher list with draft/posted distinction, posted-by/posting-date display.

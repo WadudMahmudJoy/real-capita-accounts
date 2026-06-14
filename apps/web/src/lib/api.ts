@@ -709,6 +709,10 @@ export function deleteVoucher(
   );
 }
 
+export function postVoucher(id: string): Promise<Voucher> {
+  return apiFetch<Voucher>(`/vouchers/${id}/post`, { method: "POST" });
+}
+
 /**
  * Narrow an unknown caught value to a user-facing message. Aborts are re-thrown
  * by {@link apiFetch}; everything else lands here.

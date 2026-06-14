@@ -8,6 +8,7 @@ import {
   ApiError,
   createVoucher,
   deleteVoucher,
+  postVoucher,
   toErrorMessage,
   updateVoucher,
   type AccountingPeriod,
@@ -48,6 +49,7 @@ import {
   roundMoney,
   toAmount,
   voucherStatusBadge,
+  voucherTypeLabel,
 } from "./voucher-ui";
 
 // Each editor line carries amount as a free-text string so the input can be
@@ -144,6 +146,8 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
+  const [showConfirmPost, setShowConfirmPost] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
@@ -389,6 +393,33 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
     }
   }
 
+  async function handlePost() {
+    if (!voucher) {
+      return;
+    }
+
+    setFormError(null);
+    setFormSuccess(null);
+    setShowConfirmPost(false);
+    setIsPosting(true);
+
+    try {
+      const posted = await postVoucher(voucher.id);
+      setFormSuccess(`Voucher ${posted.systemVoucherNo} has been posted.`);
+      // Navigate to the same URL to force a full re-render with the updated (posted) data.
+      router.push(`/app/vouchers/${voucher.id}`);
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.isUnauthorized) {
+        router.replace("/login");
+        return;
+      }
+
+      setFormError(toErrorMessage(caught));
+    } finally {
+      setIsPosting(false);
+    }
+  }
+
   const pageTitle =
     mode === "create"
       ? "New voucher"
@@ -415,8 +446,14 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
 
       {isReadOnly ? (
         <Notice tone="info">
-          This voucher has status POSTED. Posting, editing, and printing are not
-          part of this screen.
+          This voucher is posted and shown read-only. Posted vouchers cannot be
+          edited or deleted.
+          {voucher?.postingDate
+            ? ` Posted on ${formatDate(voucher.postingDate)}.`
+            : ""}
+          {voucher?.postedBy
+            ? ` Posted by ${voucher.postedBy.fullName}.`
+            : ""}
         </Notice>
       ) : null}
 
@@ -832,40 +869,378 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
         {formError ? <Notice tone="error">{formError}</Notice> : null}
         {formSuccess ? <Notice tone="success">{formSuccess}</Notice> : null}
 
-        {!isReadOnly ? (
+        {isReadOnly ? (
           <div className="flex flex-wrap items-center gap-3">
-            <Button disabled={isSaving} type="submit">
-              {isSaving
-                ? "Saving..."
-                : mode === "create"
-                  ? "Create draft voucher"
-                  : "Save draft voucher"}
-            </Button>
-            {mode === "edit" && voucher ? (
-              <Button
-                disabled={isDeleting}
-                onClick={handleDelete}
-                variant="danger"
-              >
-                {isDeleting ? "Deleting..." : "Delete draft"}
-              </Button>
-            ) : null}
-            <Link href="/app/vouchers">
-              <Button type="button" variant="ghost">
-                Cancel
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div>
             <Link href="/app/vouchers">
               <Button type="button" variant="secondary">
                 Back to vouchers
               </Button>
             </Link>
+            <Button
+              onClick={() => window.print()}
+              type="button"
+              variant="primary"
+            >
+              Print voucher
+            </Button>
           </div>
+        ) : (
+          <>
+            {mode === "edit" && voucher && !showConfirmPost ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <Button disabled={isSaving} type="submit">
+                  {isSaving ? "Saving..." : "Save draft voucher"}
+                </Button>
+                <Button
+                  disabled={isDeleting || isPosting}
+                  onClick={handleDelete}
+                  variant="danger"
+                >
+                  {isDeleting ? "Deleting..." : "Delete draft"}
+                </Button>
+                <Button
+                  disabled={isPosting || isSaving || isDeleting}
+                  onClick={() => setShowConfirmPost(true)}
+                  variant="secondary"
+                >
+                  {isPosting ? "Posting..." : "Post voucher"}
+                </Button>
+                <Link href="/app/vouchers">
+                  <Button type="button" variant="ghost">
+                    Cancel
+                  </Button>
+                </Link>
+              </div>
+            ) : mode === "create" ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <Button disabled={isSaving} type="submit">
+                  {isSaving ? "Saving..." : "Create draft voucher"}
+                </Button>
+                <Link href="/app/vouchers">
+                  <Button type="button" variant="ghost">
+                    Cancel
+                  </Button>
+                </Link>
+              </div>
+            ) : null}
+
+            {showConfirmPost && voucher ? (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardHeader
+                  description="Posting is permanent and cannot be undone. Please review everything before you confirm."
+                  title="Confirm posting"
+                />
+                <div className="mt-3 flex flex-col gap-2 text-sm text-foreground">
+                  <p>
+                    Posting this voucher will make it <strong>immutable</strong>.
+                    It cannot be edited or deleted after posting.
+                  </p>
+                  <ul className="list-inside list-disc space-y-1 text-muted-foreground">
+                    <li>
+                      Debit total ({formatMoney(totals.debit)}) must equal credit
+                      total ({formatMoney(totals.credit)}).
+                    </li>
+                    <li>
+                      The fiscal year must be active and the accounting period
+                      must be OPEN.
+                    </li>
+                    <li>
+                      All ledger account, project, cost center, and cash/bank
+                      rules are validated.
+                    </li>
+                  </ul>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <Button
+                    disabled={isPosting}
+                    onClick={handlePost}
+                    variant="primary"
+                  >
+                    {isPosting ? "Posting..." : "Confirm and post"}
+                  </Button>
+                  <Button
+                    disabled={isPosting}
+                    onClick={() => setShowConfirmPost(false)}
+                    variant="ghost"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </Card>
+            ) : null}
+          </>
         )}
       </form>
+
+      {isReadOnly && voucher ? <VoucherPrintLayout voucher={voucher} /> : null}
     </div>
   );
+}
+
+function VoucherPrintLayout({ voucher }: { voucher: Voucher }) {
+  const totalDebit = toAmount(voucher.totalDebit);
+  const totalCredit = toAmount(voucher.totalCredit);
+
+  return (
+    <div className="hidden print:block print:m-0 print:p-0">
+      <style>{`
+        @media print {
+          @page { margin: 15mm 12mm 15mm 12mm; size: A4; }
+          body { visibility: hidden; }
+          .print\\:block { visibility: visible; }
+          .print\\:block * { visibility: visible; }
+        }
+      `}</style>
+
+      <div className="mx-auto max-w-[190mm] font-sans text-xs text-black">
+        {/* Header */}
+        <div className="mb-4 border-b-2 border-black pb-3 text-center">
+          <h2 className="text-lg font-bold uppercase tracking-wide">
+            Real Capita Group
+          </h2>
+          <p className="mt-1 text-sm font-semibold">
+            {voucherTypeLabel(voucher.voucherType)} Voucher
+          </p>
+        </div>
+
+        {/* Voucher details */}
+        <div className="mb-4 grid grid-cols-2 gap-x-8 gap-y-2">
+          <div>
+            <span className="font-semibold">Voucher No.: </span>
+            <span>{voucher.systemVoucherNo}</span>
+          </div>
+          <div>
+            <span className="font-semibold">Date: </span>
+            <span>{formatDate(voucher.voucherDate)}</span>
+          </div>
+          {voucher.physicalSiNo ? (
+            <div>
+              <span className="font-semibold">Physical SI No.: </span>
+              <span>{voucher.physicalSiNo}</span>
+            </div>
+          ) : (
+            <div />
+          )}
+          <div>
+            <span className="font-semibold">Fiscal Year: </span>
+            <span>{voucher.fiscalYear?.name ?? "-"}</span>
+          </div>
+          <div>
+            <span className="font-semibold">Accounting Period: </span>
+            <span>
+              {voucher.accountingPeriod?.name ?? "-"}
+              {voucher.accountingPeriod
+                ? ` (${voucher.accountingPeriod.status})`
+                : ""}
+            </span>
+          </div>
+          <div>
+            <span className="font-semibold">Status: </span>
+            <span>POSTED</span>
+          </div>
+        </div>
+
+        {/* Narration */}
+        {voucher.narration ? (
+          <div className="mb-4">
+            <p className="font-semibold">Narration:</p>
+            <p className="mt-0.5 leading-relaxed">{voucher.narration}</p>
+          </div>
+        ) : null}
+
+        {/* Line items table */}
+        <table className="mb-4 w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-black px-2 py-1.5 text-left font-semibold">
+                Line
+              </th>
+              <th className="border border-black px-2 py-1.5 text-left font-semibold">
+                Ledger Account
+              </th>
+              <th className="border border-black px-2 py-1.5 text-left font-semibold">
+                Side
+              </th>
+              <th className="border border-black px-2 py-1.5 text-left font-semibold">
+                Project
+              </th>
+              <th className="border border-black px-2 py-1.5 text-left font-semibold">
+                Cost Center
+              </th>
+              <th className="border border-black px-2 py-1.5 text-left font-semibold">
+                Description
+              </th>
+              <th className="border border-black px-2 py-1.5 text-right font-semibold">
+                Debit
+              </th>
+              <th className="border border-black px-2 py-1.5 text-right font-semibold">
+                Credit
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {(voucher.lines ?? []).map((line) => (
+              <tr key={line.id}>
+                <td className="border border-black px-2 py-1">{line.lineNo}</td>
+                <td className="border border-black px-2 py-1 text-xs">
+                  {line.ledgerAccount
+                    ? `${line.ledgerAccount.code} - ${line.ledgerAccount.name}`
+                    : "-"}
+                </td>
+                <td className="border border-black px-2 py-1">
+                  {line.side}
+                </td>
+                <td className="border border-black px-2 py-1 text-xs">
+                  {line.project
+                    ? `${line.project.code} - ${line.project.name}`
+                    : "-"}
+                </td>
+                <td className="border border-black px-2 py-1 text-xs">
+                  {line.costCenter
+                    ? `${line.costCenter.code} - ${line.costCenter.name}`
+                    : "-"}
+                </td>
+                <td className="border border-black px-2 py-1 text-xs">
+                  {line.description ?? "-"}
+                </td>
+                <td className="border border-black px-2 py-1 text-right tabular-nums">
+                  {line.side === "DEBIT" ? formatMoney(line.amount) : ""}
+                </td>
+                <td className="border border-black px-2 py-1 text-right tabular-nums">
+                  {line.side === "CREDIT" ? formatMoney(line.amount) : ""}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="font-semibold">
+              <td
+                className="border border-black px-2 py-1.5 text-right"
+                colSpan={6}
+              >
+                Total
+              </td>
+              <td className="border border-black px-2 py-1.5 text-right tabular-nums">
+                {formatMoney(totalDebit)}
+              </td>
+              <td className="border border-black px-2 py-1.5 text-right tabular-nums">
+                {formatMoney(totalCredit)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        {/* In words */}
+        <div className="mb-6">
+          <p className="font-semibold">Amount in words:</p>
+          <p className="mt-0.5 italic">
+            {amountToWords(totalDebit)} only.
+          </p>
+        </div>
+
+        {/* Signatures */}
+        <div className="mt-10 grid grid-cols-3 gap-x-8">
+          <div>
+            <div className="border-t border-black pt-1 text-center text-xs">
+              Prepared by
+            </div>
+            <p className="mt-0.5 text-center text-xs text-gray-600">
+              {voucher.createdBy?.fullName ?? "-"}
+            </p>
+          </div>
+          <div>
+            <div className="border-t border-black pt-1 text-center text-xs">
+              Posted by
+            </div>
+            <p className="mt-0.5 text-center text-xs text-gray-600">
+              {voucher.postedBy?.fullName ?? "-"}
+            </p>
+            {voucher.postingDate ? (
+              <p className="text-center text-xs text-gray-600">
+                {formatDate(voucher.postingDate)}
+              </p>
+            ) : null}
+          </div>
+          <div>
+            <div className="border-t border-black pt-1 text-center text-xs">
+              Authorised by
+            </div>
+            <p className="mt-0.5 text-center text-xs text-gray-600">
+              _____________________
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 border-t border-black pt-2 text-center text-[10px] text-gray-500">
+          Real Capita Accounting &amp; Project Finance System
+          {voucher.postingDate
+            ? ` | Posted: ${formatDate(voucher.postingDate)}`
+            : ""}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Convert a number to Bangladeshi-style English words for the print layout. */
+function amountToWords(amount: number): string {
+  if (amount <= 0) {
+    return "Zero";
+  }
+
+  const ones = [
+    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+    "Seventeen", "Eighteen", "Nineteen",
+  ];
+  const tens = [
+    "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty",
+    "Ninety",
+  ];
+
+  function convert(n: number): string {
+    if (n < 20) {
+      return ones[n];
+    }
+    if (n < 100) {
+      return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ` ${ones[n % 10]}` : "");
+    }
+    if (n < 1000) {
+      return (
+        ones[Math.floor(n / 100)] +
+        " Hundred" +
+        (n % 100 !== 0 ? ` ${convert(n % 100)}` : "")
+      );
+    }
+    if (n < 100000) {
+      return (
+        convert(Math.floor(n / 1000)) +
+        " Thousand" +
+        (n % 1000 !== 0 ? ` ${convert(n % 1000)}` : "")
+      );
+    }
+    if (n < 10000000) {
+      return (
+        convert(Math.floor(n / 100000)) +
+        " Lac" +
+        (n % 100000 !== 0 ? ` ${convert(n % 100000)}` : "")
+      );
+    }
+    return (
+      convert(Math.floor(n / 10000000)) +
+      " Crore" +
+      (n % 10000000 !== 0 ? ` ${convert(n % 10000000)}` : "")
+    );
+  }
+
+  const whole = Math.floor(amount);
+  const paisa = Math.round((amount - whole) * 100);
+  let result = convert(whole) + " Taka";
+
+  if (paisa > 0) {
+    result += ` and ${convert(paisa)} Paisa`;
+  }
+
+  return result;
 }

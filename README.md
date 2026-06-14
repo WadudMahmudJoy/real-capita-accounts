@@ -8,14 +8,15 @@ This repository is intentionally not a continuation of the previous Real Capita 
 
 - Phase 2A accounting foundation is complete and accepted.
 - Phase 2B voucher requirement documentation/specification lock is complete.
-- Phase 2C voucher implementation is complete through Chunk 2C-4:
+- Phase 2C voucher implementation is complete through Chunk 2C-5:
   - Chunk 2C-1: voucher schema foundation (enums, Voucher, VoucherLine, VoucherNumberSequence).
   - Chunk 2C-2: backend draft voucher API (list/detail/create/update/soft-delete, ACCOUNTANT guard, system voucher number).
   - Chunk 2C-3: backend posting validation service (POST /vouchers/:id/post, full posting rules, immutability, VOUCHER_POSTED audit event).
   - Chunk 2C-4: frontend voucher draft/create UI (voucher list with filters, draft create/edit form, debit/credit line editor, totals and balance indicator, posted read-only view).
-- Implemented voucher features now include: voucher schema foundation, backend draft voucher API, backend posting validation service, and frontend voucher draft/create UI.
-- Still not implemented: posting UI button/page polish, print layout, reports, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, and extra roles beyond Accountant.
-- The next task is Phase 2C-5 posting UI and print foundation, only after explicit user confirmation.
+  - Chunk 2C-5: posting UI and print foundation (post action with confirmation panel, posted read-only view with postedBy/postingDate, browser print layout with Real Capita Group header, amount-in-words, and signature areas).
+- Implemented voucher features now include: full voucher lifecycle from draft create through posting, with print layout for posted vouchers.
+- Still not implemented: reports, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, and extra roles beyond Accountant.
+- The next task is Phase 2C-6 final integration and acceptance review, only after explicit user confirmation.
 
 ## Stack
 
@@ -154,6 +155,6 @@ Use `pnpm agent:start` for a quick local orientation report.
 
 ## Strict Current Boundary
 
-The current completed work includes the Phase 2A accounting foundation and Phase 2C voucher implementation through Chunk 2C-4 (voucher schema, backend draft voucher API, backend posting validation service, frontend voucher draft/create UI). It does not include posting UI button/page polish, print layout, reports, ledgers, cash book, bank book, trial balance, financial statements, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+The current completed work includes the Phase 2A accounting foundation and Phase 2C voucher implementation through Chunk 2C-5 (voucher schema, backend draft voucher API, backend posting validation service, frontend voucher draft/create UI, posting UI and print foundation). It does not include reports, ledgers, cash book, bank book, trial balance, financial statements, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The next coding phase must be confirmed before implementation. The proposed next task is Phase 2C-5 posting UI and print foundation, documented in `docs/plans/phase-2c-voucher-implementation-plan.md`.
+The next coding phase must be confirmed before implementation. The proposed next task is Phase 2C-6 final integration and acceptance review, documented in `docs/plans/phase-2c-voucher-implementation-plan.md`.
