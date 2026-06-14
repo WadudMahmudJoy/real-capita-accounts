@@ -2,11 +2,28 @@
 
 ## Current Phase
 
-Phase 1B: accounting foundation requirement lock and next-agent handoff.
+Phase 2A: accounting foundation implementation, in progress.
 
-Phase 0 is complete and accepted. Phase 1A keeps the product boundary narrow: secure login, one confirmed Accountant role, one development Accountant user, protected app shell, durable agent documentation, ADRs, and verification scripts.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria.
 
-Phase 1B documentation/specification lock has been prepared. No business modules were implemented.
+Phase 2A is being implemented in chunks:
+
+- Chunk 1: accounting-foundation Prisma schema, migration, and the fixed five-class `AccountClass` system seed — complete.
+- Chunk 2: backend accounting foundation API guarded by the `ACCOUNTANT` role — complete, reviewed, pushed, and accepted.
+- Chunk 3A: frontend accounting foundation pages — complete (this session).
+- Chunk 3B: remaining frontend pages and final integration verification — not started.
+
+## Phase 2A Chunk 3A (frontend foundation) — completed this session
+
+- Extended `apps/web/src/lib/api.ts` into a typed, cookie-authenticated API helper: `apiFetch` always sends `credentials: "include"`, surfaces clear auth/connection errors through an `ApiError` type, and never stores tokens in `localStorage`. Added resource helpers and types for company, fiscal years, projects, and account classes.
+- Added `apps/web/src/app/app/_components/ui.tsx` shared presentation primitives (cards, fields, buttons, status badges, notices) for a calm, professional accountant UI.
+- Added `apps/web/src/app/app/layout.tsx`: a protected app shell that gates on `GET /auth/me`, shows the signed-in user and role, provides sign out, and renders real navigation (Company Setup, Fiscal Years, Projects, Account Classes) with disabled "Later" entries for the Chunk 3B pages.
+- Reworked `apps/web/src/app/app/page.tsx` into a calm overview/landing page with quick links (no analytics, no charts).
+- Added `apps/web/src/app/app/company/page.tsx`: create or edit the singleton company profile (name, legalName, address, phone, email, currency default BDT).
+- Added `apps/web/src/app/app/fiscal-years/page.tsx`: list, create, edit, and activate fiscal years with active/closed status; uses the singleton company id for creation.
+- Added `apps/web/src/app/app/projects/page.tsx`: list, create, and edit projects (code, name, location, notes, isActive).
+- Added `apps/web/src/app/app/accounts/classes/page.tsx`: read-only Account Classes table (code, name, normalBalance).
+- No Prisma schema changes, no migrations, and no backend changes were made in Chunk 3A.
 
 ## Completed
 
@@ -56,17 +73,16 @@ Phase 1B documentation/specification lock has been prepared. No business modules
 
 ## Next Planned Phase
 
-User must explicitly confirm Phase 2A implementation before any business schema, API, or UI work begins.
+The next task is Phase 2A Chunk 3B (frontend only), building the remaining accounting foundation pages on top of the existing Chunk 2 backend API:
 
-Proposed Phase 2A scope is documented, but not implemented:
+- Accounting Periods page (periods under a fiscal year).
+- Cost Centers page (cost centers under projects).
+- Account Groups page.
+- Ledger Accounts page.
+- Cash/Bank Accounts page (linked to ledger accounts marked as cash/bank).
+- Final integration verification across all foundation pages.
 
-- Company setup
-- Fiscal year setup
-- Accounting period setup
-- Project setup
-- Cost center setup under projects
-- Basic account class/group/account-head foundation
-- Cash/bank account setup linked to account heads
+Chunk 3B must remain frontend-only: do not change the Prisma schema, create migrations, change the backend (unless a blocking integration bug is found and reported first), add roles, add business seed data, or add vouchers, reports, payroll, parties, file uploads, or dashboard analytics.
 
 ## Current GitHub Repository
 
