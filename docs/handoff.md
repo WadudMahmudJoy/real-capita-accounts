@@ -2,9 +2,31 @@
 
 ## Current Phase
 
-Phase 2C: voucher schema foundation review.
+Phase 2C: backend draft voucher API review.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, and Chunk 2C-1 added the voucher schema foundation only.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C planned the voucher implementation chunks, Chunk 2C-1 added the voucher schema foundation, and Chunk 2C-2 added the backend draft voucher API.
+
+## Phase 2C Chunk 2C-2 Backend Draft Voucher API - completed this session
+
+- Added a NestJS voucher module at `apps/api/src/voucher`: `voucher.module.ts`, `voucher.controller.ts`, `voucher.service.ts`, and DTOs `dto/voucher-line.dto.ts`, `dto/create-voucher.dto.ts`, `dto/update-voucher.dto.ts`, `dto/list-vouchers-query.dto.ts`.
+- Registered `VoucherModule` in `apps/api/src/app.module.ts`.
+- Implemented draft-only endpoints, all guarded by `AuthGuard` + `RolesGuard` for the `ACCOUNTANT` role, with no global `/api` prefix:
+  - `GET /vouchers` (non-deleted only; optional `voucherType`, `status`, `fiscalYearId`, `accountingPeriodId` filters; includes fiscal year, accounting period, `createdBy`/`postedBy` basic info, and line count).
+  - `GET /vouchers/:id` (voucher with ordered lines and ledger account, project, cost center, cash/bank relations; 404 if missing or soft-deleted).
+  - `POST /vouchers` (creates `DRAFT` only; `companyId` derived from fiscal year; `systemVoucherNo` generated transactionally from `VoucherNumberSequence` scoped by company + fiscal year + voucher type, format `TYPE-NNNNN`; `createdById` from authenticated user; `postedById`/`postingDate` stay null; `totalDebit`/`totalCredit` computed server-side; `lineNo` assigned from array order).
+  - `PATCH /vouchers/:id` (DRAFT only; posted vouchers immutable; narration cannot become blank; lines, when provided, replace draft lines transactionally and recalculate totals; `systemVoucherNo` unchanged).
+  - `DELETE /vouchers/:id` (soft-delete a DRAFT via `isDeleted`/`deletedAt`; posted vouchers cannot be deleted; no hard delete; consumed voucher numbers are not reused).
+- Voucher numbering: `VoucherNumberSequence` is upserted then atomically incremented inside the create transaction (per company + fiscal year + voucher type). The deleted-draft number stays consumed.
+- Validation implemented: fiscal year exists; accounting period exists and belongs to the fiscal year; voucher date inside both fiscal year and accounting period ranges; ledger accounts exist and are active; optional project/cost center/cash-bank references exist when provided; positive line amounts; valid line side; narration required at the API level; no client-controlled totals/status/`systemVoucherNo`/posting fields (rejected by the whitelist `ValidationPipe`).
+- Audit events `VOUCHER_CREATED`, `VOUCHER_EDITED`, and `VOUCHER_DELETED` recorded in the existing `AuditEvent` model.
+- Deferred to Chunk 2C-3: debit equals credit before posting, accounting period must be OPEN before posting, `requiresProject`/`requiresCostCenter` enforcement, `isCashBank`/cash-bank consistency, the posting endpoint, the `VOUCHER_POSTED` audit event, and reversal/correction policy.
+- No frontend, posting service, posting endpoint, reports, dashboard analytics, payroll, parties/customers/vendors, roles, file uploads, seed data, or tooling were added. No Prisma schema change or migration was made.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:api`, `pnpm build:web`, `pnpm check:all`, `pnpm doctor`.
+- Manual API smoke tests passed against `http://localhost:4000`: unauthenticated `GET /vouchers` returns 401; login as `accountant@realcapita.local` succeeds; draft create returns a generated `systemVoucherNo` (`PAYMENT-00001`) with server-computed totals; list and detail return the draft with lines; PATCH updates narration/lines and recalculates totals while keeping the voucher number; client `status`/`systemVoucherNo`/totals/posting fields are rejected (400); blank narration, bad date range, inactive/nonexistent references, negative amount, and single-line drafts are rejected; unbalanced drafts are allowed with computed totals; per-type numbering increments correctly; soft-delete hides the voucher and PATCH/GET on it return 404; the consumed number is not reused. Smoke-test voucher rows were cleaned up afterward.
+
+## Next Stop Point
+
+Review the Phase 2C-2 backend draft voucher API. The next proposed task is Chunk 2C-3 posting validation service, but it must not begin until explicitly confirmed by the user.
 
 ## Phase 2C Chunk 2C-1 Voucher Schema Foundation - completed this session
 
@@ -15,9 +37,9 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - No API, frontend UI, posting service, reports, parties, customers, vendors, file uploads, roles, or seed data were added.
 - Verification passed: `pnpm prisma`, `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build` twice, `pnpm check:all`, `pnpm doctor`, and migration sync check.
 
-## Next Stop Point
+## Phase 2C Chunk 2C-1 Next Stop Point (superseded)
 
-Review the Phase 2C-1 schema foundation before starting backend work. The next proposed task is Chunk 2C-2 backend draft voucher API, but it must not begin until explicitly confirmed by the user.
+Reviewing the Phase 2C-1 schema foundation was the stop point before backend work. Chunk 2C-2 backend draft voucher API is now complete; see the section above.
 
 ## Phase 2C Voucher Implementation Planning - completed this session
 
@@ -104,11 +126,11 @@ Review the Phase 2C-1 schema foundation before starting backend work. The next p
 
 ## Next Planned Phase
 
-Phase 2C Chunk 2C-1 voucher schema foundation is complete. The next task should be schema review, then explicit user confirmation before starting Chunk 2C-2 backend draft voucher API.
+Phase 2C Chunk 2C-2 backend draft voucher API is complete. The next task is a backend review of the draft voucher API, then explicit user confirmation before starting Chunk 2C-3 posting validation service.
 
 Still not implemented:
 
-- Voucher API, voucher frontend UI, posting, journals, or transaction workflows.
+- Voucher posting endpoint/service, voucher frontend UI, journals posting, or transaction workflows beyond draft CRUD.
 - Ledger reports, cash book, bank book, trial balance, financial statements, or dashboard analytics.
 - Payroll or salary sheets.
 - Parties, customers, vendors, HR, CRM, or ERP modules.
