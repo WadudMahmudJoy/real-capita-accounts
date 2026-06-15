@@ -6,11 +6,11 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2D: accounting reports implementation. Chunk 2D-2 backend ledger/cash-book/bank-book report API is implemented and reviewed.
+Phase 2D: accounting reports implementation. Chunk 2D-3 backend Trial Balance report API is implemented and ready for review.
 
 Phase 0 is complete and accepted. Phase 1A adds only authentication, one confirmed role, a protected app shell, project operating documentation, ADRs, and verification scripts.
 
-Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D locked accounting report requirements before report implementation, and Chunk 2D-2 added the backend General Ledger, Cash Book, and Bank Book report APIs.
+Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D locked accounting report requirements before report implementation. Chunk 2D-2 added the backend General Ledger, Cash Book, and Bank Book report APIs, and Chunk 2D-3 added the backend Trial Balance report API.
 
 If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`.
 
@@ -26,9 +26,9 @@ If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` 
 
 ## Strict Current Boundary
 
-Phase 2D Chunk 2D-2 backend General Ledger, Cash Book, and Bank Book report API is complete and reviewed. Trial Balance and later report chunks must not start without explicit user confirmation.
+Phase 2D Chunk 2D-3 backend Trial Balance report API is complete and ready for review. Income Statement, Balance Sheet, and later report chunks must not start without explicit user confirmation.
 
-Do not implement Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary, report frontend pages, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, or business seed data until the user confirms the next implementation phase.
+Do not implement Income Statement, Balance Sheet, Project Summary, Cost Center Summary, report frontend pages, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, or business seed data until the user confirms the next implementation phase.
 
 ## Confirmed Role Model
 
@@ -120,9 +120,9 @@ Co-authored-by: Md. Wadud Mahmud Joy <wadudjoy24@gmail.com>
 
 This is a new accounting-first system, not a continuation of the previous ERP prototype. The old ERP may be treated only as historical reference. Do not copy code, schema, seed data, fake modules, UI screens, or private data from it.
 
-## Phase 2D Requirement Lock
+## Phase 2D Reports
 
-Phase 2D is documentation/specification only. The next coding phase must not start until the user explicitly confirms the report implementation phase.
+Phase 2D report requirements are locked. The backend APIs for General Ledger, Cash Book, Bank Book, and Trial Balance are implemented. The next coding phase must not start until the user explicitly confirms the next report implementation chunk.
 
 Before any report schema/API/UI work, read:
 
@@ -145,4 +145,4 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 ## Next Phase Guidance
 
-Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API review is complete. The next recommended task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API. No report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2D Chunk 2D-3 backend Trial Balance report API is complete. The next recommended task is Chunk 2D-3 backend Trial Balance API review before starting Chunk 2D-4 Income Statement and Balance Sheet API. No report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.

@@ -16,14 +16,14 @@ This repository is intentionally not a continuation of the previous Real Capita 
   - Chunk 2C-5: posting UI and print foundation (post action with confirmation panel, posted read-only view with postedBy/postingDate, browser print layout with Real Capita Group header, amount-in-words, and signature areas).
   - Chunk 2C-6: final integration and acceptance review (API+browser smoke tests, docs update, scope verification).
 - Implemented voucher features now include: full voucher lifecycle from draft create through posting, with print layout for posted vouchers.
-- Phase 2D accounting reports requirement lock is complete, and Chunk 2D-2 backend report API is implemented:
+- Phase 2D accounting reports requirement lock is complete, and backend report APIs are implemented through Chunk 2D-3:
   - Eight reports defined: General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary.
   - Reports derive from posted VoucherLine records only; no primary report tables.
-  - Backend endpoints implemented for General Ledger, Cash Book, and Bank Book.
+  - Backend endpoints implemented for General Ledger, Cash Book, Bank Book, and Trial Balance.
   - Opening balances through opening journal vouchers.
   - Browser print foundation for reports; PDF/Excel deferred.
   - Implementation plan split into 7 chunks (2D-1 through 2D-7).
-- Still not implemented: Trial Balance API, Income Statement API, Balance Sheet API, Project Summary API, Cost Center Summary API, report UI pages, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
+- Still not implemented: Income Statement API, Balance Sheet API, Project Summary API, Cost Center Summary API, report UI pages, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
 - The next coding phase must be confirmed before implementation.
 
 ## Stack
@@ -163,6 +163,6 @@ Use `pnpm agent:start` for a quick local orientation report.
 
 ## Strict Current Boundary
 
-The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock, and the Phase 2D Chunk 2D-2 backend APIs for General Ledger, Cash Book, and Bank Book. It does not include Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary, report UI pages, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, reversal/correction features, approval workflow, or unconfirmed office roles.
+The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock, the Phase 2D Chunk 2D-2 backend APIs for General Ledger, Cash Book, and Bank Book, and the Phase 2D Chunk 2D-3 backend API for Trial Balance. It does not include Income Statement, Balance Sheet, Project Summary, Cost Center Summary, report UI pages, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, reversal/correction features, approval workflow, or unconfirmed office roles.
 
-The next coding phase must be confirmed before implementation. The proposed next phase is the report engine implementation locked in `docs/requirements/phase-2d-accounting-reports-requirement-lock.md`.
+The next recommended task is Chunk 2D-3 backend Trial Balance API review before starting Chunk 2D-4 Income Statement and Balance Sheet API.

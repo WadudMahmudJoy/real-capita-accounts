@@ -259,7 +259,7 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 - Dashboard analytics.
 - Voucher screens, journals, posting, or transaction workflows (locked in Phase 2B docs only).
-- Report frontend pages, Trial Balance, financial statements, project/cost-center summaries, or report print layouts.
+- Report frontend pages, financial statements, project/cost-center summaries, or report print layouts.
 - Payroll, salary sheets, HR, CRM, party, customer, or vendor modules.
 - File uploads.
 - Business seed data.
