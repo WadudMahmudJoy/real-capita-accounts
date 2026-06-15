@@ -6,13 +6,13 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2E: MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is implemented: `MFS` exists as a separate cash/bank-equivalent account type, `MfsProvider` is modeled, and nullable MFS metadata fields exist on `CashBankAccount`. MFS runtime is still incomplete: no MFS account API validation, no MFS frontend page, no MFS Book report, and no voucher posting behavior change exist yet.
+Phase 2E: MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are implemented: the backend Cash & Bank account API can manage MFS accounts with provider and wallet metadata. MFS runtime is still incomplete: no frontend MFS account page, no MFS Book report, and no MFS voucher posting support exist yet.
 
 Phase 2D is accepted at commit `be482c2`. The `phase-2d-complete` tag should exist. Phase 2D added backend report APIs for Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, and Balance Sheet; frontend report pages for all six reports; and a browser print foundation for all six report pages.
 
 Phase 0 is complete and accepted. Phase 1A adds only authentication, one confirmed role, a protected app shell, project operating documentation, ADRs, and verification scripts.
 
-Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 requirement lock is accepted; Chunk 2E-2 schema/model foundation is implemented.
+Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 requirement lock is accepted; Chunk 2E-2 schema/model foundation is accepted; Chunk 2E-3 backend validation/API changes are implemented.
 
 If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`.
 
@@ -28,9 +28,9 @@ If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` 
 
 ## Strict Current Boundary
 
-Phase 2D accounting reports implementation is complete and accepted. Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. MFS runtime remains incomplete: the current Cash & Bank API still blocks MFS account creation until Phase 2E Chunk 2E-3 backend validation/API work, and there is no MFS Book API, no MFS frontend page, no dashboard/report/export expansion, and no voucher posting behavior change.
+Phase 2D accounting reports implementation is complete and accepted. Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are implemented. MFS runtime remains incomplete: the backend Cash & Bank API can manage MFS accounts, but there is no MFS Book API, no MFS frontend page, no dashboard/report/export expansion, and no MFS voucher posting support.
 
-Do not implement Project Summary, Cost Center Summary, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, business seed data, MFS account API/runtime behavior, MFS voucher posting behavior, MFS Book, or MFS frontend pages until the user confirms the next implementation chunk.
+Do not implement Project Summary, Cost Center Summary, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, business seed data, MFS voucher posting behavior, MFS Book, or MFS frontend pages until the user confirms the next implementation chunk.
 
 ## Confirmed Role Model
 
@@ -131,11 +131,11 @@ Before any new feature work, read:
 - `docs/requirements/phase-2d-accounting-reports-requirement-lock.md`
 - `docs/acceptance/phase-2d-acceptance-criteria.md`
 
-## Phase 2E MFS / bKash Requirement Lock And Schema Foundation
+## Phase 2E MFS / bKash Requirement Lock, Schema Foundation, And Account API
 
 Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at `fdffcfb`. It defines MFS accounting model, provider tracking, wallet/account identity, voucher behavior, MFS Book concept, report impact, validation rules, and acceptance criteria.
 
-Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. The Prisma model now has `CashBankAccountType.MFS`, `MfsProvider` values `BKASH`, `NAGAD`, `ROCKET`, `UPAY`, and `OTHER`, and nullable `CashBankAccount` fields for `provider`, `providerOtherName`, `walletNumber`, and `accountHolderName`. Existing CASH and BANK behavior is preserved. MFS account creation/runtime validation remains blocked until Chunk 2E-3.
+Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. The Prisma model now has `CashBankAccountType.MFS`, `MfsProvider` values `BKASH`, `NAGAD`, `ROCKET`, `UPAY`, and `OTHER`, and nullable `CashBankAccount` fields for `provider`, `providerOtherName`, `walletNumber`, and `accountHolderName`. Phase 2E Chunk 2E-3 backend validation/API changes are implemented: the existing Cash & Bank account API can create, list, update, and deactivate MFS accounts with provider and wallet metadata. Existing CASH and BANK behavior is preserved. No frontend MFS page or MFS Book report exists yet. No MFS voucher posting support was added; voucher posting rejects MFS cash-bank accounts until a later Phase 2E chunk.
 
 Before any MFS implementation, read:
 
@@ -150,11 +150,11 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 1. Start with `docs/ai/START_HERE.md`.
 2. Run `pnpm agent:start`.
-3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2E lock/schema-foundation docs.
+3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2E lock/schema-foundation/account-API docs.
 4. Confirm `git status` is clean before new work.
 5. Continue only inside the current phase boundary.
 6. Update handoff docs before ending the session.
 
 ## Next Phase Guidance
 
-Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. MFS runtime is still incomplete. The next recommended task is Phase 2E Chunk 2E-3 backend validation/API changes, unless review finds issues. Do not start Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS Book, frontend MFS pages, or any new module without explicit user confirmation.
+Phase 2E Chunk 2E-3 backend validation/API changes are implemented. The next recommended task is Phase 2E Chunk 2E-4 frontend MFS account setup UI, unless review finds issues. Do not start Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS Book, MFS voucher posting support, or any new module without explicit user confirmation.

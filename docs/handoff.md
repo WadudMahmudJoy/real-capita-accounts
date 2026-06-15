@@ -2,9 +2,20 @@
 
 ## Current Phase
 
-Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. MFS runtime is still incomplete: no MFS account API validation, no MFS frontend page, no MFS Book report, and no voucher posting behavior change exists yet. Stop before starting the next implementation chunk without explicit user confirmation.
+Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are implemented. The backend Cash & Bank account API can manage MFS accounts. MFS runtime is still incomplete: no MFS frontend page, no MFS Book report, and no MFS voucher posting support exists yet. Stop before starting the next implementation chunk without explicit user confirmation.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation only.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup.
+
+## Phase 2E Chunk 2E-3 Backend Validation / API Changes - completed this session
+
+- Opened the existing guarded `cash-bank-accounts` API to `accountType = MFS` while preserving existing `AuthGuard`, `RolesGuard`, and `ACCOUNTANT` access.
+- Added DTO support for `provider`, `providerOtherName`, `walletNumber`, and `accountHolderName`.
+- Enforced MFS validation: provider is required, wallet number is required, `providerOtherName` is required only for `provider = OTHER`, and non-`OTHER` providers clear `providerOtherName`.
+- CASH and BANK accounts still do not require MFS metadata; MFS-only metadata is cleared server-side on CASH/BANK writes.
+- MFS setup requires a linked ledger account marked `isCashBank` and active. CASH/BANK ledger linkage behavior is otherwise preserved.
+- Existing list/update responses include nullable MFS metadata fields through the existing `CashBankAccount` model response.
+- Added a narrow posting safety block: voucher posting rejects MFS cash-bank accounts so MFS posting support cannot leak in before the planned voucher/report chunks.
+- Cash Book remains CASH-only and Bank Book remains BANK-only. No MFS Book endpoint/page, frontend MFS account page, sidebar/navigation change, report API expansion, provider integration, seed data, or new role was added.
 
 ## Phase 2E Chunk 2E-2 Backend Schema / Model Foundation - completed this session
 
@@ -19,7 +30,7 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 
 ## Next Stop Point
 
-Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. The next recommended task is Phase 2E Chunk 2E-3 backend validation/API changes, unless review finds issues. Do not start MFS Book, frontend MFS pages, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
+Phase 2E Chunk 2E-3 backend validation/API changes are implemented. The next recommended task is Phase 2E Chunk 2E-4 frontend MFS account setup UI, unless review finds issues. Do not start MFS Book, MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
 
 ## Phase 2E MFS / bKash Requirement Lock - completed this session
 
@@ -427,11 +438,10 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2E Chunk 2E-2 backend schema/model foundation is complete. The next recommended task is Phase 2E Chunk 2E-3 backend validation/API changes, unless review finds issues. Do not start MFS Book, frontend MFS pages, Project Summary, Cost Center Summary, dashboard, payroll, parties, uploads, roles, PDF/Excel export, or any new module without explicit user confirmation.
+Phase 2E Chunk 2E-3 backend validation/API changes are complete. The next recommended task is Phase 2E Chunk 2E-4 frontend MFS account setup UI, unless review finds issues. Do not start MFS Book, MFS voucher posting support, Project Summary, Cost Center Summary, dashboard, payroll, parties, uploads, roles, PDF/Excel export, or any new module without explicit user confirmation.
 
 Still not implemented:
 
-- MFS account setup API/runtime validation.
 - MFS frontend account setup page.
 - MFS Book API.
 - MFS Book frontend and print foundation.
@@ -450,21 +460,21 @@ Still not implemented:
 
 ## Last Verification Results
 
-Verification date: 2026-06-15, Phase 2E Chunk 2E-2 backend schema/model foundation.
+Verification date: 2026-06-15, Phase 2E Chunk 2E-3 backend validation/API changes.
 
 - `pnpm prisma:generate`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
-- `pnpm build:web`: passed. The build route list still has no MFS account page and no MFS Book page.
+- `pnpm build:web`: passed. The build route list still has no MFS account setup page and no MFS Book page.
 - `pnpm build:api`: passed.
 - `docker compose config`: passed.
 - `pnpm check:all`: passed.
 - `pnpm doctor`: passed with warnings only that ports 3000 and 4000 were occupied by existing local web/API processes.
-- `pnpm prisma migrate dev --name phase_2e_mfs_schema_foundation`: passed and applied migration `20260615123515_phase_2e_mfs_schema_foundation`.
-- Backend-safe smoke tests against a temporary API on port `4012` passed: `GET /health`, login as `accountant@realcapita.local`, `GET /auth/me`, `GET /cash-bank-accounts`, `GET /vouchers`, Cash Book (`CASH_BOOK` / `CASH`), Bank Book (`BANK_BOOK` / `BANK`), Trial Balance, Income Statement, and Balance Sheet.
-- Confirmed `POST /cash-bank-accounts` with `accountType = MFS` returns 400 in this chunk and remains deferred to 2E-3.
-- Confirmed `GET /reports/mfs-book` returns 404 and `apps/web/src/app/app/reports/mfs-book/page.tsx` does not exist.
-- No MFS Book endpoint/page, frontend MFS account page, sidebar/navigation change, voucher posting behavior change, report API expansion, dashboard/report/export expansion, MFS provider integration, seed data, new role, Project Summary, Cost Center Summary, payroll, parties/customers/vendors, uploads, or old ERP code was added.
+- Disposable database smoke used `real_capita_accounts_smoke_2e3` and a temporary API on port `4015`; migrations applied cleanly with `pnpm exec prisma migrate deploy`, seed passed, the API was stopped, and the smoke database was dropped afterwards.
+- Backend-safe smoke tests passed: unauthenticated `GET /cash-bank-accounts` returned 401; login as `accountant@realcapita.local` succeeded; CASH and BANK account create/list/update/deactivate still worked; CASH/BANK writes cleared MFS-only metadata; MFS create with `BKASH` and dummy wallet id succeeded; MFS create missing provider returned 400; MFS create missing wallet returned 400; `OTHER` provider without `providerOtherName` returned 400; MFS update/deactivate worked; `GET /cash-bank-accounts` returned MFS metadata.
+- Voucher/report smoke passed: existing CASH voucher create/post succeeded; existing BANK voucher create/post succeeded; a draft MFS voucher could be created but posting returned 400 because MFS posting support is intentionally deferred; Cash Book returned `CASH_BOOK` / `CASH`; Bank Book returned `BANK_BOOK` / `BANK`; Trial Balance, Income Statement, and Balance Sheet returned normally; `GET /reports/mfs-book` returned 404.
+- Confirmed `apps/web/src/app/app/reports/mfs-book/page.tsx` and `apps/web/src/app/app/mfs` do not exist.
+- No MFS Book endpoint/page, frontend MFS account page, sidebar/navigation change, report API expansion, dashboard/report/export expansion, MFS provider integration, seed data, new role, Project Summary, Cost Center Summary, payroll, parties/customers/vendors, uploads, or old ERP code was added.
 
 ## Current GitHub Repository
 

@@ -1,5 +1,5 @@
 import { IsBoolean, IsEnum, IsOptional, IsString, MinLength } from "class-validator";
-import { CashBankAccountType } from "../../generated/prisma/client";
+import { CashBankAccountType, MfsProvider } from "../../generated/prisma/client";
 import { Trim } from "../../common/dto-transforms";
 
 export class UpdateCashBankAccountDto {
@@ -33,6 +33,25 @@ export class UpdateCashBankAccountDto {
   @IsString()
   @Trim()
   accountNumber?: string;
+
+  @IsOptional()
+  @IsEnum(MfsProvider)
+  provider?: MfsProvider | null;
+
+  @IsOptional()
+  @IsString()
+  @Trim()
+  providerOtherName?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Trim()
+  walletNumber?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Trim()
+  accountHolderName?: string | null;
 
   @IsOptional()
   @IsBoolean()

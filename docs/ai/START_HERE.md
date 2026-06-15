@@ -16,7 +16,9 @@ Phase 2D accounting reports implementation is complete and accepted. All six bac
 
 Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`.
 
-Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. The Prisma schema now models `CashBankAccountType.MFS`, the `MfsProvider` enum (`BKASH`, `NAGAD`, `ROCKET`, `UPAY`, `OTHER`), and nullable MFS metadata on `CashBankAccount` (`provider`, `providerOtherName`, `walletNumber`, `accountHolderName`). MFS runtime is still incomplete: no MFS account API validation, no MFS frontend page, no MFS Book report, and no voucher posting behavior change exists yet.
+Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. The Prisma schema now models `CashBankAccountType.MFS`, the `MfsProvider` enum (`BKASH`, `NAGAD`, `ROCKET`, `UPAY`, `OTHER`), and nullable MFS metadata on `CashBankAccount` (`provider`, `providerOtherName`, `walletNumber`, `accountHolderName`).
+
+Phase 2E Chunk 2E-3 backend validation/API changes are implemented. The backend Cash & Bank account API can create, list, update, and deactivate MFS accounts with provider and wallet metadata. MFS runtime is still incomplete: no MFS frontend page, no MFS Book report, and no MFS voucher posting support exists yet. Voucher posting rejects MFS cash-bank accounts until a later Phase 2E chunk.
 
 The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represents AGM sir as the main accounting operator for now. Do not add other roles until Real Capita confirms exact responsibilities.
 
@@ -71,4 +73,4 @@ Do not rely on hidden chat memory. Reconstruct state from this repo:
 4. Check `git status --short --branch`.
 5. Continue only from documented requirements.
 
-If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md` and `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md` before coding. The next recommended task is Phase 2E Chunk 2E-3 backend validation/API changes, unless review finds issues; do not start MFS Book or frontend MFS pages in 2E-3.
+If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md` and `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md` before coding. The next recommended task is Phase 2E Chunk 2E-4 frontend MFS account setup UI, unless review finds issues; do not start MFS Book or MFS voucher posting support in 2E-4.

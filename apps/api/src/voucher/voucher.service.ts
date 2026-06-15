@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import {
   AccountingPeriodStatus,
+  CashBankAccountType,
   Prisma,
   VoucherStatus,
   type VoucherType,
@@ -666,6 +667,12 @@ export class VoucherService {
 
       if (!line.cashBankAccount.isActive) {
         throw new BadRequestException(`${label}: cash/bank account is not active.`);
+      }
+
+      if (line.cashBankAccount.accountType === CashBankAccountType.MFS) {
+        throw new BadRequestException(
+          `${label}: MFS voucher posting is deferred to a later Phase 2E chunk.`,
+        );
       }
 
       if (!line.ledgerAccount.isCashBank) {
