@@ -8,6 +8,7 @@ import { CostCenterModule } from "./cost-center/cost-center.module";
 import { FiscalYearModule } from "./fiscal-year/fiscal-year.module";
 import { HealthController } from "./health.controller";
 import { ProjectModule } from "./project/project.module";
+import { ReportModule } from "./report/report.module";
 import { VoucherModule } from "./voucher/voucher.module";
 
 @Module({
@@ -21,6 +22,7 @@ import { VoucherModule } from "./voucher/voucher.module";
     AccountingModule,
     CashBankModule,
     VoucherModule,
+    ReportModule,
   ],
   controllers: [HealthController],
 })

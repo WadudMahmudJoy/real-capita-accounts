@@ -1,0 +1,842 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import {
+  CashBankAccountType,
+  NormalBalanceSide,
+  Prisma,
+  VoucherLineSide,
+  VoucherStatus,
+} from "../generated/prisma/client";
+import { parseIsoDate } from "../common/date-rules";
+import { PrismaService } from "../prisma/prisma.service";
+import { ReportQueryDto } from "./dto/report-query.dto";
+
+type FiscalYearSummary = {
+  id: string;
+  name: string;
+  startDate: Date;
+  endDate: Date;
+  company: {
+    id: string;
+    name: string;
+    legalName: string | null;
+    currency: string;
+  };
+};
+
+type AccountingPeriodSummary = {
+  id: string;
+  fiscalYearId: string;
+  name: string;
+  startDate: Date;
+  endDate: Date;
+  status: string;
+};
+
+type ProjectSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+type CostCenterSummary = {
+  id: string;
+  projectId: string;
+  code: string;
+  name: string;
+  project: ProjectSummary;
+};
+
+type ReportContext = {
+  fiscalYear: FiscalYearSummary;
+  accountingPeriod: AccountingPeriodSummary | null;
+  dateRange: {
+    startDate: Date;
+    endDate: Date;
+  };
+  project: ProjectSummary | null;
+  costCenter: CostCenterSummary | null;
+};
+
+type BalanceSummary = {
+  debit: string;
+  credit: string;
+  signedAmount: string;
+  balanceSide: NormalBalanceSide;
+};
+
+type ReportType = "LEDGER" | "CASH_BOOK" | "BANK_BOOK";
+
+const ZERO = new Prisma.Decimal(0);
+
+@Injectable()
+export class ReportService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getLedger(query: ReportQueryDto) {
+    if (!query.ledgerAccountId) {
+      throw new BadRequestException(
+        "ledgerAccountId is required for the ledger report.",
+      );
+    }
+
+    const context = await this.resolveReportContext(query);
+    const ledgerAccount = await this.findLedgerAccount(query.ledgerAccountId);
+    const baseWhere = this.buildLineFilter(query, {
+      ledgerAccountId: ledgerAccount.id,
+    });
+    const openingTotals = await this.sumDebitCredit(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "opening"),
+    );
+    const periodTotals = await this.sumDebitCredit(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "period"),
+    );
+    const openingSigned = this.signedBalance(
+      openingTotals.debit,
+      openingTotals.credit,
+      ledgerAccount.normalBalance,
+    );
+    const periodSigned = this.signedBalance(
+      periodTotals.debit,
+      periodTotals.credit,
+      ledgerAccount.normalBalance,
+    );
+    const closingSigned = openingSigned.plus(periodSigned);
+    const lines = await this.findReportLines(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "period"),
+    );
+    let runningBalance = openingSigned;
+
+    return {
+      reportType: "LEDGER" satisfies ReportType,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      ledgerAccount: {
+        id: ledgerAccount.id,
+        code: ledgerAccount.code,
+        name: ledgerAccount.name,
+        normalBalance: ledgerAccount.normalBalance,
+        isActive: ledgerAccount.isActive,
+        accountGroup: {
+          id: ledgerAccount.accountGroup.id,
+          code: ledgerAccount.accountGroup.code,
+          name: ledgerAccount.accountGroup.name,
+          accountClass: {
+            id: ledgerAccount.accountGroup.accountClass.id,
+            code: ledgerAccount.accountGroup.accountClass.code,
+            name: ledgerAccount.accountGroup.accountClass.name,
+            normalBalance: ledgerAccount.accountGroup.accountClass.normalBalance,
+          },
+        },
+      },
+      filters: this.summarizeFilters(context),
+      openingBalance: this.formatBalance(
+        openingSigned,
+        ledgerAccount.normalBalance,
+      ),
+      periodDebit: this.toMoney(periodTotals.debit),
+      periodCredit: this.toMoney(periodTotals.credit),
+      closingBalance: this.formatBalance(
+        closingSigned,
+        ledgerAccount.normalBalance,
+      ),
+      lines: lines.map((line) => {
+        runningBalance = runningBalance.plus(
+          this.signedLineMovement(
+            line.side,
+            line.amount,
+            ledgerAccount.normalBalance,
+          ),
+        );
+
+        return {
+          id: line.id,
+          voucherDate: this.formatDate(line.voucher.voucherDate),
+          systemVoucherNo: line.voucher.systemVoucherNo,
+          voucherType: line.voucher.voucherType,
+          narration: line.voucher.narration,
+          lineNo: line.lineNo,
+          lineDescription: line.description,
+          debit: this.toMoney(
+            line.side === VoucherLineSide.DEBIT ? line.amount : ZERO,
+          ),
+          credit: this.toMoney(
+            line.side === VoucherLineSide.CREDIT ? line.amount : ZERO,
+          ),
+          runningBalance: this.formatBalance(
+            runningBalance,
+            ledgerAccount.normalBalance,
+          ),
+          project: line.project ? this.summarizeProject(line.project) : null,
+          costCenter: line.costCenter
+            ? this.summarizeLineCostCenter(line.costCenter)
+            : null,
+          cashBankAccount: line.cashBankAccount
+            ? this.summarizeCashBankAccount(line.cashBankAccount)
+            : null,
+        };
+      }),
+    };
+  }
+
+  getCashBook(query: ReportQueryDto) {
+    return this.getCashBankBook(
+      query,
+      CashBankAccountType.CASH,
+      "CASH_BOOK",
+    );
+  }
+
+  getBankBook(query: ReportQueryDto) {
+    return this.getCashBankBook(
+      query,
+      CashBankAccountType.BANK,
+      "BANK_BOOK",
+    );
+  }
+
+  private async getCashBankBook(
+    query: ReportQueryDto,
+    accountType: CashBankAccountType,
+    reportType: Extract<ReportType, "CASH_BOOK" | "BANK_BOOK">,
+  ) {
+    const context = await this.resolveReportContext(query);
+    const { cashBankAccount, ledgerAccount } =
+      await this.validateCashBankBookFilters(query, accountType);
+    const baseWhere = this.buildLineFilter(query, {
+      cashBankAccountId: cashBankAccount?.id,
+      cashBankAccountType: accountType,
+      ledgerAccountId: ledgerAccount?.id,
+      requireCashBankLedger: true,
+    });
+    const openingTotals = await this.sumDebitCredit(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "opening"),
+    );
+    const periodTotals = await this.sumDebitCredit(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "period"),
+    );
+    const openingSigned = openingTotals.debit.minus(openingTotals.credit);
+    const closingSigned = openingSigned
+      .plus(periodTotals.debit)
+      .minus(periodTotals.credit);
+    const lines = await this.findReportLines(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "period"),
+    );
+    let runningBalance = openingSigned;
+
+    return {
+      reportType,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      accountType,
+      cashBankAccount: cashBankAccount
+        ? this.summarizeCashBankAccount(cashBankAccount)
+        : null,
+      filters: {
+        ...this.summarizeFilters(context),
+        ledgerAccount: ledgerAccount
+          ? this.summarizeLedgerAccount(ledgerAccount)
+          : null,
+      },
+      openingBalance: this.formatBalance(
+        openingSigned,
+        NormalBalanceSide.DEBIT,
+      ),
+      periodDebit: this.toMoney(periodTotals.debit),
+      periodCredit: this.toMoney(periodTotals.credit),
+      closingBalance: this.formatBalance(
+        closingSigned,
+        NormalBalanceSide.DEBIT,
+      ),
+      lines: lines.map((line) => {
+        runningBalance = runningBalance.plus(
+          line.side === VoucherLineSide.DEBIT
+            ? line.amount
+            : line.amount.negated(),
+        );
+
+        return {
+          id: line.id,
+          voucherDate: this.formatDate(line.voucher.voucherDate),
+          systemVoucherNo: line.voucher.systemVoucherNo,
+          voucherType: line.voucher.voucherType,
+          narration: line.voucher.narration,
+          cashBankAccount: line.cashBankAccount
+            ? this.summarizeCashBankAccount(line.cashBankAccount)
+            : null,
+          ledgerAccount: this.summarizeLedgerAccount(line.ledgerAccount),
+          oppositeAccounts: line.voucher.lines
+            .filter((voucherLine) => voucherLine.id !== line.id)
+            .map((voucherLine) => ({
+              id: voucherLine.id,
+              ledgerAccount: this.summarizeLedgerAccount(
+                voucherLine.ledgerAccount,
+              ),
+              side: voucherLine.side,
+              amount: this.toMoney(voucherLine.amount),
+            })),
+          description: line.description,
+          debit: this.toMoney(
+            line.side === VoucherLineSide.DEBIT ? line.amount : ZERO,
+          ),
+          credit: this.toMoney(
+            line.side === VoucherLineSide.CREDIT ? line.amount : ZERO,
+          ),
+          runningBalance: this.formatBalance(
+            runningBalance,
+            NormalBalanceSide.DEBIT,
+          ),
+          project: line.project ? this.summarizeProject(line.project) : null,
+          costCenter: line.costCenter
+            ? this.summarizeLineCostCenter(line.costCenter)
+            : null,
+        };
+      }),
+    };
+  }
+
+  private async resolveReportContext(
+    query: ReportQueryDto,
+  ): Promise<ReportContext> {
+    const fiscalYear = await this.prisma.fiscalYear.findUnique({
+      include: { company: true },
+      where: { id: query.fiscalYearId },
+    });
+
+    if (!fiscalYear) {
+      throw new NotFoundException("Fiscal year was not found.");
+    }
+
+    const accountingPeriod = query.accountingPeriodId
+      ? await this.prisma.accountingPeriod.findUnique({
+          where: { id: query.accountingPeriodId },
+        })
+      : null;
+
+    if (query.accountingPeriodId && !accountingPeriod) {
+      throw new NotFoundException("Accounting period was not found.");
+    }
+
+    if (accountingPeriod && accountingPeriod.fiscalYearId !== fiscalYear.id) {
+      throw new BadRequestException(
+        "Accounting period does not belong to the selected fiscal year.",
+      );
+    }
+
+    const hasStartDate = query.startDate !== undefined;
+    const hasEndDate = query.endDate !== undefined;
+
+    if (hasStartDate !== hasEndDate) {
+      throw new BadRequestException(
+        "Both startDate and endDate are required for a custom report date range.",
+      );
+    }
+
+    const dateRange =
+      hasStartDate && hasEndDate
+        ? {
+            startDate: parseIsoDate(query.startDate!, "startDate"),
+            endDate: parseIsoDate(query.endDate!, "endDate"),
+          }
+        : accountingPeriod
+          ? {
+              startDate: accountingPeriod.startDate,
+              endDate: accountingPeriod.endDate,
+            }
+          : {
+              startDate: fiscalYear.startDate,
+              endDate: fiscalYear.endDate,
+            };
+
+    if (dateRange.startDate > dateRange.endDate) {
+      throw new BadRequestException("startDate must be on or before endDate.");
+    }
+
+    if (
+      dateRange.startDate < fiscalYear.startDate ||
+      dateRange.endDate > fiscalYear.endDate
+    ) {
+      throw new BadRequestException(
+        "Report date range must fall inside the fiscal year date range.",
+      );
+    }
+
+    if (
+      accountingPeriod &&
+      (dateRange.startDate < accountingPeriod.startDate ||
+        dateRange.endDate > accountingPeriod.endDate)
+    ) {
+      throw new BadRequestException(
+        "Report date range must fall inside the selected accounting period date range.",
+      );
+    }
+
+    const project = query.projectId
+      ? await this.prisma.project.findUnique({
+          select: { code: true, id: true, name: true },
+          where: { id: query.projectId },
+        })
+      : null;
+
+    if (query.projectId && !project) {
+      throw new NotFoundException("Project was not found.");
+    }
+
+    const costCenter = query.costCenterId
+      ? await this.prisma.costCenter.findUnique({
+          include: {
+            project: { select: { code: true, id: true, name: true } },
+          },
+          where: { id: query.costCenterId },
+        })
+      : null;
+
+    if (query.costCenterId && !costCenter) {
+      throw new NotFoundException("Cost center was not found.");
+    }
+
+    if (project && costCenter && costCenter.projectId !== project.id) {
+      throw new BadRequestException(
+        "Cost center must belong to the selected project.",
+      );
+    }
+
+    return {
+      accountingPeriod,
+      costCenter,
+      dateRange,
+      fiscalYear,
+      project,
+    };
+  }
+
+  private async findLedgerAccount(id: string) {
+    const ledgerAccount = await this.prisma.ledgerAccount.findUnique({
+      include: {
+        accountGroup: {
+          include: { accountClass: true },
+        },
+      },
+      where: { id },
+    });
+
+    if (!ledgerAccount) {
+      throw new NotFoundException("Ledger account was not found.");
+    }
+
+    return ledgerAccount;
+  }
+
+  private async validateCashBankBookFilters(
+    query: ReportQueryDto,
+    expectedType: CashBankAccountType,
+  ) {
+    const [cashBankAccount, ledgerAccount] = await Promise.all([
+      query.cashBankAccountId
+        ? this.prisma.cashBankAccount.findUnique({
+            include: {
+              ledgerAccount: {
+                include: {
+                  accountGroup: {
+                    include: { accountClass: true },
+                  },
+                },
+              },
+            },
+            where: { id: query.cashBankAccountId },
+          })
+        : Promise.resolve(null),
+      query.ledgerAccountId
+        ? this.prisma.ledgerAccount.findUnique({
+            include: {
+              accountGroup: {
+                include: { accountClass: true },
+              },
+              cashBankAccounts: true,
+            },
+            where: { id: query.ledgerAccountId },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    if (query.cashBankAccountId && !cashBankAccount) {
+      throw new NotFoundException("Cash/bank account was not found.");
+    }
+
+    if (query.ledgerAccountId && !ledgerAccount) {
+      throw new NotFoundException("Ledger account was not found.");
+    }
+
+    if (cashBankAccount && cashBankAccount.accountType !== expectedType) {
+      throw new BadRequestException(
+        `Cash/bank account must be ${expectedType} type for this report.`,
+      );
+    }
+
+    if (ledgerAccount) {
+      if (!ledgerAccount.isCashBank) {
+        throw new BadRequestException(
+          "Ledger account must be marked as cash/bank for this report.",
+        );
+      }
+
+      if (
+        !ledgerAccount.cashBankAccounts.some(
+          (account) => account.accountType === expectedType,
+        )
+      ) {
+        throw new BadRequestException(
+          `Ledger account is not linked to a ${expectedType} cash/bank account.`,
+        );
+      }
+    }
+
+    if (
+      cashBankAccount &&
+      ledgerAccount &&
+      cashBankAccount.ledgerAccountId !== ledgerAccount.id
+    ) {
+      throw new BadRequestException(
+        "cashBankAccountId must belong to the selected ledgerAccountId.",
+      );
+    }
+
+    return { cashBankAccount, ledgerAccount };
+  }
+
+  private buildLineFilter(
+    query: ReportQueryDto,
+    options: {
+      cashBankAccountId?: string;
+      cashBankAccountType?: CashBankAccountType;
+      ledgerAccountId?: string;
+      requireCashBankLedger?: boolean;
+    },
+  ): Prisma.VoucherLineWhereInput {
+    return {
+      ...(options.ledgerAccountId
+        ? { ledgerAccountId: options.ledgerAccountId }
+        : {}),
+      ...(query.projectId ? { projectId: query.projectId } : {}),
+      ...(query.costCenterId ? { costCenterId: query.costCenterId } : {}),
+      ...(options.cashBankAccountId
+        ? { cashBankAccountId: options.cashBankAccountId }
+        : {}),
+      ...(options.cashBankAccountType
+        ? {
+            cashBankAccount: {
+              is: { accountType: options.cashBankAccountType },
+            },
+          }
+        : {}),
+      ...(options.requireCashBankLedger
+        ? {
+            ledgerAccount: {
+              is: { isCashBank: true },
+            },
+          }
+        : {}),
+    };
+  }
+
+  private buildVoucherDateFilter(
+    context: ReportContext,
+    mode: "opening" | "period",
+  ): Prisma.VoucherWhereInput {
+    return {
+      fiscalYearId: context.fiscalYear.id,
+      isDeleted: false,
+      status: VoucherStatus.POSTED,
+      voucherDate:
+        mode === "opening"
+          ? {
+              gte: context.fiscalYear.startDate,
+              lt: context.dateRange.startDate,
+            }
+          : {
+              gte: context.dateRange.startDate,
+              lte: context.dateRange.endDate,
+            },
+      ...(mode === "period" && context.accountingPeriod
+        ? { accountingPeriodId: context.accountingPeriod.id }
+        : {}),
+    };
+  }
+
+  private async sumDebitCredit(
+    lineWhere: Prisma.VoucherLineWhereInput,
+    voucherWhere: Prisma.VoucherWhereInput,
+  ) {
+    const [debit, credit] = await Promise.all([
+      this.sumAmount({
+        ...lineWhere,
+        side: VoucherLineSide.DEBIT,
+        voucher: voucherWhere,
+      }),
+      this.sumAmount({
+        ...lineWhere,
+        side: VoucherLineSide.CREDIT,
+        voucher: voucherWhere,
+      }),
+    ]);
+
+    return { credit, debit };
+  }
+
+  private async sumAmount(where: Prisma.VoucherLineWhereInput) {
+    const result = await this.prisma.voucherLine.aggregate({
+      _sum: { amount: true },
+      where,
+    });
+
+    return result._sum.amount ?? ZERO;
+  }
+
+  private async findReportLines(
+    lineWhere: Prisma.VoucherLineWhereInput,
+    voucherWhere: Prisma.VoucherWhereInput,
+  ) {
+    const lines = await this.prisma.voucherLine.findMany({
+      include: {
+        cashBankAccount: {
+          include: {
+            ledgerAccount: {
+              include: {
+                accountGroup: {
+                  include: { accountClass: true },
+                },
+              },
+            },
+          },
+        },
+        costCenter: {
+          include: {
+            project: { select: { code: true, id: true, name: true } },
+          },
+        },
+        ledgerAccount: {
+          include: {
+            accountGroup: {
+              include: { accountClass: true },
+            },
+          },
+        },
+        project: true,
+        voucher: {
+          include: {
+            lines: {
+              include: {
+                ledgerAccount: {
+                  include: {
+                    accountGroup: {
+                      include: { accountClass: true },
+                    },
+                  },
+                },
+              },
+              orderBy: [{ lineNo: "asc" }, { id: "asc" }],
+            },
+          },
+        },
+      },
+      where: {
+        ...lineWhere,
+        voucher: voucherWhere,
+      },
+    });
+
+    return lines.sort((left, right) => {
+      const byDate =
+        left.voucher.voucherDate.getTime() - right.voucher.voucherDate.getTime();
+
+      if (byDate !== 0) {
+        return byDate;
+      }
+
+      const byVoucherNo = left.voucher.systemVoucherNo.localeCompare(
+        right.voucher.systemVoucherNo,
+      );
+
+      if (byVoucherNo !== 0) {
+        return byVoucherNo;
+      }
+
+      if (left.lineNo !== right.lineNo) {
+        return left.lineNo - right.lineNo;
+      }
+
+      return left.id.localeCompare(right.id);
+    });
+  }
+
+  private signedLineMovement(
+    side: VoucherLineSide,
+    amount: Prisma.Decimal,
+    normalBalance: NormalBalanceSide,
+  ) {
+    if (normalBalance === NormalBalanceSide.DEBIT) {
+      return side === VoucherLineSide.DEBIT ? amount : amount.negated();
+    }
+
+    return side === VoucherLineSide.CREDIT ? amount : amount.negated();
+  }
+
+  private signedBalance(
+    debit: Prisma.Decimal,
+    credit: Prisma.Decimal,
+    normalBalance: NormalBalanceSide,
+  ) {
+    return normalBalance === NormalBalanceSide.DEBIT
+      ? debit.minus(credit)
+      : credit.minus(debit);
+  }
+
+  private formatBalance(
+    signedAmount: Prisma.Decimal,
+    normalBalance: NormalBalanceSide,
+  ): BalanceSummary {
+    const balanceSide = signedAmount.isNegative()
+      ? this.oppositeBalanceSide(normalBalance)
+      : normalBalance;
+    const amount = signedAmount.abs();
+
+    return {
+      balanceSide,
+      credit:
+        balanceSide === NormalBalanceSide.CREDIT
+          ? this.toMoney(amount)
+          : this.toMoney(ZERO),
+      debit:
+        balanceSide === NormalBalanceSide.DEBIT
+          ? this.toMoney(amount)
+          : this.toMoney(ZERO),
+      signedAmount: this.toMoney(signedAmount),
+    };
+  }
+
+  private oppositeBalanceSide(normalBalance: NormalBalanceSide) {
+    return normalBalance === NormalBalanceSide.DEBIT
+      ? NormalBalanceSide.CREDIT
+      : NormalBalanceSide.DEBIT;
+  }
+
+  private summarizeFilters(context: ReportContext) {
+    return {
+      costCenter: context.costCenter
+        ? this.summarizeCostCenter(context.costCenter)
+        : null,
+      project: context.project ? this.summarizeProject(context.project) : null,
+    };
+  }
+
+  private summarizeFiscalYear(fiscalYear: FiscalYearSummary) {
+    return {
+      company: fiscalYear.company,
+      endDate: this.formatDate(fiscalYear.endDate),
+      id: fiscalYear.id,
+      name: fiscalYear.name,
+      startDate: this.formatDate(fiscalYear.startDate),
+    };
+  }
+
+  private summarizeAccountingPeriod(period: AccountingPeriodSummary) {
+    return {
+      endDate: this.formatDate(period.endDate),
+      id: period.id,
+      name: period.name,
+      startDate: this.formatDate(period.startDate),
+      status: period.status,
+    };
+  }
+
+  private summarizeDateRange(dateRange: ReportContext["dateRange"]) {
+    return {
+      endDate: this.formatDate(dateRange.endDate),
+      startDate: this.formatDate(dateRange.startDate),
+    };
+  }
+
+  private summarizeProject(project: ProjectSummary) {
+    return {
+      code: project.code,
+      id: project.id,
+      name: project.name,
+    };
+  }
+
+  private summarizeCostCenter(costCenter: CostCenterSummary) {
+    return {
+      code: costCenter.code,
+      id: costCenter.id,
+      name: costCenter.name,
+      project: this.summarizeProject(costCenter.project),
+    };
+  }
+
+  private summarizeLineCostCenter(
+    costCenter: CostCenterSummary | (CostCenterSummary & { project: ProjectSummary }),
+  ) {
+    return this.summarizeCostCenter(costCenter);
+  }
+
+  private summarizeLedgerAccount(ledgerAccount: {
+    id: string;
+    code: string;
+    name: string;
+    normalBalance: NormalBalanceSide;
+    isActive: boolean;
+  }) {
+    return {
+      code: ledgerAccount.code,
+      id: ledgerAccount.id,
+      isActive: ledgerAccount.isActive,
+      name: ledgerAccount.name,
+      normalBalance: ledgerAccount.normalBalance,
+    };
+  }
+
+  private summarizeCashBankAccount(cashBankAccount: {
+    id: string;
+    displayName: string;
+    accountType: CashBankAccountType;
+    ledgerAccountId: string;
+    bankName: string | null;
+    branch: string | null;
+    accountNumber: string | null;
+    isActive: boolean;
+  }) {
+    return {
+      accountNumber: cashBankAccount.accountNumber,
+      accountType: cashBankAccount.accountType,
+      bankName: cashBankAccount.bankName,
+      branch: cashBankAccount.branch,
+      displayName: cashBankAccount.displayName,
+      id: cashBankAccount.id,
+      isActive: cashBankAccount.isActive,
+      ledgerAccountId: cashBankAccount.ledgerAccountId,
+    };
+  }
+
+  private formatDate(date: Date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  private toMoney(value: Prisma.Decimal | number | string) {
+    return new Prisma.Decimal(value).toFixed(2);
+  }
+}

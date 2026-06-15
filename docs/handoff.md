@@ -2,9 +2,31 @@
 
 ## Current Phase
 
-Phase 2D: accounting reports requirement lock reviewed (Chunk 2D-1 complete). No implementation yet.
+Phase 2D: backend ledger/cash-book/bank-book report API complete (Chunk 2D-2 complete). Stop for backend API review before Trial Balance.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locks accounting report requirements before any report implementation.
+
+## Phase 2D Chunk 2D-2 Backend Ledger/Cash-Book/Bank-Book API - completed this session
+
+- Added `apps/api/src/report/report.module.ts`, `apps/api/src/report/report.controller.ts`, `apps/api/src/report/report.service.ts`, and `apps/api/src/report/dto/report-query.dto.ts`.
+- Registered `ReportModule` in `apps/api/src/app.module.ts`.
+- Added guarded backend endpoints:
+  - `GET /reports/ledger`: General Ledger / Ledger Statement for one required `ledgerAccountId`.
+  - `GET /reports/cash-book`: Cash Book for cash-type cash/bank posted voucher lines.
+  - `GET /reports/bank-book`: Bank Book for bank-type cash/bank posted voucher lines.
+- All report routes use the existing class-level `AuthGuard` + `RolesGuard` + `ACCOUNTANT` pattern.
+- Reports are derived only from `VoucherLine` rows attached to `Voucher.status = POSTED` and `Voucher.isDeleted = false`.
+- Shared query behavior supports required `fiscalYearId`, optional `accountingPeriodId`, optional `startDate`/`endDate`, optional `projectId`, optional `costCenterId`, optional `ledgerAccountId`, and optional `cashBankAccountId`.
+- Date range behavior: accounting period date range is used when selected without custom dates; custom ranges require both dates, must have `startDate <= endDate`, must fit inside the selected fiscal year, and must also fit inside the selected accounting period when one is supplied.
+- Ledger report returns fiscal year, optional accounting period, date range, ledger account summary with account group/class, filters, opening balance, period debit/credit, closing balance, ordered lines, and normal-balance-aware running balances.
+- Cash Book and Bank Book return fiscal year, optional accounting period, date range, account/filter summaries, opening balance, period debit/credit, closing balance, ordered lines, opposite accounts, and debit-minus-credit running balances.
+- No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Trial Balance, Income Statement, or Balance Sheet implementation were added.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:api`, `pnpm build:web`, `docker compose config`, `pnpm check:all`, and `pnpm doctor` (doctor warnings only for ports 4000 and 3000 already occupied by local processes).
+- Manual API smoke tests passed against `http://localhost:4000`: unauthenticated `GET /reports/ledger` returned 401; login as `accountant@realcapita.local` succeeded; `GET /reports/ledger` returned opening/period/closing totals and lines; `GET /reports/cash-book` returned valid cash-book structure; `GET /reports/bank-book` returned valid bank-book structure; a temporary DRAFT voucher did not affect ledger totals or line count and was cleaned from the local smoke database; invalid date range returned 400; wrong cash/bank account type for cash-book and bank-book returned 400.
+
+## Next Stop Point (2D-2)
+
+Review the Phase 2D-2 backend ledger/cash-book/bank-book report API. The next recommended task is a backend report API review before starting Chunk 2D-3 Trial Balance API.
 
 ## Phase 2D Accounting Reports Requirement Lock - completed this session
 
@@ -26,9 +48,9 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - Updated `docs/handoff.md`: updated current phase header.
 - No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no reports, no dashboard analytics, no payroll, no parties/customers/vendors, no roles, no file uploads, no seed data, and no tooling were added.
 
-## Next Stop Point (2D-1)
+## Previous Stop Point (2D-1)
 
-Review the Phase 2D-1 requirement lock review. The next proposed task is Chunk 2D-2 backend ledger/cash-book/bank-book API, but it must not begin until explicitly confirmed by the user.
+Phase 2D-1 requirement lock review is superseded by the completed Chunk 2D-2 backend report API. See the current 2D-2 stop point above.
 
 ## Phase 2C Chunk 2C-6 Final Integration and Acceptance Review - completed this session
 
