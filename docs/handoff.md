@@ -2,9 +2,27 @@
 
 ## Current Phase
 
-Phase 2D: backend ledger/cash-book/bank-book report API reviewed (Chunk 2D-2 review complete). Stop before Trial Balance.
+Phase 2D: backend Trial Balance report API implemented (Chunk 2D-3 complete). Stop before Income Statement and Balance Sheet.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locks accounting report requirements before any report implementation.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locked accounting report requirements before report implementation.
+
+## Phase 2D Chunk 2D-3 Backend Trial Balance API - completed this session
+
+- Added guarded backend endpoint `GET /reports/trial-balance` in the existing report module.
+- The endpoint uses the existing class-level `AuthGuard` + `RolesGuard` + `ACCOUNTANT` report-route protection.
+- Query behavior uses required `fiscalYearId` and optional `accountingPeriodId`, custom `startDate`/`endDate`, `projectId`, and `costCenterId`. `ledgerAccountId` is not required for Trial Balance.
+- Shared report validation applies: fiscal year existence, accounting-period existence and fiscal-year ownership, paired custom dates, `startDate <= endDate`, date range inside the fiscal year, date range inside the selected accounting period when provided, project and cost-center existence, and cost-center-to-project consistency.
+- Trial Balance derives only from `VoucherLine` rows attached to `Voucher.status = POSTED` and `Voucher.isDeleted = false`.
+- `DRAFT` vouchers, soft-deleted vouchers, and unposted effects do not affect rows or totals.
+- Opening balances use posted movement before the selected start date inside the same fiscal year. Period debit/credit totals show raw selected-range movement. Closing debit/credit uses normal-balance-aware presentation, including opposite-side presentation when an account balance reverses its normal side.
+- The report returns `reportType: "TRIAL_BALANCE"`, fiscal year, optional accounting period, date range, project/cost-center filters, totals (`openingDebit`, `openingCredit`, `periodDebit`, `periodCredit`, `closingDebit`, `closingCredit`, `isBalanced`, `difference`), and ledger-account rows.
+- Empty valid reports return zero totals, `isBalanced: true`, `difference: "0.00"`, and `rows: []`.
+- Existing `GET /reports/ledger`, `GET /reports/cash-book`, and `GET /reports/bank-book` still work after the change.
+- No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Income Statement, Balance Sheet, Project Summary, Cost Center Summary, PDF/Excel export, or report UI were added.
+
+## Next Stop Point (2D-3)
+
+Review Phase 2D-3 backend Trial Balance API. The next recommended task is 2D-3 backend Trial Balance API review before starting Chunk 2D-4 Income Statement and Balance Sheet API.
 
 ## Phase 2D Chunk 2D-2 Backend Report API Review - completed this session
 
@@ -17,9 +35,9 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - Manual API smoke checks passed: unauthenticated ledger returns 401; accountant login works; ledger/cash-book/bank-book return valid structures; posted lines affect totals; temporary draft and soft-deleted draft lines do not affect totals; invalid date range, invalid fiscal year, invalid accounting period, period/fiscal-year mismatch, period date mismatch, project/cost-center mismatch, and wrong cash/bank account type return clear 400/404 responses; valid empty ledger returns zero totals and empty lines.
 - No backend source fixes were needed. Stale project docs were corrected where older sections still said report APIs were not implemented.
 
-## Next Stop Point (2D-2 Review)
+## Previous Stop Point (2D-2 Review)
 
-Review Phase 2D-2 backend report API review results. The next recommended task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API.
+Phase 2D-2 backend report API review is superseded by the completed Chunk 2D-3 backend Trial Balance API. See the current 2D-3 stop point above.
 
 ## Phase 2D Chunk 2D-2 Backend Ledger/Cash-Book/Bank-Book API - completed this session
 
@@ -251,11 +269,10 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API review is complete. The next task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API.
+Phase 2D Chunk 2D-3 backend Trial Balance API is complete. The next task is 2D-3 backend Trial Balance API review before starting Chunk 2D-4 Income Statement and Balance Sheet API.
 
 Still not implemented:
 
-- Trial Balance API.
 - Income Statement API.
 - Balance Sheet API.
 - Project Summary API.
@@ -273,13 +290,16 @@ Still not implemented:
 
 ## Last Verification Results
 
-Verification date: 2026-06-15, Phase 2D Chunk 2D-2 backend report API.
+Verification date: 2026-06-15, Phase 2D Chunk 2D-3 backend Trial Balance API.
 
+- `pnpm prisma:generate`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
+- `pnpm build:api`: passed.
+- `pnpm build:web`: passed.
 - `pnpm check:all`: passed.
 - `pnpm doctor`: passed.
-- No Prisma schema changes, no migrations, and no frontend code changes in Phase 2D Chunk 2D-2.
+- No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Income Statement, or Balance Sheet implementation in Phase 2D Chunk 2D-3.
 
 ## Current GitHub Repository
 

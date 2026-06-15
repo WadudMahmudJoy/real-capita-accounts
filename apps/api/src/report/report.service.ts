@@ -68,7 +68,12 @@ type BalanceSummary = {
   balanceSide: NormalBalanceSide;
 };
 
-type ReportType = "LEDGER" | "CASH_BOOK" | "BANK_BOOK";
+type DebitCreditTotals = {
+  debit: Prisma.Decimal;
+  credit: Prisma.Decimal;
+};
+
+type ReportType = "LEDGER" | "CASH_BOOK" | "BANK_BOOK" | "TRIAL_BALANCE";
 
 const ZERO = new Prisma.Decimal(0);
 
@@ -202,6 +207,160 @@ export class ReportService {
       CashBankAccountType.BANK,
       "BANK_BOOK",
     );
+  }
+
+  async getTrialBalance(query: ReportQueryDto) {
+    if (query.ledgerAccountId || query.cashBankAccountId) {
+      throw new BadRequestException(
+        "ledgerAccountId and cashBankAccountId are not supported for the trial balance report.",
+      );
+    }
+
+    const context = await this.resolveReportContext(query);
+    const baseWhere = this.buildLineFilter(query, {});
+    const [openingByLedger, periodByLedger] = await Promise.all([
+      this.sumDebitCreditByLedger(
+        baseWhere,
+        this.buildVoucherDateFilter(context, "opening"),
+      ),
+      this.sumDebitCreditByLedger(
+        baseWhere,
+        this.buildVoucherDateFilter(context, "period"),
+      ),
+    ]);
+    const ledgerAccountIds = [
+      ...new Set([...openingByLedger.keys(), ...periodByLedger.keys()]),
+    ];
+    const ledgerAccounts = ledgerAccountIds.length
+      ? await this.prisma.ledgerAccount.findMany({
+          include: {
+            accountGroup: {
+              include: { accountClass: true },
+            },
+          },
+          where: { id: { in: ledgerAccountIds } },
+        })
+      : [];
+    const rows = ledgerAccounts
+      .map((ledgerAccount) => {
+        const openingTotals = this.getDebitCreditForLedger(
+          openingByLedger,
+          ledgerAccount.id,
+        );
+        const periodTotals = this.getDebitCreditForLedger(
+          periodByLedger,
+          ledgerAccount.id,
+        );
+        const openingSigned = this.signedBalance(
+          openingTotals.debit,
+          openingTotals.credit,
+          ledgerAccount.normalBalance,
+        );
+        const periodSigned = this.signedBalance(
+          periodTotals.debit,
+          periodTotals.credit,
+          ledgerAccount.normalBalance,
+        );
+        const closingSigned = openingSigned.plus(periodSigned);
+        const openingBalance = this.balanceAmounts(
+          openingSigned,
+          ledgerAccount.normalBalance,
+        );
+        const closingBalance = this.balanceAmounts(
+          closingSigned,
+          ledgerAccount.normalBalance,
+        );
+
+        return {
+          closingCredit: closingBalance.credit,
+          closingDebit: closingBalance.debit,
+          closingSigned,
+          ledgerAccount,
+          openingCredit: openingBalance.credit,
+          openingDebit: openingBalance.debit,
+          openingSigned,
+          periodCredit: periodTotals.credit,
+          periodDebit: periodTotals.debit,
+        };
+      })
+      .filter(
+        (row) =>
+          !row.openingSigned.equals(ZERO) ||
+          !row.periodDebit.equals(ZERO) ||
+          !row.periodCredit.equals(ZERO) ||
+          !row.closingSigned.equals(ZERO),
+      )
+      .sort((left, right) =>
+        this.compareTrialBalanceLedgerAccounts(
+          left.ledgerAccount,
+          right.ledgerAccount,
+        ),
+      );
+
+    let openingDebit = ZERO;
+    let openingCredit = ZERO;
+    let periodDebit = ZERO;
+    let periodCredit = ZERO;
+    let closingDebit = ZERO;
+    let closingCredit = ZERO;
+
+    for (const row of rows) {
+      openingDebit = openingDebit.plus(row.openingDebit);
+      openingCredit = openingCredit.plus(row.openingCredit);
+      periodDebit = periodDebit.plus(row.periodDebit);
+      periodCredit = periodCredit.plus(row.periodCredit);
+      closingDebit = closingDebit.plus(row.closingDebit);
+      closingCredit = closingCredit.plus(row.closingCredit);
+    }
+
+    const difference = closingDebit.minus(closingCredit);
+
+    return {
+      reportType: "TRIAL_BALANCE" satisfies ReportType,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      filters: this.summarizeFilters(context),
+      totals: {
+        closingCredit: this.toMoney(closingCredit),
+        closingDebit: this.toMoney(closingDebit),
+        difference: this.toMoney(difference),
+        isBalanced: difference.equals(ZERO),
+        openingCredit: this.toMoney(openingCredit),
+        openingDebit: this.toMoney(openingDebit),
+        periodCredit: this.toMoney(periodCredit),
+        periodDebit: this.toMoney(periodDebit),
+      },
+      rows: rows.map((row) => ({
+        closingCredit: this.toMoney(row.closingCredit),
+        closingDebit: this.toMoney(row.closingDebit),
+        ledgerAccount: {
+          id: row.ledgerAccount.id,
+          code: row.ledgerAccount.code,
+          name: row.ledgerAccount.name,
+          normalBalance: row.ledgerAccount.normalBalance,
+          isActive: row.ledgerAccount.isActive,
+          accountGroup: {
+            id: row.ledgerAccount.accountGroup.id,
+            code: row.ledgerAccount.accountGroup.code,
+            name: row.ledgerAccount.accountGroup.name,
+            accountClass: {
+              id: row.ledgerAccount.accountGroup.accountClass.id,
+              code: row.ledgerAccount.accountGroup.accountClass.code,
+              name: row.ledgerAccount.accountGroup.accountClass.name,
+              normalBalance:
+                row.ledgerAccount.accountGroup.accountClass.normalBalance,
+            },
+          },
+        },
+        openingCredit: this.toMoney(row.openingCredit),
+        openingDebit: this.toMoney(row.openingDebit),
+        periodCredit: this.toMoney(row.periodCredit),
+        periodDebit: this.toMoney(row.periodDebit),
+      })),
+    };
   }
 
   private async getCashBankBook(
@@ -598,6 +757,42 @@ export class ReportService {
     return { credit, debit };
   }
 
+  private async sumDebitCreditByLedger(
+    lineWhere: Prisma.VoucherLineWhereInput,
+    voucherWhere: Prisma.VoucherWhereInput,
+  ): Promise<Map<string, DebitCreditTotals>> {
+    const rows = await this.prisma.voucherLine.groupBy({
+      _sum: { amount: true },
+      by: ["ledgerAccountId", "side"],
+      where: {
+        ...lineWhere,
+        voucher: voucherWhere,
+      },
+    });
+    const totalsByLedger = new Map<string, DebitCreditTotals>();
+
+    for (const row of rows) {
+      const current = this.getDebitCreditForLedger(
+        totalsByLedger,
+        row.ledgerAccountId,
+      );
+      const amount = row._sum.amount ?? ZERO;
+
+      totalsByLedger.set(row.ledgerAccountId, {
+        credit:
+          row.side === VoucherLineSide.CREDIT
+            ? current.credit.plus(amount)
+            : current.credit,
+        debit:
+          row.side === VoucherLineSide.DEBIT
+            ? current.debit.plus(amount)
+            : current.debit,
+      });
+    }
+
+    return totalsByLedger;
+  }
+
   private async sumAmount(where: Prisma.VoucherLineWhereInput) {
     const result = await this.prisma.voucherLine.aggregate({
       _sum: { amount: true },
@@ -710,6 +905,20 @@ export class ReportService {
     signedAmount: Prisma.Decimal,
     normalBalance: NormalBalanceSide,
   ): BalanceSummary {
+    const balance = this.balanceAmounts(signedAmount, normalBalance);
+
+    return {
+      balanceSide: balance.balanceSide,
+      credit: this.toMoney(balance.credit),
+      debit: this.toMoney(balance.debit),
+      signedAmount: this.toMoney(signedAmount),
+    };
+  }
+
+  private balanceAmounts(
+    signedAmount: Prisma.Decimal,
+    normalBalance: NormalBalanceSide,
+  ) {
     const balanceSide = signedAmount.isNegative()
       ? this.oppositeBalanceSide(normalBalance)
       : normalBalance;
@@ -717,22 +926,87 @@ export class ReportService {
 
     return {
       balanceSide,
-      credit:
-        balanceSide === NormalBalanceSide.CREDIT
-          ? this.toMoney(amount)
-          : this.toMoney(ZERO),
-      debit:
-        balanceSide === NormalBalanceSide.DEBIT
-          ? this.toMoney(amount)
-          : this.toMoney(ZERO),
-      signedAmount: this.toMoney(signedAmount),
+      credit: balanceSide === NormalBalanceSide.CREDIT ? amount : ZERO,
+      debit: balanceSide === NormalBalanceSide.DEBIT ? amount : ZERO,
     };
+  }
+
+  private getDebitCreditForLedger(
+    totalsByLedger: Map<string, DebitCreditTotals>,
+    ledgerAccountId: string,
+  ): DebitCreditTotals {
+    return totalsByLedger.get(ledgerAccountId) ?? { credit: ZERO, debit: ZERO };
   }
 
   private oppositeBalanceSide(normalBalance: NormalBalanceSide) {
     return normalBalance === NormalBalanceSide.DEBIT
       ? NormalBalanceSide.CREDIT
       : NormalBalanceSide.DEBIT;
+  }
+
+  private compareTrialBalanceLedgerAccounts(
+    left: {
+      code: string;
+      name: string;
+      accountGroup: {
+        code: string;
+        name: string;
+        accountClass: { code: string };
+      };
+    },
+    right: {
+      code: string;
+      name: string;
+      accountGroup: {
+        code: string;
+        name: string;
+        accountClass: { code: string };
+      };
+    },
+  ) {
+    const byClass =
+      this.accountClassSortKey(left.accountGroup.accountClass.code) -
+      this.accountClassSortKey(right.accountGroup.accountClass.code);
+
+    if (byClass !== 0) {
+      return byClass;
+    }
+
+    const byGroupCode = left.accountGroup.code.localeCompare(
+      right.accountGroup.code,
+    );
+
+    if (byGroupCode !== 0) {
+      return byGroupCode;
+    }
+
+    const byGroupName = left.accountGroup.name.localeCompare(
+      right.accountGroup.name,
+    );
+
+    if (byGroupName !== 0) {
+      return byGroupName;
+    }
+
+    const byCode = left.code.localeCompare(right.code);
+
+    if (byCode !== 0) {
+      return byCode;
+    }
+
+    return left.name.localeCompare(right.name);
+  }
+
+  private accountClassSortKey(code: string) {
+    const order: Record<string, number> = {
+      ASSET: 1,
+      LIABILITY: 2,
+      EQUITY: 3,
+      INCOME: 4,
+      EXPENSE: 5,
+    };
+
+    return order[code] ?? Number.MAX_SAFE_INTEGER;
   }
 
   private summarizeFilters(context: ReportContext) {

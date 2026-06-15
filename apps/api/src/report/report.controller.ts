@@ -26,4 +26,9 @@ export class ReportController {
   getBankBook(@Query() query: ReportQueryDto) {
     return this.reportService.getBankBook(query);
   }
+
+  @Get("trial-balance")
+  getTrialBalance(@Query() query: ReportQueryDto) {
+    return this.reportService.getTrialBalance(query);
+  }
 }

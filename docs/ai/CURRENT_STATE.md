@@ -30,6 +30,7 @@ Phase 2D accounting reports requirement/specification lock is complete.
 Phase 2D Chunk 2D-1 requirement lock review is complete.
 Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API is complete.
 Phase 2D Chunk 2D-2 backend report API review is complete.
+Phase 2D Chunk 2D-3 backend Trial Balance API is complete.
 
 ## Phase 2D Chunk 2D-2 Backend Ledger/Cash-Book/Bank-Book API
 
@@ -66,6 +67,24 @@ Review results:
 - Accounting calculation review passed for opening, period debit/credit, closing, and running balance behavior in the reviewed scope.
 - No backend source changes were needed during review.
 - Stale project docs were corrected where older sections still said report APIs were not implemented.
+
+## Phase 2D Chunk 2D-3 Backend Trial Balance API
+
+Chunk 2D-3 added the guarded backend endpoint `GET /reports/trial-balance` inside the existing report module.
+
+Trial Balance behavior:
+
+- The endpoint uses the existing `AuthGuard`, `RolesGuard`, and `ACCOUNTANT` report-controller protection.
+- The query requires `fiscalYearId` and supports optional `accountingPeriodId`, custom `startDate`/`endDate`, `projectId`, and `costCenterId`.
+- The same report context validation applies: period ownership, paired custom dates, `startDate <= endDate`, fiscal-year range, selected-period range, project and cost-center existence, and cost-center-to-project consistency.
+- Trial Balance derives only from `VoucherLine` rows attached to `Voucher.status = POSTED` and `Voucher.isDeleted = false`.
+- `DRAFT` vouchers, soft-deleted vouchers, and unposted effects do not affect rows or totals.
+- Opening balances use posted movement before the selected start date inside the same fiscal year.
+- Period debit and period credit show raw period movement totals.
+- Closing balances use normal-balance-aware presentation, including opposite-side presentation when a signed account balance reverses its normal side.
+- Empty valid reports return zero totals, `isBalanced: true`, `difference: "0.00"`, and `rows: []`.
+
+No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Income Statement, or Balance Sheet implementation were added.
 
 ## Phase 2C Implementation Planning
 
@@ -195,9 +214,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, report frontend pages, trial balance, financial statements, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+The repo intentionally does not include journals beyond the voucher draft/post workflow, report frontend pages, financial statements, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete and accepted. Phase 2D accounting reports requirement lock is documented: eight reports defined (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), derived from posted voucher lines only, no primary report tables, opening balances through opening journal vouchers, browser print foundation. Chunk 2D-2 implemented only the backend APIs for General Ledger, Cash Book, and Bank Book.
+The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete and accepted. Phase 2D accounting reports requirement lock is documented: eight reports defined (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), derived from posted voucher lines only, no primary report tables, opening balances through opening journal vouchers, browser print foundation. Chunk 2D-2 implemented the backend APIs for General Ledger, Cash Book, and Bank Book. Chunk 2D-3 implemented the backend API for Trial Balance.
 
 ## Database Port
 
@@ -213,7 +232,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API review is complete. The next recommended task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API. No Trial Balance, Income Statement, Balance Sheet, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2D Chunk 2D-3 backend Trial Balance API is complete. The next recommended task is 2D-3 backend Trial Balance API review before starting Chunk 2D-4 Income Statement and Balance Sheet API. No Income Statement, Balance Sheet, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 
