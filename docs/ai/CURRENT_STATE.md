@@ -29,6 +29,7 @@ Phase 2C Chunk 2C-6 final integration and acceptance review is complete. Phase 2
 Phase 2D accounting reports requirement/specification lock is complete.
 Phase 2D Chunk 2D-1 requirement lock review is complete.
 Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API is complete.
+Phase 2D Chunk 2D-2 backend report API review is complete.
 
 ## Phase 2D Chunk 2D-2 Backend Ledger/Cash-Book/Bank-Book API
 
@@ -52,6 +53,19 @@ Report behavior:
 - Cash Book and Bank Book use receipt/payment behavior from cash/bank linked posted voucher lines, with running balances computed from debit minus credit.
 
 No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Trial Balance, Income Statement, or Balance Sheet implementation were added.
+
+## Phase 2D Chunk 2D-2 Backend Report API Review
+
+Chunk 2D-2 backend report API review passed. The reviewed implementation remains limited to backend General Ledger, Cash Book, and Bank Book report APIs plus docs updates.
+
+Review results:
+
+- Route/security check passed: `GET /reports/ledger`, `GET /reports/cash-book`, and `GET /reports/bank-book` use `AuthGuard`, `RolesGuard`, and `ACCOUNTANT`.
+- Posted-only check passed: reports use `Voucher.status = POSTED`, `Voucher.isDeleted = false`, and attached `VoucherLine` rows only.
+- Validation check passed for required fiscal year, required ledger account on ledger report, period/date-range rules, project/cost-center mismatch, and cash/bank account type mismatch.
+- Accounting calculation review passed for opening, period debit/credit, closing, and running balance behavior in the reviewed scope.
+- No backend source changes were needed during review.
+- Stale project docs were corrected where older sections still said report APIs were not implemented.
 
 ## Phase 2C Implementation Planning
 
@@ -199,7 +213,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API is complete. The next recommended task is a backend report API review before starting Chunk 2D-3 Trial Balance API. No Trial Balance, Income Statement, Balance Sheet, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API review is complete. The next recommended task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API. No Trial Balance, Income Statement, Balance Sheet, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 

@@ -2,9 +2,24 @@
 
 ## Current Phase
 
-Phase 2D: backend ledger/cash-book/bank-book report API complete (Chunk 2D-2 complete). Stop for backend API review before Trial Balance.
+Phase 2D: backend ledger/cash-book/bank-book report API reviewed (Chunk 2D-2 review complete). Stop before Trial Balance.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locks accounting report requirements before any report implementation.
+
+## Phase 2D Chunk 2D-2 Backend Report API Review - completed this session
+
+- Reviewed the 2D-2 backend report API implementation at `apps/api/src/report` against the Phase 2D requirement lock, query model proposal, acceptance criteria, and implementation plan.
+- Confirmed scope stayed limited to backend report module/controller/service/DTO, `AppModule` registration, and docs updates. No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Trial Balance, Income Statement, Balance Sheet, Project Summary, or Cost Center Summary were added.
+- Confirmed routes exist and are guarded by `AuthGuard`, `RolesGuard`, and `ACCOUNTANT`: `GET /reports/ledger`, `GET /reports/cash-book`, and `GET /reports/bank-book`.
+- Confirmed reports derive only from posted, non-deleted vouchers and attached voucher lines: `Voucher.status = POSTED`, `Voucher.isDeleted = false`, and `VoucherLine` rows.
+- Confirmed ledger calculation behavior: opening balance from posted movement before the selected start date inside the fiscal year; period debit/credit from the selected range; closing balance from opening plus normal-balance-aware period movement; deterministic line ordering.
+- Confirmed Cash Book and Bank Book behavior: cash report is cash-type only, bank report is bank-type only, optional cash/bank account and ledger account filters work safely, and running balances use debit minus credit.
+- Manual API smoke checks passed: unauthenticated ledger returns 401; accountant login works; ledger/cash-book/bank-book return valid structures; posted lines affect totals; temporary draft and soft-deleted draft lines do not affect totals; invalid date range, invalid fiscal year, invalid accounting period, period/fiscal-year mismatch, period date mismatch, project/cost-center mismatch, and wrong cash/bank account type return clear 400/404 responses; valid empty ledger returns zero totals and empty lines.
+- No backend source fixes were needed. Stale project docs were corrected where older sections still said report APIs were not implemented.
+
+## Next Stop Point (2D-2 Review)
+
+Review Phase 2D-2 backend report API review results. The next recommended task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API.
 
 ## Phase 2D Chunk 2D-2 Backend Ledger/Cash-Book/Bank-Book API - completed this session
 
@@ -24,9 +39,9 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:api`, `pnpm build:web`, `docker compose config`, `pnpm check:all`, and `pnpm doctor` (doctor warnings only for ports 4000 and 3000 already occupied by local processes).
 - Manual API smoke tests passed against `http://localhost:4000`: unauthenticated `GET /reports/ledger` returned 401; login as `accountant@realcapita.local` succeeded; `GET /reports/ledger` returned opening/period/closing totals and lines; `GET /reports/cash-book` returned valid cash-book structure; `GET /reports/bank-book` returned valid bank-book structure; a temporary DRAFT voucher did not affect ledger totals or line count and was cleaned from the local smoke database; invalid date range returned 400; wrong cash/bank account type for cash-book and bank-book returned 400.
 
-## Next Stop Point (2D-2)
+## Previous Stop Point (2D-2 Implementation)
 
-Review the Phase 2D-2 backend ledger/cash-book/bank-book report API. The next recommended task is a backend report API review before starting Chunk 2D-3 Trial Balance API.
+Phase 2D-2 backend ledger/cash-book/bank-book report API implementation is superseded by the completed 2D-2 review. See the current 2D-2 review stop point above.
 
 ## Phase 2D Accounting Reports Requirement Lock - completed this session
 
@@ -226,7 +241,7 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 - Dashboard analytics.
 - Voucher screens, journals, posting, or transaction workflows (locked in Phase 2B docs only).
-- Ledger reports, cash book, bank book, trial balance, or financial statements.
+- Report frontend pages, Trial Balance, financial statements, project/cost-center summaries, or report print layouts.
 - Payroll, salary sheets, HR, CRM, party, customer, or vendor modules.
 - File uploads.
 - Business seed data.
@@ -236,15 +251,18 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2D accounting reports requirement lock is prepared. The next task is a review of the Phase 2D docs, then explicit user confirmation before starting report implementation (Chunk 2D-1).
+Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API review is complete. The next task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API.
 
 Still not implemented:
 
-- Accounting reports (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary).
-- Report API endpoints.
+- Trial Balance API.
+- Income Statement API.
+- Balance Sheet API.
+- Project Summary API.
+- Cost Center Summary API.
 - Report frontend pages.
 - Report print layouts.
-- Reports, ledgers, cash book, bank book, trial balance, financial statements, or dashboard analytics (no runtime code yet).
+- Financial statements or dashboard analytics.
 - Payroll or salary sheets.
 - Parties, customers, vendors, HR, CRM, or ERP modules.
 - Additional roles beyond `ACCOUNTANT`.
@@ -255,13 +273,13 @@ Still not implemented:
 
 ## Last Verification Results
 
-Verification date: 2026-06-15, Phase 2D documentation lock.
+Verification date: 2026-06-15, Phase 2D Chunk 2D-2 backend report API.
 
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
 - `pnpm check:all`: passed.
 - `pnpm doctor`: passed.
-- No Prisma schema changes, no migrations, no backend or frontend code changes in Phase 2D.
+- No Prisma schema changes, no migrations, and no frontend code changes in Phase 2D Chunk 2D-2.
 
 ## Current GitHub Repository
 

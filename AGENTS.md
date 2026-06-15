@@ -6,11 +6,11 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2D: accounting reports requirement lock. Documentation only, no implementation yet.
+Phase 2D: accounting reports implementation. Chunk 2D-2 backend ledger/cash-book/bank-book report API is implemented and reviewed.
 
 Phase 0 is complete and accepted. Phase 1A adds only authentication, one confirmed role, a protected app shell, project operating documentation, ADRs, and verification scripts.
 
-Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locks voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D locks accounting report requirements before any report implementation.
+Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D locked accounting report requirements before report implementation, and Chunk 2D-2 added the backend General Ledger, Cash Book, and Bank Book report APIs.
 
 If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`.
 
@@ -26,9 +26,9 @@ If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` 
 
 ## Strict Current Boundary
 
-Phase 2D is documentation/specification only. No report APIs, report UI, dashboard analytics, payroll, parties, customers, vendors, file uploads, business seed data, or unconfirmed office roles should be started without explicit user confirmation.
+Phase 2D Chunk 2D-2 backend General Ledger, Cash Book, and Bank Book report API is complete and reviewed. Trial Balance and later report chunks must not start without explicit user confirmation.
 
-Do not implement report endpoints, report frontend pages, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, or business seed data until the user confirms the next implementation phase.
+Do not implement Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary, report frontend pages, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, or business seed data until the user confirms the next implementation phase.
 
 ## Confirmed Role Model
 
@@ -145,4 +145,4 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 ## Next Phase Guidance
 
-The next coding phase must be confirmed before implementation. Phase 2D accounting reports requirement lock is complete. No report APIs, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API review is complete. The next recommended task is explicit user confirmation before starting Chunk 2D-3 Trial Balance API. No report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
