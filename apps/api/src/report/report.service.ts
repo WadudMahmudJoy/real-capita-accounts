@@ -135,6 +135,7 @@ type ReportType =
   | "LEDGER"
   | "CASH_BOOK"
   | "BANK_BOOK"
+  | "MFS_BOOK"
   | "TRIAL_BALANCE"
   | "INCOME_STATEMENT"
   | "BALANCE_SHEET";
@@ -270,6 +271,14 @@ export class ReportService {
       query,
       CashBankAccountType.BANK,
       "BANK_BOOK",
+    );
+  }
+
+  getMfsBook(query: ReportQueryDto) {
+    return this.getCashBankBook(
+      query,
+      CashBankAccountType.MFS,
+      "MFS_BOOK",
     );
   }
 
@@ -750,7 +759,7 @@ export class ReportService {
   private async getCashBankBook(
     query: ReportQueryDto,
     accountType: CashBankAccountType,
-    reportType: Extract<ReportType, "CASH_BOOK" | "BANK_BOOK">,
+    reportType: Extract<ReportType, "CASH_BOOK" | "BANK_BOOK" | "MFS_BOOK">,
   ) {
     const context = await this.resolveReportContext(query);
     const { cashBankAccount, ledgerAccount } =
@@ -1714,8 +1723,13 @@ export class ReportService {
     branch: string | null;
     accountNumber: string | null;
     isActive: boolean;
+    provider?: string | null;
+    providerOtherName?: string | null;
+    walletNumber?: string | null;
+    accountHolderName?: string | null;
   }) {
     return {
+      accountHolderName: cashBankAccount.accountHolderName ?? null,
       accountNumber: cashBankAccount.accountNumber,
       accountType: cashBankAccount.accountType,
       bankName: cashBankAccount.bankName,
@@ -1724,6 +1738,9 @@ export class ReportService {
       id: cashBankAccount.id,
       isActive: cashBankAccount.isActive,
       ledgerAccountId: cashBankAccount.ledgerAccountId,
+      provider: cashBankAccount.provider ?? null,
+      providerOtherName: cashBankAccount.providerOtherName ?? null,
+      walletNumber: cashBankAccount.walletNumber ?? null,
     };
   }
 

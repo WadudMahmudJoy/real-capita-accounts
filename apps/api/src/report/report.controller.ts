@@ -27,6 +27,11 @@ export class ReportController {
     return this.reportService.getBankBook(query);
   }
 
+  @Get("mfs-book")
+  getMfsBook(@Query() query: ReportQueryDto) {
+    return this.reportService.getMfsBook(query);
+  }
+
   @Get("trial-balance")
   getTrialBalance(@Query() query: ReportQueryDto) {
     return this.reportService.getTrialBalance(query);
