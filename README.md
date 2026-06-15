@@ -25,9 +25,15 @@ This repository is intentionally not a continuation of the previous Real Capita 
   - Chunk 2D-6: frontend financial statement pages (Income Statement, Balance Sheet) and browser print foundation for all six report pages.
   - Chunk 2D-7: final integration and acceptance review (all backend+frontend+print smoke tests, docs update, scope verification).
 - Implemented report features: all six backend report endpoints, all six frontend report pages, and browser print foundation for all six report pages. Reports derive from posted VoucherLine records only; no primary report tables.
-- Phase 2E MFS / bKash transaction support requirement lock is complete. No runtime MFS implementation exists yet. Phase 2E defines MFS accounting model, provider tracking (bKash, Nagad, Rocket, Upay, Other), wallet/account identity, voucher behavior, MFS Book concept, report impact, validation rules, and acceptance criteria for a future implementation phase.
-- Still not implemented: MFS account setup, MFS Book report, MFS voucher line support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
-- The next phase must be confirmed before implementation.
+- Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`.
+- Phase 2E Chunk 2E-2 backend schema/model foundation is implemented:
+  - `CashBankAccountType` now includes `MFS` beside `CASH` and `BANK`.
+  - `MfsProvider` supports `BKASH`, `NAGAD`, `ROCKET`, `UPAY`, and `OTHER`.
+  - `CashBankAccount` has nullable MFS metadata fields for provider, custom provider name, wallet number, and account holder name.
+  - Existing CASH and BANK runtime behavior is preserved; MFS account API/runtime validation remains blocked until Chunk 2E-3.
+- No MFS Book report, frontend MFS account page, dashboard/report/export expansion, voucher posting behavior change, MFS provider integration, or MFS seed data exists yet.
+- Still not implemented: MFS account setup API/UI, MFS Book report, MFS voucher posting support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
+- The next recommended task is Phase 2E Chunk 2E-3 backend validation/API changes, unless review finds issues. It must be explicitly confirmed before starting.
 
 ## Stack
 
@@ -166,4 +172,4 @@ Use `pnpm agent:start` for a quick local orientation report.
 
 ## Strict Current Boundary
 
-The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock and implementation (accepted), and the Phase 2E MFS / bKash requirement lock. No runtime MFS implementation exists yet. No schema, API, UI, or report behavior has changed for MFS. The next recommended task is to review/accept the Phase 2E requirement lock, then confirm implementation if approved. Do not start MFS runtime implementation, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
+The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock and implementation (accepted), the Phase 2E MFS / bKash requirement lock accepted at `fdffcfb`, and the Phase 2E Chunk 2E-2 backend schema/model foundation. MFS runtime is still incomplete: no MFS Book report, no frontend MFS account page, no dashboard/report/export expansion, no MFS provider integration, and no voucher posting behavior change exists yet. The current Cash & Bank API still blocks MFS account creation until Phase 2E Chunk 2E-3 backend validation/API work. Do not start Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS Book, frontend MFS pages, or any new module without explicit user confirmation.

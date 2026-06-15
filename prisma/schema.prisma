@@ -110,6 +110,15 @@ enum AccountingPeriodStatus {
 enum CashBankAccountType {
   CASH
   BANK
+  MFS
+}
+
+enum MfsProvider {
+  BKASH
+  NAGAD
+  ROCKET
+  UPAY
+  OTHER
 }
 
 // ---------------------------------------------------------------------------
@@ -268,18 +277,22 @@ model LedgerAccount {
 }
 
 model CashBankAccount {
-  id              String              @id @default(cuid())
-  ledgerAccountId String              @unique
-  displayName     String
-  accountType     CashBankAccountType
-  bankName        String?
-  branch          String?
-  accountNumber   String?
-  isActive        Boolean             @default(true)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  ledgerAccount   LedgerAccount       @relation(fields: [ledgerAccountId], references: [id])
-  voucherLines    VoucherLine[]
+  id                String              @id @default(cuid())
+  ledgerAccountId   String              @unique
+  displayName       String
+  accountType       CashBankAccountType
+  bankName          String?
+  branch            String?
+  accountNumber     String?
+  provider          MfsProvider?
+  providerOtherName String?
+  walletNumber      String?
+  accountHolderName String?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  ledgerAccount     LedgerAccount       @relation(fields: [ledgerAccountId], references: [id])
+  voucherLines      VoucherLine[]
 
   @@map("cash_bank_accounts")
 }

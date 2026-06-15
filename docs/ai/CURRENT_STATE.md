@@ -36,7 +36,20 @@ Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank B
 Phase 2D Chunk 2D-6 frontend financial statement pages (Income Statement, Balance Sheet) and the report browser-print foundation are complete.
 Phase 2D Chunk 2D-7 final integration and acceptance review is complete. Phase 2D is now accepted.
 
-Phase 2E MFS / bKash transaction support requirement/specification lock is complete. No runtime MFS implementation exists yet. No schema, API, UI, or report behavior has changed.
+Phase 2E MFS / bKash transaction support requirement/specification lock is complete and accepted at commit `fdffcfb`.
+
+Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. MFS runtime is still incomplete: no MFS account API validation, no MFS frontend page, no MFS Book report, and no voucher posting behavior change exists yet.
+
+## Phase 2E Chunk 2E-2 Backend Schema / Model Foundation - completed this session
+
+- Added `MFS` as a separate `CashBankAccountType` value beside existing `CASH` and `BANK`. Existing CASH and BANK values were not renamed or removed.
+- Added `MfsProvider` enum with `BKASH`, `NAGAD`, `ROCKET`, `UPAY`, and `OTHER`.
+- Extended `CashBankAccount` with nullable MFS metadata fields: `provider`, `providerOtherName`, `walletNumber`, and `accountHolderName`.
+- Created and applied migration `20260615123515_phase_2e_mfs_schema_foundation`.
+- Existing CASH and BANK rows migrate without manual data edits because every new MFS-specific column is nullable.
+- Added a narrow backend guard in the existing Cash & Bank service so the generic cash-bank account API does not accept `accountType = MFS` before Phase 2E Chunk 2E-3 validation/API work.
+- Cash Book remains CASH-only and Bank Book remains BANK-only. No MFS Book endpoint or page was added.
+- No frontend MFS account page, sidebar navigation change, report API expansion, voucher posting behavior change, dashboard/report/export expansion, MFS provider API integration, seed data, or new role was added.
 
 ## Phase 2E MFS / bKash Requirement Lock - completed this session
 
@@ -45,7 +58,7 @@ Phase 2E MFS / bKash transaction support requirement/specification lock is compl
 - Created `docs/acceptance/phase-2e-acceptance-criteria.md`: acceptance for documentation lock, future backend implementation, future frontend implementation, report correctness, security, regression, and explicit non-acceptance conditions.
 - Created `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md`: splits MFS implementation into 7 chunks (2E-1 requirement lock review, 2E-2 backend schema/model, 2E-3 backend validation/API, 2E-4 frontend MFS account setup, 2E-5 MFS Book report API, 2E-6 MFS Book frontend and print foundation, 2E-7 final integration and acceptance review). Each chunk includes model recommendation, scope, files to read, verification, manual smoke tests, and exact stop condition.
 - Updated `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`, `README.md`, `AGENTS.md`, `docs/ai/START_HERE.md` to reflect Phase 2E requirement lock.
-- No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no MFS runtime logic, no roles, no seed data, and no tooling were added in Phase 2E.
+- No Prisma schema changes, migrations, backend API endpoints, frontend pages, MFS runtime logic, roles, seed data, or tooling were added in Phase 2E Chunk 2E-1 requirement lock.
 
 ## Phase 2D Chunk 2D-7 Final Integration and Acceptance Review
 
@@ -312,9 +325,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS account setup, MFS Book report, MFS voucher line support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS runtime implementation, or unconfirmed office roles.
+The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS account setup API/UI, MFS Book report, MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS runtime implementation beyond the schema/model foundation, or unconfirmed office roles.
 
-The Phase 2E MFS / bKash requirement lock is complete. No runtime MFS implementation exists yet. The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
+The Phase 2E MFS / bKash requirement lock is complete and accepted at `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is implemented, but MFS runtime is incomplete. The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
 
 ## Database Port
 
@@ -330,7 +343,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2E requirement lock is complete. The next recommended task is to review/accept the Phase 2E requirement lock, then confirm Phase 2E implementation if approved. No MFS runtime implementation, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2E Chunk 2E-2 backend schema/model foundation is implemented. The next recommended task is Phase 2E Chunk 2E-3 backend validation/API changes, unless review finds issues. No MFS Book report, frontend MFS account page, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 
