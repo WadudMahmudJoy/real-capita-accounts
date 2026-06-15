@@ -28,6 +28,14 @@ import {
   formatMoney,
   voucherTypeLabel,
 } from "./report-ui";
+import {
+  PrintReportButton,
+  ReportPrintFrame,
+  printCell,
+  printHeadCell,
+  printNumberCell,
+  printNumberHeadCell,
+} from "./report-print";
 import { useReportReferences } from "./useReportReferences";
 
 type Variant = {
@@ -162,7 +170,7 @@ function CashBankResult({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader title="Report summary" />
+        <CardHeader actions={<PrintReportButton />} title="Report summary" />
         <div className="mt-5 flex flex-col gap-6">
           <ReportMeta
             items={[
@@ -318,6 +326,92 @@ function CashBankResult({
           </div>
         )}
       </Card>
+
+      <ReportPrintFrame
+        meta={[
+          { label: "Company", value: report.fiscalYear.company.name },
+          { label: "Fiscal year", value: report.fiscalYear.name },
+          { label: "Accounting period", value: periodLabel },
+          {
+            label: "Date range",
+            value: `${formatDate(report.dateRange.startDate)} to ${formatDate(report.dateRange.endDate)}`,
+          },
+          {
+            label: "Cash/bank account",
+            value: report.cashBankAccount
+              ? report.cashBankAccount.displayName
+              : variant.emptyAccountsLabel,
+          },
+          {
+            label: "Opening balance",
+            value: formatBalance(report.openingBalance),
+          },
+          {
+            label: "Closing balance",
+            value: formatBalance(report.closingBalance),
+          },
+          {
+            label: "Project filter",
+            value: report.filters.project
+              ? `${report.filters.project.code} - ${report.filters.project.name}`
+              : "All projects",
+          },
+        ]}
+        title={variant.title}
+      >
+        <table className="w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className={printHeadCell}>Date</th>
+              <th className={printHeadCell}>Voucher no.</th>
+              <th className={printHeadCell}>Ledger account</th>
+              <th className={printNumberHeadCell}>Debit</th>
+              <th className={printNumberHeadCell}>Credit</th>
+              <th className={printNumberHeadCell}>Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className={printCell} colSpan={5}>
+                Opening balance
+              </td>
+              <td className={printNumberCell}>
+                {formatBalance(report.openingBalance)}
+              </td>
+            </tr>
+            {report.lines.map((line) => (
+              <tr key={line.id}>
+                <td className={printCell}>{formatDate(line.voucherDate)}</td>
+                <td className={printCell}>{line.systemVoucherNo}</td>
+                <td className={printCell}>
+                  {line.ledgerAccount.code} - {line.ledgerAccount.name}
+                </td>
+                <td className={printNumberCell}>{formatMoney(line.debit)}</td>
+                <td className={printNumberCell}>{formatMoney(line.credit)}</td>
+                <td className={printNumberCell}>
+                  {formatBalance(line.runningBalance)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="font-semibold">
+              <td className="border border-black px-2 py-1.5" colSpan={3}>
+                Period movement / closing balance
+              </td>
+              <td className={printNumberCell}>
+                {formatMoney(report.periodDebit)}
+              </td>
+              <td className={printNumberCell}>
+                {formatMoney(report.periodCredit)}
+              </td>
+              <td className={printNumberCell}>
+                {formatBalance(report.closingBalance)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </ReportPrintFrame>
     </div>
   );
 }

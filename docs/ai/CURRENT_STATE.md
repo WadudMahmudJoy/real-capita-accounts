@@ -33,6 +33,27 @@ Phase 2D Chunk 2D-2 backend report API review is complete.
 Phase 2D Chunk 2D-3 backend Trial Balance API is complete.
 Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete.
 Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance) are complete.
+Phase 2D Chunk 2D-6 frontend financial statement pages (Income Statement, Balance Sheet) and the report browser-print foundation are complete.
+
+## Phase 2D Chunk 2D-6 Frontend Financial Statement Pages and Report Print Foundation
+
+Chunk 2D-6 added the accountant-facing Income Statement and Balance Sheet frontend pages and a browser-print foundation for every approved report page, on top of the existing backend financial statement APIs, with no backend, schema, or migration changes.
+
+- Extended `apps/web/src/lib/api.ts` with string-money financial statement types (`FinancialStatementGroupSummary`, `IncomeStatementRow`, `IncomeStatementSection`, `IncomeStatementReport`, `BalanceSheetRow`, `BalanceSheetSection`, `BalanceSheetReport`), added an optional `asOfDate` to `ReportQueryParams` (carried through `buildReportQuery`), and added cookie-authenticated helpers `getIncomeStatementReport` and `getBalanceSheetReport`. Both use the existing `apiFetch` with `credentials: "include"`; no tokens are stored in `localStorage`. All money values are typed as strings to match the API serialization. No Project Summary or Cost Center Summary helpers were added.
+- Added a print foundation module `apps/web/src/app/app/reports/_lib/report-print.tsx`: a `PrintReportButton` (calls `window.print()` only) and a `ReportPrintFrame` print-only layout (Real Capita Group heading, report title, report context meta, report body, generated date/time, and prepared/checked/authorised signature placeholders) using `@media print` CSS modelled on the voucher print foundation. No PDF generation, no Excel export, no file uploads.
+- Extended the shared `ReportFilters` panel (`_lib/report-ui.tsx`) with `showDateRange` (default true) and `showAsOfDate` config options plus an `asOfDate` field so the Balance Sheet uses an optional point-in-time as-of date instead of a start/end range, while the Income Statement keeps the optional custom date range.
+- Added a `Reports` navigation entry for `Income Statement` and `Balance Sheet` in `apps/web/src/app/app/layout.tsx`. No dashboard cards or analytics.
+- Added routes `/app/reports/income-statement` and `/app/reports/balance-sheet`.
+- Income Statement page requires a fiscal year; optional period, custom date range, project, and cost center (no ledger account, no cash/bank account, no as-of date). Renders the report header, total income, total expense, net income with profit/loss state, and grouped Income and Expense sections (account code/name, debit movement, credit movement, amount) with section totals. A valid empty report shows zero totals and a calm empty state.
+- Balance Sheet page requires a fiscal year; optional period, as-of date, project, and cost center (no start/end date, no ledger account, no cash/bank account). Renders the report header, Assets/Liabilities/Equity sections (account code/name, debit movement, credit movement, balance), total assets, total liabilities, total equity, total liabilities and equity, difference, and `isBalanced`. When unbalanced it shows a clear warning and never hides or forces the difference. It does not invent virtual retained earnings; it shows only what the backend returns.
+- Added a "Print report" button (shown after a report loads) and a print-only `ReportPrintFrame` layout to all six report pages: Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, and Balance Sheet. Each print layout includes the Real Capita Group heading, report title, fiscal year, accounting period or date range / as-of date, selected filters, the report table/sections, totals, a generated timestamp, and signature placeholders.
+- Every page handles reference loading, report loading, empty reference data, client-side validation before submit, backend validation errors, unauthenticated redirect through the existing app shell, and calm empty states for empty results.
+
+No Project Summary, Cost Center Summary, Project Summary API, Cost Center Summary API, report tables, PDF/Excel export, approval workflow, voucher reversal/correction, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, tooling, Prisma schema changes, migrations, backend API changes, or bKash/MFS implementation were added.
+
+### Future Request Note: bKash / MFS Transaction Support
+
+bKash/MFS transaction support was requested and is deferred to a separate future requirement lock/chunk. No schema, enum, cash/bank logic, voucher validation, or report changes were made for bKash/MFS in this chunk.
 
 ## Phase 2D Chunk 2D-5 Frontend Operational Report Pages
 
@@ -279,9 +300,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, Income Statement frontend, Balance Sheet frontend, Project Summary, Cost Center Summary, report print layouts, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+The repo intentionally does not include journals beyond the voucher draft/post workflow, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS transaction support, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete and accepted. Phase 2D accounting reports requirement lock is documented: eight reports defined (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), derived from posted voucher lines only, no primary report tables, opening balances through opening journal vouchers, browser print foundation. Chunk 2D-2 implemented the backend APIs for General Ledger, Cash Book, and Bank Book. Chunk 2D-3 implemented the backend API for Trial Balance. Chunk 2D-4 implemented backend Income Statement and Balance Sheet APIs. Chunk 2D-5 implemented frontend operational report pages for Ledger, Cash Book, Bank Book, and Trial Balance. Report print layouts remain deferred.
+The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete and accepted. Phase 2D accounting reports requirement lock is documented: eight reports defined (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), derived from posted voucher lines only, no primary report tables, opening balances through opening journal vouchers, browser print foundation. Chunk 2D-2 implemented the backend APIs for General Ledger, Cash Book, and Bank Book. Chunk 2D-3 implemented the backend API for Trial Balance. Chunk 2D-4 implemented backend Income Statement and Balance Sheet APIs. Chunk 2D-5 implemented frontend operational report pages for Ledger, Cash Book, Bank Book, and Trial Balance. Chunk 2D-6 implemented the frontend Income Statement and Balance Sheet pages plus the browser-print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
 
 ## Database Port
 
@@ -297,7 +318,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance) are complete. The next recommended task is 2D-5 frontend report pages review before starting Chunk 2D-6 financial statement frontend pages and print foundation. No Income Statement/Balance Sheet frontend, Project Summary, Cost Center Summary, report print layout, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2D Chunk 2D-6 frontend financial statement pages (Income Statement, Balance Sheet) and the report browser-print foundation are complete. The next recommended task is 2D-6 review before Chunk 2D-7 final integration and acceptance review. No Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, bKash/MFS support, or new modules should be started without explicit user confirmation. bKash/MFS transaction support was requested by AGM sir and must be handled in a separate future requirement lock/chunk.
 
 Reference docs before continuing:
 

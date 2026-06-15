@@ -26,6 +26,14 @@ import {
   formatMoney,
   voucherTypeLabel,
 } from "../_lib/report-ui";
+import {
+  PrintReportButton,
+  ReportPrintFrame,
+  printCell,
+  printHeadCell,
+  printNumberCell,
+  printNumberHeadCell,
+} from "../_lib/report-print";
 import { useReportReferences } from "../_lib/useReportReferences";
 
 export default function LedgerReportPage() {
@@ -121,7 +129,7 @@ function LedgerResult({ report }: { report: LedgerReport }) {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader title="Report summary" />
+        <CardHeader actions={<PrintReportButton />} title="Report summary" />
         <div className="mt-5 flex flex-col gap-6">
           <ReportMeta
             items={[
@@ -259,6 +267,100 @@ function LedgerResult({ report }: { report: LedgerReport }) {
           </div>
         )}
       </Card>
+
+      <ReportPrintFrame
+        meta={[
+          { label: "Company", value: report.fiscalYear.company.name },
+          { label: "Fiscal year", value: report.fiscalYear.name },
+          { label: "Accounting period", value: periodLabel },
+          {
+            label: "Date range",
+            value: `${formatDate(report.dateRange.startDate)} to ${formatDate(report.dateRange.endDate)}`,
+          },
+          {
+            label: "Ledger account",
+            value: `${ledgerAccount.code} - ${ledgerAccount.name}`,
+          },
+          {
+            label: "Opening balance",
+            value: formatBalance(report.openingBalance),
+          },
+          {
+            label: "Closing balance",
+            value: formatBalance(report.closingBalance),
+          },
+          {
+            label: "Project filter",
+            value: report.filters.project
+              ? `${report.filters.project.code} - ${report.filters.project.name}`
+              : "All projects",
+          },
+          {
+            label: "Cost center filter",
+            value: report.filters.costCenter
+              ? `${report.filters.costCenter.code} - ${report.filters.costCenter.name}`
+              : "All cost centers",
+          },
+        ]}
+        title="General Ledger / Ledger Statement"
+      >
+        <table className="w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className={printHeadCell}>Date</th>
+              <th className={printHeadCell}>Voucher no.</th>
+              <th className={printHeadCell}>Type</th>
+              <th className={printHeadCell}>Description</th>
+              <th className={printNumberHeadCell}>Debit</th>
+              <th className={printNumberHeadCell}>Credit</th>
+              <th className={printNumberHeadCell}>Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className={printCell} colSpan={6}>
+                Opening balance
+              </td>
+              <td className={printNumberCell}>
+                {formatBalance(report.openingBalance)}
+              </td>
+            </tr>
+            {report.lines.map((line) => (
+              <tr key={line.id}>
+                <td className={printCell}>{formatDate(line.voucherDate)}</td>
+                <td className={printCell}>{line.systemVoucherNo}</td>
+                <td className={printCell}>
+                  {voucherTypeLabel(line.voucherType)}
+                </td>
+                <td className={printCell}>
+                  {line.lineDescription ?? line.narration ?? "-"}
+                </td>
+                <td className={printNumberCell}>{formatMoney(line.debit)}</td>
+                <td className={printNumberCell}>{formatMoney(line.credit)}</td>
+                <td className={printNumberCell}>
+                  {formatBalance(line.runningBalance)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="font-semibold">
+              <td className="border border-black px-2 py-1.5" colSpan={4}>
+                Period movement / closing balance
+              </td>
+              <td className={printNumberCell}>
+                {formatMoney(report.periodDebit)}
+              </td>
+              <td className={printNumberCell}>
+                {formatMoney(report.periodCredit)}
+              </td>
+              <td className={printNumberCell}>
+                {formatBalance(report.closingBalance)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </ReportPrintFrame>
     </div>
   );
 }

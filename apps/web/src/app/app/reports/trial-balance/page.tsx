@@ -24,6 +24,14 @@ import {
   formatDate,
   formatMoney,
 } from "../_lib/report-ui";
+import {
+  PrintReportButton,
+  ReportPrintFrame,
+  printCell,
+  printHeadCell,
+  printNumberCell,
+  printNumberHeadCell,
+} from "../_lib/report-print";
 import { useReportReferences } from "../_lib/useReportReferences";
 
 export default function TrialBalanceReportPage() {
@@ -115,7 +123,7 @@ function TrialBalanceResult({ report }: { report: TrialBalanceReport }) {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader title="Report summary" />
+        <CardHeader actions={<PrintReportButton />} title="Report summary" />
         <div className="mt-5 flex flex-col gap-6">
           <ReportMeta
             items={[
@@ -288,6 +296,81 @@ function TrialBalanceResult({ report }: { report: TrialBalanceReport }) {
           </div>
         )}
       </Card>
+
+      <ReportPrintFrame
+        meta={[
+          { label: "Company", value: report.fiscalYear.company.name },
+          { label: "Fiscal year", value: report.fiscalYear.name },
+          { label: "Accounting period", value: periodLabel },
+          {
+            label: "Date range",
+            value: `${formatDate(report.dateRange.startDate)} to ${formatDate(report.dateRange.endDate)}`,
+          },
+          {
+            label: "Balanced",
+            value: `${totals.isBalanced ? "Yes" : "No"} (difference ${formatMoney(totals.difference)})`,
+          },
+          {
+            label: "Project filter",
+            value: report.filters.project
+              ? `${report.filters.project.code} - ${report.filters.project.name}`
+              : "All projects",
+          },
+          {
+            label: "Cost center filter",
+            value: report.filters.costCenter
+              ? `${report.filters.costCenter.code} - ${report.filters.costCenter.name}`
+              : "All cost centers",
+          },
+        ]}
+        title="Trial Balance"
+      >
+        <table className="w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className={printHeadCell}>Code</th>
+              <th className={printHeadCell}>Account name</th>
+              <th className={printNumberHeadCell}>Closing debit</th>
+              <th className={printNumberHeadCell}>Closing credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.rows.length === 0 ? (
+              <tr>
+                <td className={printCell} colSpan={4}>
+                  No posted ledger movement for the selected range.
+                </td>
+              </tr>
+            ) : (
+              report.rows.map((row) => (
+                <tr key={row.ledgerAccount.id}>
+                  <td className={printCell}>{row.ledgerAccount.code}</td>
+                  <td className={printCell}>{row.ledgerAccount.name}</td>
+                  <td className={printNumberCell}>
+                    {formatMoney(row.closingDebit)}
+                  </td>
+                  <td className={printNumberCell}>
+                    {formatMoney(row.closingCredit)}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+          <tfoot>
+            <tr className="font-semibold">
+              <td className="border border-black px-2 py-1.5" colSpan={2}>
+                Totals
+              </td>
+              <td className={printNumberCell}>
+                {formatMoney(totals.closingDebit)}
+              </td>
+              <td className={printNumberCell}>
+                {formatMoney(totals.closingCredit)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </ReportPrintFrame>
     </div>
   );
 }

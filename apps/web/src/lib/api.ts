@@ -931,6 +931,81 @@ export type TrialBalanceReport = {
   rows: TrialBalanceRow[];
 };
 
+// --- Income Statement ---
+
+/** Account-group subtotal within an income statement section. */
+export type FinancialStatementGroupSummary = {
+  id: string;
+  code: string;
+  name: string;
+  total: string;
+};
+
+/** One ledger-account line in an income statement section. */
+export type IncomeStatementRow = {
+  accountClass: ReportAccountClassSummary;
+  accountGroup: ReportAccountGroupSummary;
+  amount: string;
+  creditMovement: string;
+  debitMovement: string;
+  ledgerAccount: ReportProjectSummary;
+};
+
+/** Income or Expense section of the income statement. */
+export type IncomeStatementSection = {
+  groups: FinancialStatementGroupSummary[];
+  rows: IncomeStatementRow[];
+  total: string;
+};
+
+export type IncomeStatementReport = {
+  reportType: "INCOME_STATEMENT";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  filters: ReportFilterSummary;
+  income: IncomeStatementSection;
+  expenses: IncomeStatementSection;
+  netIncome: string;
+  isProfit: boolean;
+};
+
+// --- Balance Sheet ---
+
+/** One ledger-account line in a balance sheet section. */
+export type BalanceSheetRow = {
+  accountClass: ReportAccountClassSummary;
+  accountGroup: ReportAccountGroupSummary;
+  amount: string;
+  balanceCredit: string;
+  balanceDebit: string;
+  creditMovement: string;
+  debitMovement: string;
+  ledgerAccount: ReportProjectSummary;
+  normalBalance: NormalBalanceSide;
+};
+
+/** Assets, Liabilities, or Equity section of the balance sheet. */
+export type BalanceSheetSection = {
+  groups: FinancialStatementGroupSummary[];
+  rows: BalanceSheetRow[];
+  total: string;
+};
+
+export type BalanceSheetReport = {
+  reportType: "BALANCE_SHEET";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  asOfDate: string;
+  filters: ReportFilterSummary;
+  assets: BalanceSheetSection;
+  liabilities: BalanceSheetSection;
+  equity: BalanceSheetSection;
+  totalLiabilitiesAndEquity: string;
+  difference: string;
+  isBalanced: boolean;
+};
+
 /**
  * Shared report query parameters. `fiscalYearId` is always required; the rest
  * are optional and report-specific. Empty values are omitted from the request.
@@ -940,6 +1015,7 @@ export type ReportQueryParams = {
   accountingPeriodId?: string;
   startDate?: string;
   endDate?: string;
+  asOfDate?: string;
   ledgerAccountId?: string;
   projectId?: string;
   costCenterId?: string;
@@ -963,6 +1039,9 @@ function buildReportQuery(params: ReportQueryParams): string {
   }
   if (params.endDate) {
     search.set("endDate", params.endDate);
+  }
+  if (params.asOfDate) {
+    search.set("asOfDate", params.asOfDate);
   }
   if (params.ledgerAccountId) {
     search.set("ledgerAccountId", params.ledgerAccountId);
@@ -1015,6 +1094,26 @@ export function getTrialBalanceReport(
 ): Promise<TrialBalanceReport> {
   return apiFetch<TrialBalanceReport>(
     `/reports/trial-balance${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getIncomeStatementReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<IncomeStatementReport> {
+  return apiFetch<IncomeStatementReport>(
+    `/reports/income-statement${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getBalanceSheetReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<BalanceSheetReport> {
+  return apiFetch<BalanceSheetReport>(
+    `/reports/balance-sheet${buildReportQuery(params)}`,
     { signal },
   );
 }

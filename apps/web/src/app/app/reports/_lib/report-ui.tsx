@@ -164,6 +164,7 @@ type FilterValues = {
   accountingPeriodId: string;
   startDate: string;
   endDate: string;
+  asOfDate: string;
   projectId: string;
   costCenterId: string;
   ledgerAccountId: string;
@@ -172,6 +173,7 @@ type FilterValues = {
 
 const emptyFilters: FilterValues = {
   accountingPeriodId: "",
+  asOfDate: "",
   cashBankAccountId: "",
   costCenterId: "",
   endDate: "",
@@ -188,6 +190,16 @@ export type ReportFiltersConfig = {
   requireLedgerAccount?: boolean;
   /** Show the cash/bank account dropdown (cash book / bank book). */
   showCashBankAccount?: boolean;
+  /**
+   * Show the custom start/end date range inputs. Defaults to true. The balance
+   * sheet hides this because it is a point-in-time report driven by asOfDate.
+   */
+  showDateRange?: boolean;
+  /**
+   * Show the as-of date input (balance sheet point-in-time). Optional: when left
+   * empty the backend falls back to the period or fiscal-year end date.
+   */
+  showAsOfDate?: boolean;
   /**
    * When set, scope the cash/bank dropdown and the ledger dropdown to cash/bank
    * accounts of this type so the user cannot pick an account the backend will
@@ -300,10 +312,11 @@ export function ReportFilters({
       return;
     }
 
-    const hasStart = values.startDate !== "";
-    const hasEnd = values.endDate !== "";
+    const showDateRange = config?.showDateRange ?? true;
+    const hasStart = showDateRange && values.startDate !== "";
+    const hasEnd = showDateRange && values.endDate !== "";
 
-    if (hasStart !== hasEnd) {
+    if (showDateRange && (values.startDate !== "") !== (values.endDate !== "")) {
       setError(
         "Enter both a start date and an end date for a custom date range.",
       );
@@ -324,6 +337,9 @@ export function ReportFilters({
         : {}),
       ...(hasStart && hasEnd
         ? { startDate: values.startDate, endDate: values.endDate }
+        : {}),
+      ...(config?.showAsOfDate && values.asOfDate
+        ? { asOfDate: values.asOfDate }
         : {}),
       ...(config?.showLedgerAccount && values.ledgerAccountId
         ? { ledgerAccountId: values.ledgerAccountId }
@@ -422,23 +438,38 @@ export function ReportFilters({
           </Field>
         ) : null}
 
-        <Field htmlFor="report-start-date" label="Start date">
-          <TextInput
-            id="report-start-date"
-            onChange={(event) => update({ startDate: event.target.value })}
-            type="date"
-            value={values.startDate}
-          />
-        </Field>
+        {(config?.showDateRange ?? true) ? (
+          <>
+            <Field htmlFor="report-start-date" label="Start date">
+              <TextInput
+                id="report-start-date"
+                onChange={(event) => update({ startDate: event.target.value })}
+                type="date"
+                value={values.startDate}
+              />
+            </Field>
 
-        <Field htmlFor="report-end-date" label="End date">
-          <TextInput
-            id="report-end-date"
-            onChange={(event) => update({ endDate: event.target.value })}
-            type="date"
-            value={values.endDate}
-          />
-        </Field>
+            <Field htmlFor="report-end-date" label="End date">
+              <TextInput
+                id="report-end-date"
+                onChange={(event) => update({ endDate: event.target.value })}
+                type="date"
+                value={values.endDate}
+              />
+            </Field>
+          </>
+        ) : null}
+
+        {config?.showAsOfDate ? (
+          <Field htmlFor="report-as-of-date" label="As of date">
+            <TextInput
+              id="report-as-of-date"
+              onChange={(event) => update({ asOfDate: event.target.value })}
+              type="date"
+              value={values.asOfDate}
+            />
+          </Field>
+        ) : null}
 
         <Field htmlFor="report-project" label="Project">
           <Select
@@ -473,11 +504,19 @@ export function ReportFilters({
 
       {error ? <Notice tone="error">{error}</Notice> : null}
 
-      <p className="text-xs leading-5 text-muted-foreground">
-        Leave the date range empty to use the selected accounting period, or the
-        whole fiscal year when no period is chosen. A custom range needs both
-        dates and must fall inside the fiscal year.
-      </p>
+      {config?.showAsOfDate ? (
+        <p className="text-xs leading-5 text-muted-foreground">
+          Leave the as-of date empty to use the selected accounting period end
+          date, or the fiscal year end date when no period is chosen. The as-of
+          date must fall inside the fiscal year.
+        </p>
+      ) : (config?.showDateRange ?? true) ? (
+        <p className="text-xs leading-5 text-muted-foreground">
+          Leave the date range empty to use the selected accounting period, or the
+          whole fiscal year when no period is chosen. A custom range needs both
+          dates and must fall inside the fiscal year.
+        </p>
+      ) : null}
 
       <div className="flex items-center gap-3">
         <Button disabled={pending} onClick={handleSubmit}>

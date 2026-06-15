@@ -10,6 +10,7 @@ import {
   CalendarClock,
   CalendarRange,
   Coins,
+  FileBarChart,
   FolderKanban,
   Landmark,
   Layers,
@@ -18,6 +19,7 @@ import {
   Network,
   ReceiptText,
   Scale,
+  ScrollText,
   ShieldCheck,
   Wallet,
   type LucideIcon,
@@ -126,6 +128,18 @@ const reportLinks: NavLink[] = [
     icon: Scale,
     label: "Trial Balance",
     match: (pathname) => pathname.startsWith("/app/reports/trial-balance"),
+  },
+  {
+    href: "/app/reports/income-statement",
+    icon: FileBarChart,
+    label: "Income Statement",
+    match: (pathname) => pathname.startsWith("/app/reports/income-statement"),
+  },
+  {
+    href: "/app/reports/balance-sheet",
+    icon: ScrollText,
+    label: "Balance Sheet",
+    match: (pathname) => pathname.startsWith("/app/reports/balance-sheet"),
   },
 ];
 
