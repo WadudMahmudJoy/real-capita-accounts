@@ -31,4 +31,14 @@ export class ReportController {
   getTrialBalance(@Query() query: ReportQueryDto) {
     return this.reportService.getTrialBalance(query);
   }
+
+  @Get("income-statement")
+  getIncomeStatement(@Query() query: ReportQueryDto) {
+    return this.reportService.getIncomeStatement(query);
+  }
+
+  @Get("balance-sheet")
+  getBalanceSheet(@Query() query: ReportQueryDto) {
+    return this.reportService.getBalanceSheet(query);
+  }
 }

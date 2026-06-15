@@ -44,4 +44,8 @@ export class ReportQueryDto {
   @MinLength(1)
   @Trim()
   cashBankAccountId?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  asOfDate?: string;
 }

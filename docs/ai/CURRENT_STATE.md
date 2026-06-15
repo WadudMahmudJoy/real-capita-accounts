@@ -31,6 +31,52 @@ Phase 2D Chunk 2D-1 requirement lock review is complete.
 Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API is complete.
 Phase 2D Chunk 2D-2 backend report API review is complete.
 Phase 2D Chunk 2D-3 backend Trial Balance API is complete.
+Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete.
+
+## Phase 2D Chunk 2D-4 Backend Income Statement and Balance Sheet API
+
+Chunk 2D-4 added two guarded backend endpoints inside the existing report module:
+
+- `GET /reports/income-statement`: Income Statement for a period within a fiscal year.
+- `GET /reports/balance-sheet`: Balance Sheet at a point-in-time date within a fiscal year.
+
+Both endpoints use the existing class-level `AuthGuard` + `RolesGuard` + `ACCOUNTANT` report-route protection.
+
+The shared `ReportQueryDto` gained an optional `asOfDate` field for the balance sheet point-in-time query.
+
+### Income Statement
+
+- Period-based report using only INCOME and EXPENSE account classes.
+- Uses existing shared report query validation for fiscal year, accounting period, and date range.
+- Income accounts: signed amount = credit - debit (credit increases income).
+- Expense accounts: signed amount = debit - credit (debit increases expense).
+- Net income = total income - total expense; `isProfit` flag when net income >= 0.
+- Rows grouped by account group, sorted by account class (Income then Expense), group code/name, ledger account code/name.
+- Rejects `ledgerAccountId`, `cashBankAccountId`, and `asOfDate` with clear 400 errors.
+- Empty valid reports return zero totals, `isProfit: true`.
+
+### Balance Sheet
+
+- As-of-date based report using only ASSET, LIABILITY, and EQUITY account classes.
+- `asOfDate` determines the point-in-time; falls back to `accountingPeriod.endDate`, then `fiscalYear.endDate`.
+- Cumulative movements from `fiscalYear.startDate` through `asOfDate` inclusive.
+- Asset accounts: signed amount = debit - credit (debit increases asset).
+- Liability accounts: signed amount = credit - debit (credit increases liability).
+- Equity accounts: signed amount = credit - debit (credit increases equity).
+- Balance check: `difference = totalAssets - totalLiabilitiesAndEquity`; `isBalanced` when zero.
+- Rows grouped by account group, sorted by account class (Asset, Liability, Equity), group code/name, ledger account code/name.
+- Rejects `ledgerAccountId`, `cashBankAccountId`, `startDate`, and `endDate` with clear 400 errors.
+- `asOfDate` must fall inside the fiscal year; when `accountingPeriodId` is also provided, `asOfDate` must fall inside the period.
+- Does not invent virtual retained earnings; reports only posted voucher line movements honestly.
+- Empty valid reports return zero totals, `isBalanced: true`, `difference: "0.00"`.
+
+### Files changed
+
+- `apps/api/src/report/dto/report-query.dto.ts`: added `asOfDate` field.
+- `apps/api/src/report/report.controller.ts`: added `income-statement` and `balance-sheet` endpoints.
+- `apps/api/src/report/report.service.ts`: added `getIncomeStatement`, `getBalanceSheet`, `resolveBalanceSheetContext`, `buildBalanceSheetVoucherFilter`, and supporting types/helpers.
+
+No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Project Summary, Cost Center Summary, PDF/Excel export, or report UI were added.
 
 ## Phase 2D Chunk 2D-2 Backend Ledger/Cash-Book/Bank-Book API
 
@@ -232,7 +278,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D Chunk 2D-3 backend Trial Balance API is complete. The next recommended task is 2D-3 backend Trial Balance API review before starting Chunk 2D-4 Income Statement and Balance Sheet API. No Income Statement, Balance Sheet, report UI, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete. The next recommended task is 2D-4 backend financial statement API review before starting Chunk 2D-5 frontend report pages. No frontend report pages, report UI, dashboard analytics, payroll, parties, uploads, roles, Project Summary, Cost Center Summary, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 

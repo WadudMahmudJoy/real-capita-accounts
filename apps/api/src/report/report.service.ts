@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
+  AccountClassCode,
   CashBankAccountType,
   NormalBalanceSide,
   Prisma,
@@ -61,6 +62,63 @@ type ReportContext = {
   costCenter: CostCenterSummary | null;
 };
 
+type BalanceSheetContext = {
+  fiscalYear: FiscalYearSummary;
+  accountingPeriod: AccountingPeriodSummary | null;
+  asOfDate: Date;
+  project: ProjectSummary | null;
+  costCenter: CostCenterSummary | null;
+};
+
+type FinancialStatementRow = {
+  accountClass: {
+    id: string;
+    code: string;
+    name: string;
+    normalBalance: NormalBalanceSide;
+  };
+  accountGroup: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  amount: string;
+  creditMovement: string;
+  debitMovement: string;
+  ledgerAccount: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  signedAmount: Prisma.Decimal;
+};
+
+type BalanceSheetRow = {
+  accountClass: {
+    id: string;
+    code: string;
+    name: string;
+    normalBalance: NormalBalanceSide;
+  };
+  accountGroup: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  amount: string;
+  balanceCredit: string;
+  balanceDebit: string;
+  creditMovement: string;
+  debitMovement: string;
+  ledgerAccount: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  normalBalance: NormalBalanceSide;
+  signedAmount: Prisma.Decimal;
+};
+
 type BalanceSummary = {
   debit: string;
   credit: string;
@@ -73,7 +131,13 @@ type DebitCreditTotals = {
   credit: Prisma.Decimal;
 };
 
-type ReportType = "LEDGER" | "CASH_BOOK" | "BANK_BOOK" | "TRIAL_BALANCE";
+type ReportType =
+  | "LEDGER"
+  | "CASH_BOOK"
+  | "BANK_BOOK"
+  | "TRIAL_BALANCE"
+  | "INCOME_STATEMENT"
+  | "BALANCE_SHEET";
 
 const ZERO = new Prisma.Decimal(0);
 
@@ -363,6 +427,326 @@ export class ReportService {
     };
   }
 
+  async getIncomeStatement(query: ReportQueryDto) {
+    if (query.ledgerAccountId || query.cashBankAccountId) {
+      throw new BadRequestException(
+        "ledgerAccountId and cashBankAccountId are not supported for the income statement report.",
+      );
+    }
+
+    if (query.asOfDate) {
+      throw new BadRequestException(
+        "asOfDate is not supported for the income statement report. Use startDate/endDate or accountingPeriodId instead.",
+      );
+    }
+
+    const context = await this.resolveReportContext(query);
+    const baseWhere = this.buildLineFilter(query, {});
+    const periodByLedger = await this.sumDebitCreditByLedger(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "period"),
+    );
+
+    const ledgerAccounts = await this.prisma.ledgerAccount.findMany({
+      include: {
+        accountGroup: {
+          include: { accountClass: true },
+        },
+      },
+      where: {
+        accountGroup: {
+          accountClass: {
+            code: {
+              in: [AccountClassCode.INCOME, AccountClassCode.EXPENSE],
+            },
+          },
+        },
+      },
+    });
+
+    const incomeRows: FinancialStatementRow[] = [];
+    const expenseRows: FinancialStatementRow[] = [];
+
+    for (const ledgerAccount of ledgerAccounts) {
+      const periodTotals = this.getDebitCreditForLedger(
+        periodByLedger,
+        ledgerAccount.id,
+      );
+      const accountClassCode = ledgerAccount.accountGroup.accountClass.code;
+
+      // Income: credit increases, debit decreases → signedAmount = credit - debit
+      // Expense: debit increases, credit decreases → signedAmount = debit - credit
+      const signedAmount =
+        accountClassCode === AccountClassCode.INCOME
+          ? periodTotals.credit.minus(periodTotals.debit)
+          : periodTotals.debit.minus(periodTotals.credit);
+
+      if (signedAmount.equals(ZERO)) {
+        continue;
+      }
+
+      const row: FinancialStatementRow = {
+        accountClass: this.summarizeAccountClass(
+          ledgerAccount.accountGroup.accountClass,
+        ),
+        accountGroup: {
+          code: ledgerAccount.accountGroup.code,
+          id: ledgerAccount.accountGroup.id,
+          name: ledgerAccount.accountGroup.name,
+        },
+        amount: this.toMoney(signedAmount.abs()),
+        creditMovement: this.toMoney(periodTotals.credit),
+        debitMovement: this.toMoney(periodTotals.debit),
+        ledgerAccount: {
+          code: ledgerAccount.code,
+          id: ledgerAccount.id,
+          name: ledgerAccount.name,
+        },
+        signedAmount,
+      };
+
+      if (accountClassCode === AccountClassCode.INCOME) {
+        incomeRows.push(row);
+      } else {
+        expenseRows.push(row);
+      }
+    }
+
+    const sortRows = (rows: FinancialStatementRow[]) =>
+      rows.sort((left, right) => {
+        const byGroupCode = left.accountGroup.code.localeCompare(
+          right.accountGroup.code,
+        );
+
+        if (byGroupCode !== 0) {
+          return byGroupCode;
+        }
+
+        const byGroupName = left.accountGroup.name.localeCompare(
+          right.accountGroup.name,
+        );
+
+        if (byGroupName !== 0) {
+          return byGroupName;
+        }
+
+        const byCode = left.ledgerAccount.code.localeCompare(
+          right.ledgerAccount.code,
+        );
+
+        if (byCode !== 0) {
+          return byCode;
+        }
+
+        return left.ledgerAccount.name.localeCompare(
+          right.ledgerAccount.name,
+        );
+      });
+
+    sortRows(incomeRows);
+    sortRows(expenseRows);
+
+    const totalIncome = incomeRows.reduce(
+      (sum, row) => sum.plus(row.signedAmount),
+      ZERO,
+    );
+    const totalExpense = expenseRows.reduce(
+      (sum, row) => sum.plus(row.signedAmount),
+      ZERO,
+    );
+    const netIncome = totalIncome.minus(totalExpense);
+
+    return {
+      reportType: "INCOME_STATEMENT" satisfies ReportType,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      filters: this.summarizeFilters(context),
+      income: this.buildClassSection(incomeRows, totalIncome),
+      expenses: this.buildClassSection(expenseRows, totalExpense),
+      netIncome: this.toMoney(netIncome),
+      isProfit: netIncome.greaterThanOrEqualTo(ZERO),
+    };
+  }
+
+  async getBalanceSheet(query: ReportQueryDto) {
+    if (query.ledgerAccountId || query.cashBankAccountId) {
+      throw new BadRequestException(
+        "ledgerAccountId and cashBankAccountId are not supported for the balance sheet report.",
+      );
+    }
+
+    if (query.startDate || query.endDate) {
+      throw new BadRequestException(
+        "startDate and endDate are not supported for the balance sheet report. Use asOfDate instead.",
+      );
+    }
+
+    const context = await this.resolveBalanceSheetContext(query);
+    const baseWhere = this.buildLineFilter(query, {});
+    const allMovements = await this.sumDebitCreditByLedger(
+      baseWhere,
+      this.buildBalanceSheetVoucherFilter(context),
+    );
+
+    const ledgerAccounts = await this.prisma.ledgerAccount.findMany({
+      include: {
+        accountGroup: {
+          include: { accountClass: true },
+        },
+      },
+      where: {
+        accountGroup: {
+          accountClass: {
+            code: {
+              in: [
+                AccountClassCode.ASSET,
+                AccountClassCode.LIABILITY,
+                AccountClassCode.EQUITY,
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    const assetRows: BalanceSheetRow[] = [];
+    const liabilityRows: BalanceSheetRow[] = [];
+    const equityRows: BalanceSheetRow[] = [];
+
+    for (const ledgerAccount of ledgerAccounts) {
+      const totals = this.getDebitCreditForLedger(
+        allMovements,
+        ledgerAccount.id,
+      );
+      const accountClassCode = ledgerAccount.accountGroup.accountClass.code;
+
+      // Asset: debit increases, credit decreases → amount = debit - credit
+      // Liability: credit increases, debit decreases → amount = credit - debit
+      // Equity: credit increases, debit decreases → amount = credit - debit
+      let signedAmount: Prisma.Decimal;
+
+      if (accountClassCode === AccountClassCode.ASSET) {
+        signedAmount = totals.debit.minus(totals.credit);
+      } else {
+        signedAmount = totals.credit.minus(totals.debit);
+      }
+
+      if (signedAmount.equals(ZERO)) {
+        continue;
+      }
+
+      const balanceSide =
+        accountClassCode === AccountClassCode.ASSET
+          ? NormalBalanceSide.DEBIT
+          : NormalBalanceSide.CREDIT;
+
+      const balance = this.balanceAmounts(signedAmount, balanceSide);
+
+      const row: BalanceSheetRow = {
+        accountClass: this.summarizeAccountClass(
+          ledgerAccount.accountGroup.accountClass,
+        ),
+        accountGroup: {
+          code: ledgerAccount.accountGroup.code,
+          id: ledgerAccount.accountGroup.id,
+          name: ledgerAccount.accountGroup.name,
+        },
+        amount: this.toMoney(signedAmount.abs()),
+        balanceCredit: this.toMoney(balance.credit),
+        balanceDebit: this.toMoney(balance.debit),
+        creditMovement: this.toMoney(totals.credit),
+        debitMovement: this.toMoney(totals.debit),
+        ledgerAccount: {
+          code: ledgerAccount.code,
+          id: ledgerAccount.id,
+          name: ledgerAccount.name,
+        },
+        normalBalance:
+          accountClassCode === AccountClassCode.ASSET
+            ? NormalBalanceSide.DEBIT
+            : NormalBalanceSide.CREDIT,
+        signedAmount,
+      };
+
+      if (accountClassCode === AccountClassCode.ASSET) {
+        assetRows.push(row);
+      } else if (accountClassCode === AccountClassCode.LIABILITY) {
+        liabilityRows.push(row);
+      } else {
+        equityRows.push(row);
+      }
+    }
+
+    const sortBalanceSheetRows = (rows: BalanceSheetRow[]) =>
+      rows.sort((left, right) => {
+        const byGroupCode = left.accountGroup.code.localeCompare(
+          right.accountGroup.code,
+        );
+
+        if (byGroupCode !== 0) {
+          return byGroupCode;
+        }
+
+        const byGroupName = left.accountGroup.name.localeCompare(
+          right.accountGroup.name,
+        );
+
+        if (byGroupName !== 0) {
+          return byGroupName;
+        }
+
+        const byCode = left.ledgerAccount.code.localeCompare(
+          right.ledgerAccount.code,
+        );
+
+        if (byCode !== 0) {
+          return byCode;
+        }
+
+        return left.ledgerAccount.name.localeCompare(
+          right.ledgerAccount.name,
+        );
+      });
+
+    sortBalanceSheetRows(assetRows);
+    sortBalanceSheetRows(liabilityRows);
+    sortBalanceSheetRows(equityRows);
+
+    const totalAssets = assetRows.reduce(
+      (sum, row) => sum.plus(row.signedAmount),
+      ZERO,
+    );
+    const totalLiabilities = liabilityRows.reduce(
+      (sum, row) => sum.plus(row.signedAmount),
+      ZERO,
+    );
+    const totalEquity = equityRows.reduce(
+      (sum, row) => sum.plus(row.signedAmount),
+      ZERO,
+    );
+    const totalLiabilitiesAndEquity = totalLiabilities.plus(totalEquity);
+    const difference = totalAssets.minus(totalLiabilitiesAndEquity);
+
+    return {
+      reportType: "BALANCE_SHEET" satisfies ReportType,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      asOfDate: this.formatDate(context.asOfDate),
+      filters: this.summarizeFilters(context),
+      assets: this.buildBalanceSheetSection(assetRows, totalAssets),
+      liabilities: this.buildBalanceSheetSection(liabilityRows, totalLiabilities),
+      equity: this.buildBalanceSheetSection(equityRows, totalEquity),
+      totalLiabilitiesAndEquity: this.toMoney(totalLiabilitiesAndEquity),
+      difference: this.toMoney(difference),
+      isBalanced: difference.equals(ZERO),
+    };
+  }
+
   private async getCashBankBook(
     query: ReportQueryDto,
     accountType: CashBankAccountType,
@@ -584,6 +968,100 @@ export class ReportService {
     };
   }
 
+  private async resolveBalanceSheetContext(
+    query: ReportQueryDto,
+  ): Promise<BalanceSheetContext> {
+    const fiscalYear = await this.prisma.fiscalYear.findUnique({
+      include: { company: true },
+      where: { id: query.fiscalYearId },
+    });
+
+    if (!fiscalYear) {
+      throw new NotFoundException("Fiscal year was not found.");
+    }
+
+    const accountingPeriod = query.accountingPeriodId
+      ? await this.prisma.accountingPeriod.findUnique({
+          where: { id: query.accountingPeriodId },
+        })
+      : null;
+
+    if (query.accountingPeriodId && !accountingPeriod) {
+      throw new NotFoundException("Accounting period was not found.");
+    }
+
+    if (accountingPeriod && accountingPeriod.fiscalYearId !== fiscalYear.id) {
+      throw new BadRequestException(
+        "Accounting period does not belong to the selected fiscal year.",
+      );
+    }
+
+    let asOfDate: Date;
+
+    if (query.asOfDate) {
+      asOfDate = parseIsoDate(query.asOfDate, "asOfDate");
+      // If accountingPeriodId is also supplied and asOfDate doesn't fall inside
+      // the period's date range, reject the request.
+      if (
+        accountingPeriod &&
+        (asOfDate < accountingPeriod.startDate ||
+          asOfDate > accountingPeriod.endDate)
+      ) {
+        throw new BadRequestException(
+          "asOfDate must fall inside the selected accounting period date range.",
+        );
+      }
+    } else if (accountingPeriod) {
+      asOfDate = accountingPeriod.endDate;
+    } else {
+      asOfDate = fiscalYear.endDate;
+    }
+
+    if (asOfDate < fiscalYear.startDate || asOfDate > fiscalYear.endDate) {
+      throw new BadRequestException(
+        "asOfDate must fall inside the fiscal year date range.",
+      );
+    }
+
+    const project = query.projectId
+      ? await this.prisma.project.findUnique({
+          select: { code: true, id: true, name: true },
+          where: { id: query.projectId },
+        })
+      : null;
+
+    if (query.projectId && !project) {
+      throw new NotFoundException("Project was not found.");
+    }
+
+    const costCenter = query.costCenterId
+      ? await this.prisma.costCenter.findUnique({
+          include: {
+            project: { select: { code: true, id: true, name: true } },
+          },
+          where: { id: query.costCenterId },
+        })
+      : null;
+
+    if (query.costCenterId && !costCenter) {
+      throw new NotFoundException("Cost center was not found.");
+    }
+
+    if (project && costCenter && costCenter.projectId !== project.id) {
+      throw new BadRequestException(
+        "Cost center must belong to the selected project.",
+      );
+    }
+
+    return {
+      accountingPeriod,
+      asOfDate,
+      costCenter,
+      fiscalYear,
+      project,
+    };
+  }
+
   private async findLedgerAccount(id: string) {
     const ledgerAccount = await this.prisma.ledgerAccount.findUnique({
       include: {
@@ -734,6 +1212,20 @@ export class ReportService {
       ...(mode === "period" && context.accountingPeriod
         ? { accountingPeriodId: context.accountingPeriod.id }
         : {}),
+    };
+  }
+
+  private buildBalanceSheetVoucherFilter(
+    context: BalanceSheetContext,
+  ): Prisma.VoucherWhereInput {
+    return {
+      fiscalYearId: context.fiscalYear.id,
+      isDeleted: false,
+      status: VoucherStatus.POSTED,
+      voucherDate: {
+        gte: context.fiscalYear.startDate,
+        lte: context.asOfDate,
+      },
     };
   }
 
@@ -1009,7 +1501,136 @@ export class ReportService {
     return order[code] ?? Number.MAX_SAFE_INTEGER;
   }
 
-  private summarizeFilters(context: ReportContext) {
+  private buildClassSection(
+    rows: FinancialStatementRow[],
+    total: Prisma.Decimal,
+  ) {
+    const groups = this.groupFinancialStatementRows(rows);
+
+    return {
+      groups,
+      rows: rows.map((row) => ({
+        accountClass: row.accountClass,
+        accountGroup: row.accountGroup,
+        amount: row.amount,
+        creditMovement: row.creditMovement,
+        debitMovement: row.debitMovement,
+        ledgerAccount: {
+          code: row.ledgerAccount.code,
+          id: row.ledgerAccount.id,
+          name: row.ledgerAccount.name,
+        },
+      })),
+      total: this.toMoney(total),
+    };
+  }
+
+  private buildBalanceSheetSection(
+    rows: BalanceSheetRow[],
+    total: Prisma.Decimal,
+  ) {
+    const groups = this.groupBalanceSheetRows(rows);
+
+    return {
+      groups,
+      rows: rows.map((row) => ({
+        accountClass: row.accountClass,
+        accountGroup: row.accountGroup,
+        amount: row.amount,
+        balanceCredit: row.balanceCredit,
+        balanceDebit: row.balanceDebit,
+        creditMovement: row.creditMovement,
+        debitMovement: row.debitMovement,
+        ledgerAccount: {
+          code: row.ledgerAccount.code,
+          id: row.ledgerAccount.id,
+          name: row.ledgerAccount.name,
+        },
+        normalBalance: row.normalBalance,
+      })),
+      total: this.toMoney(total),
+    };
+  }
+
+  private groupFinancialStatementRows(rows: FinancialStatementRow[]) {
+    const groupsMap = new Map<
+      string,
+      { group: { id: string; code: string; name: string }; total: Prisma.Decimal }
+    >();
+
+    for (const row of rows) {
+      const key = row.accountGroup.id;
+      const current = groupsMap.get(key);
+
+      if (current) {
+        current.total = current.total.plus(row.signedAmount.abs());
+      } else {
+        groupsMap.set(key, {
+          group: { ...row.accountGroup },
+          total: row.signedAmount.abs(),
+        });
+      }
+    }
+
+    return [...groupsMap.values()]
+      .sort((left, right) => {
+        const byCode = left.group.code.localeCompare(right.group.code);
+        if (byCode !== 0) return byCode;
+        return left.group.name.localeCompare(right.group.name);
+      })
+      .map((entry) => ({
+        ...entry.group,
+        total: this.toMoney(entry.total),
+      }));
+  }
+
+  private groupBalanceSheetRows(rows: BalanceSheetRow[]) {
+    const groupsMap = new Map<
+      string,
+      { group: { id: string; code: string; name: string }; total: Prisma.Decimal }
+    >();
+
+    for (const row of rows) {
+      const key = row.accountGroup.id;
+      const current = groupsMap.get(key);
+
+      if (current) {
+        current.total = current.total.plus(row.signedAmount.abs());
+      } else {
+        groupsMap.set(key, {
+          group: { ...row.accountGroup },
+          total: row.signedAmount.abs(),
+        });
+      }
+    }
+
+    return [...groupsMap.values()]
+      .sort((left, right) => {
+        const byCode = left.group.code.localeCompare(right.group.code);
+        if (byCode !== 0) return byCode;
+        return left.group.name.localeCompare(right.group.name);
+      })
+      .map((entry) => ({
+        ...entry.group,
+        total: this.toMoney(entry.total),
+      }));
+  }
+
+  private summarizeAccountClass(accountClass: {
+    id: string;
+    code: string;
+    name: string;
+    normalBalance: NormalBalanceSide;
+  }) {
+    return {
+      code: accountClass.code,
+      id: accountClass.id,
+      name: accountClass.name,
+      normalBalance: accountClass.normalBalance,
+    };
+  }
+
+  private summarizeFilters(context: ReportContext | BalanceSheetContext) {
     return {
       costCenter: context.costCenter
         ? this.summarizeCostCenter(context.costCenter)

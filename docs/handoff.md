@@ -2,9 +2,64 @@
 
 ## Current Phase
 
-Phase 2D: backend Trial Balance report API implemented (Chunk 2D-3 complete). Stop before Income Statement and Balance Sheet.
+Phase 2D: backend Income Statement and Balance Sheet API implemented (Chunk 2D-4 complete). Stop before frontend report pages.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locked accounting report requirements before report implementation.
+
+## Phase 2D Chunk 2D-4 Backend Income Statement and Balance Sheet API - completed this session
+
+- Added guarded backend endpoints `GET /reports/income-statement` and `GET /reports/balance-sheet` in the existing report module.
+- Both endpoints use the existing class-level `AuthGuard` + `RolesGuard` + `ACCOUNTANT` report-route protection.
+- Added optional `asOfDate` field to `ReportQueryDto` for the balance sheet point-in-time query.
+- Reports derive only from `VoucherLine` rows attached to `Voucher.status = POSTED` and `Voucher.isDeleted = false`.
+
+### Income Statement (`GET /reports/income-statement`)
+
+- Period-based report using only INCOME and EXPENSE account classes.
+- Uses existing shared report query validation for fiscal year, accounting period, and date range.
+- Income accounts: credit increases income, debit decreases income (signed amount = credit - debit).
+- Expense accounts: debit increases expense, credit decreases expense (signed amount = debit - credit).
+- Net income = total income - total expense (isProfit flag when net income >= 0).
+- Rows and groups sorted by account class (Income before Expense), account group code/name, ledger account code/name.
+- Rejects `ledgerAccountId`, `cashBankAccountId`, and `asOfDate` with clear 400 errors.
+- Empty valid reports return zero totals, empty rows/groups, `isProfit: true`.
+
+### Balance Sheet (`GET /reports/balance-sheet`)
+
+- As-of-date based report using only ASSET, LIABILITY, and EQUITY account classes.
+- `asOfDate` determines the point-in-time; falls back to `accountingPeriod.endDate`, then `fiscalYear.endDate`.
+- Asset accounts: debit increases, credit decreases (signed amount = debit - credit).
+- Liability accounts: credit increases, debit decreases (signed amount = credit - debit).
+- Equity accounts: credit increases, debit decreases (signed amount = credit - debit).
+- Cumulative movements from `fiscalYear.startDate` through `asOfDate` inclusive.
+- Balance check: `difference = totalAssets - totalLiabilitiesAndEquity`, `isBalanced` when difference is zero.
+- Rows and groups sorted by account class (Asset, Liability, Equity), account group code/name, ledger account code/name.
+- Rejects `ledgerAccountId`, `cashBankAccountId`, `startDate`, and `endDate` with clear 400 errors.
+- `asOfDate` must fall inside the fiscal year date range; when `accountingPeriodId` is also provided, `asOfDate` must also fall inside the period.
+- Empty valid reports return zero totals, empty rows/groups, `isBalanced: true`, `difference: "0.00"`.
+- Does not invent virtual retained earnings; reports only posted voucher line movements. If Income/Expense closing entries are not posted, the balance sheet may not balance and reports `isBalanced` and `difference` honestly.
+
+### Money values
+
+- All money values are returned as two-decimal strings using `Prisma.Decimal.toFixed(2)`, consistent with existing report API.
+
+### Regression
+
+- Existing `GET /reports/ledger`, `GET /reports/cash-book`, `GET /reports/bank-book`, and `GET /reports/trial-balance` still work after the change.
+
+### Files changed
+
+- `apps/api/src/report/dto/report-query.dto.ts`: added `asOfDate` optional ISO8601 field.
+- `apps/api/src/report/report.controller.ts`: added `income-statement` and `balance-sheet` endpoints.
+- `apps/api/src/report/report.service.ts`: added `getIncomeStatement`, `getBalanceSheet`, `resolveBalanceSheetContext`, `buildBalanceSheetVoucherFilter`, and supporting helper methods and types.
+
+### Not added
+
+- No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Project Summary, Cost Center Summary, PDF/Excel export, or report UI.
+
+## Next Stop Point (2D-4)
+
+Review Phase 2D-4 backend Income Statement and Balance Sheet API. The next recommended task is 2D-4 backend financial statement API review before starting Chunk 2D-5 frontend report pages.
 
 ## Phase 2D Chunk 2D-3 Backend Trial Balance API - completed this session
 
@@ -269,12 +324,10 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2D Chunk 2D-3 backend Trial Balance API is complete. The next task is 2D-3 backend Trial Balance API review before starting Chunk 2D-4 Income Statement and Balance Sheet API.
+Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete. The next task is 2D-4 backend financial statement API review before starting Chunk 2D-5 frontend report pages.
 
 Still not implemented:
 
-- Income Statement API.
-- Balance Sheet API.
 - Project Summary API.
 - Cost Center Summary API.
 - Report frontend pages.
@@ -290,7 +343,7 @@ Still not implemented:
 
 ## Last Verification Results
 
-Verification date: 2026-06-15, Phase 2D Chunk 2D-3 backend Trial Balance API.
+Verification date: 2026-06-15, Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API.
 
 - `pnpm prisma:generate`: passed.
 - `pnpm typecheck`: passed.
@@ -299,7 +352,7 @@ Verification date: 2026-06-15, Phase 2D Chunk 2D-3 backend Trial Balance API.
 - `pnpm build:web`: passed.
 - `pnpm check:all`: passed.
 - `pnpm doctor`: passed.
-- No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Income Statement, or Balance Sheet implementation in Phase 2D Chunk 2D-3.
+- No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Project Summary, or Cost Center Summary implementation in Phase 2D Chunk 2D-4.
 
 ## Current GitHub Repository
 
