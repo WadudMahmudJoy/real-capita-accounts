@@ -6,11 +6,13 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2D: accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, and Balance Sheet; frontend report pages for all six reports; and a browser print foundation for all six report pages.
+Phase 2E: MFS / bKash transaction support requirement lock is complete. Phase 2E defines MFS accounting model, provider tracking, wallet/account identity, voucher behavior, report behavior (MFS Book), and acceptance criteria for a future implementation phase. No runtime MFS implementation exists yet.
+
+Phase 2D is accepted at commit `be482c2`. The `phase-2d-complete` tag should exist. Phase 2D added backend report APIs for Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, and Balance Sheet; frontend report pages for all six reports; and a browser print foundation for all six report pages.
 
 Phase 0 is complete and accepted. Phase 1A adds only authentication, one confirmed role, a protected app shell, project operating documentation, ADRs, and verification scripts.
 
-Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted.
+Phase 1B locked the accounting foundation requirements. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the full voucher engine and is accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E is requirement-lock stage only.
 
 If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`.
 
@@ -26,9 +28,9 @@ If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` 
 
 ## Strict Current Boundary
 
-Phase 2D accounting reports implementation is complete and accepted. All six backend report APIs, all six frontend report pages, and the browser print foundation are implemented. The next phase must not start without explicit user confirmation.
+Phase 2D accounting reports implementation is complete and accepted. Phase 2E MFS / bKash transaction support requirement lock is complete. No runtime MFS implementation exists yet. No schema, API, UI, or report behavior has changed. The next phase must not start without explicit user confirmation.
 
-Do not implement Project Summary, Cost Center Summary, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, or business seed data until the user confirms the next implementation phase.
+Do not implement Project Summary, Cost Center Summary, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, additional roles, file uploads, business seed data, or MFS runtime implementation until the user confirms the next implementation phase.
 
 ## Confirmed Role Model
 
@@ -129,17 +131,28 @@ Before any new feature work, read:
 - `docs/requirements/phase-2d-accounting-reports-requirement-lock.md`
 - `docs/acceptance/phase-2d-acceptance-criteria.md`
 
+## Phase 2E MFS / bKash Requirement Lock
+
+Phase 2E MFS / bKash transaction support requirement lock is complete. It defines MFS accounting model, provider tracking, wallet/account identity, voucher behavior, MFS Book concept, report impact, validation rules, and acceptance criteria for a future implementation phase. No runtime MFS implementation exists yet.
+
+Before any MFS implementation, read:
+
+- `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md`
+- `docs/architecture/phase-2e-mfs-accounting-model-proposal.md`
+- `docs/acceptance/phase-2e-acceptance-criteria.md`
+- `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md`
+
 ## Agent Switching
 
 When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI, or a human developer:
 
 1. Start with `docs/ai/START_HERE.md`.
 2. Run `pnpm agent:start`.
-3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2D lock docs.
+3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2E lock docs.
 4. Confirm `git status` is clean before new work.
 5. Continue only inside the current phase boundary.
 6. Update handoff docs before ending the session.
 
 ## Next Phase Guidance
 
-Phase 2D is complete and accepted. The next recommended task is to create a separate requirement lock for bKash/MFS support, or pause before Phase 2E. No Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, bKash/MFS implementation, or new modules should be started without explicit user confirmation.
+Phase 2E requirement lock is complete. No runtime MFS implementation exists yet. The next recommended task is to review/accept the Phase 2E requirement lock, then confirm implementation if approved. No Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS runtime implementation, or new modules should be started without explicit user confirmation.

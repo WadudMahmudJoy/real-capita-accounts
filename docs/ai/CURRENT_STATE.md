@@ -36,6 +36,17 @@ Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank B
 Phase 2D Chunk 2D-6 frontend financial statement pages (Income Statement, Balance Sheet) and the report browser-print foundation are complete.
 Phase 2D Chunk 2D-7 final integration and acceptance review is complete. Phase 2D is now accepted.
 
+Phase 2E MFS / bKash transaction support requirement/specification lock is complete. No runtime MFS implementation exists yet. No schema, API, UI, or report behavior has changed.
+
+## Phase 2E MFS / bKash Requirement Lock - completed this session
+
+- Created `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md`: defines MFS / bKash transaction support purpose, confirmed business need, current status (future requirement, not implemented), terminology (MFS, wallet/account, provider, cash-in, cash-out, merchant payment, transfer, service charge), supported future providers (bKash, Nagad, Rocket, Upay, Other), current role boundary (ACCOUNTANT only), accounting source rule (reports from POSTED voucher lines only), cash/bank/MFS separation rule (MFS is a separate account type, not BANK or CASH), voucher behavior requirements, report behavior requirements (MFS Book concept, Cash Book remains CASH-only, Bank Book remains BANK-only, Trial Balance/Income Statement/Balance Sheet unchanged), validation requirements, print/report requirements, security/privacy requirements, exclusions, and open questions for Real Capita confirmation.
+- Created `docs/architecture/phase-2e-mfs-accounting-model-proposal.md`: proposes future model (CashBankAccountType: CASH, BANK, MFS; MfsProvider enum; walletNumber/accountHolderName fields), explains why bKash should not be forced under BANK or CASH, voucher-line level impact, report impact per report type, decimal handling, backend authority rule, migration risk notes, and explicit statement of no current code changes.
+- Created `docs/acceptance/phase-2e-acceptance-criteria.md`: acceptance for documentation lock, future backend implementation, future frontend implementation, report correctness, security, regression, and explicit non-acceptance conditions.
+- Created `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md`: splits MFS implementation into 7 chunks (2E-1 requirement lock review, 2E-2 backend schema/model, 2E-3 backend validation/API, 2E-4 frontend MFS account setup, 2E-5 MFS Book report API, 2E-6 MFS Book frontend and print foundation, 2E-7 final integration and acceptance review). Each chunk includes model recommendation, scope, files to read, verification, manual smoke tests, and exact stop condition.
+- Updated `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`, `README.md`, `AGENTS.md`, `docs/ai/START_HERE.md` to reflect Phase 2E requirement lock.
+- No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no MFS runtime logic, no roles, no seed data, and no tooling were added in Phase 2E.
+
 ## Phase 2D Chunk 2D-7 Final Integration and Acceptance Review
 
 Chunk 2D-6 added the accountant-facing Income Statement and Balance Sheet frontend pages and a browser-print foundation for every approved report page, on top of the existing backend financial statement APIs, with no backend, schema, or migration changes.
@@ -301,9 +312,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS transaction support, or unconfirmed office roles.
+The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS account setup, MFS Book report, MFS voucher line support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS runtime implementation, or unconfirmed office roles.
 
-The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
+The Phase 2E MFS / bKash requirement lock is complete. No runtime MFS implementation exists yet. The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
 
 ## Database Port
 
@@ -319,11 +330,11 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D is complete and accepted. The next recommended task is to create a separate requirement lock for bKash/MFS support, or pause before Phase 2E. No Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, bKash/MFS support, or new modules should be started without explicit user confirmation. bKash/MFS transaction support was requested by AGM sir and must be handled in a separate future requirement lock/chunk.
+Phase 2E requirement lock is complete. The next recommended task is to review/accept the Phase 2E requirement lock, then confirm Phase 2E implementation if approved. No MFS runtime implementation, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 
-- `docs/plans/phase-2d-accounting-reports-implementation-plan.md`
-- `docs/requirements/phase-2d-accounting-reports-requirement-lock.md`
-- `docs/architecture/phase-2d-report-query-model-proposal.md`
-- `docs/acceptance/phase-2d-acceptance-criteria.md`
+- `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md`
+- `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md`
+- `docs/architecture/phase-2e-mfs-accounting-model-proposal.md`
+- `docs/acceptance/phase-2e-acceptance-criteria.md`

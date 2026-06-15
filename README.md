@@ -25,8 +25,8 @@ This repository is intentionally not a continuation of the previous Real Capita 
   - Chunk 2D-6: frontend financial statement pages (Income Statement, Balance Sheet) and browser print foundation for all six report pages.
   - Chunk 2D-7: final integration and acceptance review (all backend+frontend+print smoke tests, docs update, scope verification).
 - Implemented report features: all six backend report endpoints, all six frontend report pages, and browser print foundation for all six report pages. Reports derive from posted VoucherLine records only; no primary report tables.
-- Still not implemented: Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
-- bKash/MFS transaction support was requested by AGM sir and is deferred to a separate future requirement lock/chunk.
+- Phase 2E MFS / bKash transaction support requirement lock is complete. No runtime MFS implementation exists yet. Phase 2E defines MFS accounting model, provider tracking (bKash, Nagad, Rocket, Upay, Other), wallet/account identity, voucher behavior, MFS Book concept, report impact, validation rules, and acceptance criteria for a future implementation phase.
+- Still not implemented: MFS account setup, MFS Book report, MFS voucher line support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
 - The next phase must be confirmed before implementation.
 
 ## Stack
@@ -166,6 +166,4 @@ Use `pnpm agent:start` for a quick local orientation report.
 
 ## Strict Current Boundary
 
-The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock, the Phase 2D Chunk 2D-2 backend APIs for General Ledger, Cash Book, and Bank Book, the Phase 2D Chunk 2D-3 backend API for Trial Balance, the Phase 2D Chunk 2D-4 backend APIs for Income Statement and Balance Sheet, and the Phase 2D Chunk 2D-5 frontend operational report pages for Ledger, Cash Book, Bank Book, and Trial Balance. It does not include Income Statement frontend, Balance Sheet frontend, Project Summary, Cost Center Summary, report print layouts, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, reversal/correction features, approval workflow, or unconfirmed office roles.
-
-The next recommended task is Chunk 2D-5 frontend operational report pages review before starting Chunk 2D-6 financial statement frontend pages and report print foundation.
+The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock and implementation (accepted), and the Phase 2E MFS / bKash requirement lock. No runtime MFS implementation exists yet. No schema, API, UI, or report behavior has changed for MFS. The next recommended task is to review/accept the Phase 2E requirement lock, then confirm implementation if approved. Do not start MFS runtime implementation, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or any new module without explicit user confirmation.

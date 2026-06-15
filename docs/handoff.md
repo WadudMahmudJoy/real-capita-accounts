@@ -2,17 +2,25 @@
 
 ## Current Phase
 
-Phase 2D is complete and accepted. All six backend report APIs, all six frontend report pages, and the browser print foundation are implemented. Phase 2D final integration and acceptance review (Chunk 2D-7) confirmed scope, security, accounting correctness, frontend/print, regression, and documentation. Stop before any new phase without explicit user confirmation.
+Phase 2E MFS / bKash transaction support requirement lock is complete. No runtime MFS implementation exists yet. No schema, API, UI, or report behavior has changed. Stop before any implementation without explicit user confirmation.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E locks the MFS / bKash transaction support requirements and is complete at requirement-lock stage only.
 
-## Phase 2D Chunk 2D-7 Final Integration and Acceptance Review - completed this session
+## Phase 2E MFS / bKash Requirement Lock - completed this session
 
-- Full integration review across all six prior Phase 2D chunks: requirement lock review, backend report APIs, frontend operational report pages, frontend financial statement pages, and browser print foundation.
-- Verified scope boundaries: only backend report module (6 endpoints), frontend report pages (6 pages), and browser print foundation were implemented. No Project Summary, Cost Center Summary, report tables, Prisma schema changes beyond previously accepted voucher/report work, migrations in 2D, dashboard analytics, payroll, parties/customers/vendors, roles beyond ACCOUNTANT, uploads, seed data, PDF/Excel export, bKash/MFS runtime support, approval workflow, or voucher reversal/correction were added in Phase 2D.
-- Confirmed all six `/reports/*` routes are guarded by `AuthGuard` + `RolesGuard` + `ACCOUNTANT`. Unauthenticated access returns 401.
-- Confirmed all reports derive only from `VoucherLine` rows attached to `Voucher.status = POSTED` and `Voucher.isDeleted = false`.
-- Confirmed DRAFT and soft-deleted voucher data does not appear in any report.
+- Created `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md`: defines MFS / bKash transaction support requirements, terminology, providers, role boundary, accounting source rule, cash/bank/MFS separation, voucher behavior, report behavior (MFS Book), validation, print/report, security/privacy, exclusions, and open questions. Current status: future requirement, not implemented.
+- Created `docs/architecture/phase-2e-mfs-accounting-model-proposal.md`: proposes CashBankAccountType extension (CASH, BANK, MFS), MfsProvider enum, wallet/account number and account holder name concepts, explains why bKash should not be forced under BANK or CASH, voucher-line impact, report impact, decimal handling, backend authority, migration risk notes. No current code changes.
+- Created `docs/acceptance/phase-2e-acceptance-criteria.md`: acceptance for documentation lock, future backend, future frontend, report correctness, security, regression, and explicit non-acceptance conditions.
+- Created `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md`: 7 chunks (2E-1 through 2E-7) with model recommendations, scope, files, verification, smoke tests, and stop conditions.
+- Updated `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, and `docs/handoff.md` to reflect Phase 2E requirement lock.
+- No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no MFS runtime logic, no roles, no seed data, and no tooling were added.
+- Phase 2D acceptance state is preserved. Phase 2D is accepted at `be482c2`. The `phase-2d-complete` tag exists.
+
+## Next Stop Point
+
+Phase 2E requirement lock is complete. The next recommended task is to review/accept the Phase 2E requirement lock, then confirm Phase 2E implementation if approved. Do not start MFS runtime implementation, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
+
+## Phase 2D Chunk 2D-7 Final Integration and Acceptance Review - completed previous session
 - Confirmed accounting correctness: Ledger opening/period/closing/running balance, Cash Book/Bank Book cash/bank linked lines, Trial Balance totals and difference, Income Statement uses INCOME/EXPENSE only with correct net income formula, Balance Sheet uses ASSET/LIABILITY/EQUITY only, does not force balance, does not invent retained earnings, all money output uses stable two-decimal Prisma.Decimal strings.
 - Confirmed all six frontend report routes render under protected app shell with appropriate filters per report type.
 - Confirmed browser print foundation: Print button appears after report load on all six pages, uses `window.print()` only, no PDF/Excel/file upload. Print layout includes Real Capita Group heading, report title, period/date context, filters, report body, totals, generated timestamp, and signature placeholders.
@@ -58,11 +66,11 @@ Phase 2D is accepted and complete. Do not start Phase 2E, bKash/MFS implementati
 
 ## Next Stop Point (2D-7 accepted)
 
-Phase 2D is complete and accepted. The next recommended task is to create a separate requirement lock for bKash/MFS support, or pause before Phase 2E. Do not start any new phase without explicit user confirmation.
+Phase 2D is complete and accepted. Phase 2E requirement lock is complete. The next recommended task is to review/accept the Phase 2E requirement lock, then confirm implementation if approved.
 
-## Future Request Note: bKash / MFS Transaction Support
+## Future Request Note: bKash / MFS Transaction Support (now locked in Phase 2E)
 
-bKash/MFS (mobile financial services) transaction support was requested by AGM sir and should be handled in a separate future requirement lock/chunk. It is intentionally out of scope for Phase 2D Chunk 2D-6. No schema, enum, cash/bank logic, voucher validation, or report changes were made for bKash/MFS in this chunk. Lock the requirements (account modelling, charges/fees, statement reconciliation, reporting) before any implementation.
+bKash/MFS transaction support was requested by AGM sir and is now locked in Phase 2E. See `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md` and related Phase 2E docs. No runtime implementation exists yet.
 
 ## Phase 2D Chunk 2D-5 Frontend Operational Report Pages - completed this session
 

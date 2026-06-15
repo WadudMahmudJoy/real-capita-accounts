@@ -14,6 +14,8 @@ Phase 2B voucher requirement documentation/specification lock is complete. Phase
 
 Phase 2D accounting reports implementation is complete and accepted. All six backend report APIs, all six frontend report pages, and the browser print foundation are implemented.
 
+Phase 2E MFS / bKash transaction support requirement lock is complete. No runtime MFS implementation exists yet. No schema, API, UI, or report behavior has changed.
+
 The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represents AGM sir as the main accounting operator for now. Do not add other roles until Real Capita confirms exact responsibilities.
 
 ## Where To Look First
@@ -25,7 +27,8 @@ The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represent
 5. `prisma/schema.prisma` for the current database model.
 6. `apps/api/src` and `apps/web/src` for implementation.
 7. `docs/requirements/phase-2d-accounting-reports-requirement-lock.md` before any report-module coding.
-8. `docs/prompts/phase-2d-next-prompt.md` if continuing in Droid CLI or another agent.
+8. `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md` before any MFS implementation.
+9. `docs/prompts/phase-2d-next-prompt.md` if continuing in Droid CLI or another agent.
 
 ## Local Setup
 
@@ -66,4 +69,4 @@ Do not rely on hidden chat memory. Reconstruct state from this repo:
 4. Check `git status --short --branch`.
 5. Continue only from documented requirements.
 
-If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/prompts/phase-2d-next-prompt.md` before coding.
+If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md` and `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md` before coding.
