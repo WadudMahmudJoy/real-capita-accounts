@@ -42,9 +42,24 @@ Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d
 
 Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. The backend Cash & Bank account API can manage MFS accounts.
 
-Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at `be2392a`. The accountant can create, view, edit, and deactivate MFS accounts from the existing Cash, Bank & MFS setup page. Phase 2E Chunk 2E-5 MFS Book report API is implemented: `GET /reports/mfs-book` exists. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is implemented: `/app/reports/mfs-book` exists. MFS runtime is still incomplete: no MFS voucher posting support exists yet.
+Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at `be2392a`. The accountant can create, view, edit, and deactivate MFS accounts from the existing Cash, Bank & MFS setup page. Phase 2E Chunk 2E-5 MFS Book report API is accepted at `d90ffd4`: `GET /reports/mfs-book` exists. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted: `/app/reports/mfs-book` exists. Phase 2E MFS account setup and MFS Book foundation are now accepted. MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
 
-## Phase 2E Chunk 2E-6 MFS Book Frontend and Print Foundation - completed this session
+## Phase 2E Chunk 2E-7 Final Integration and Acceptance Review - completed this session (accepted)
+
+- Full integration review across all Phase 2E chunks: schema, backend account API, frontend MFS account setup, backend MFS Book report API, frontend MFS Book report page, and print foundation.
+- Verified scope boundaries: only MFS account schema/model, backend account API validation, frontend MFS account setup, backend MFS Book report, frontend MFS Book page, and browser print foundation were implemented. No Project Summary, Cost Center Summary, report tables, PDF/Excel export, dashboard analytics, payroll, parties/customers/vendors, extra roles, file uploads, business seed data, MFS voucher posting support, or MFS provider API integration were added.
+- Confirmed all MFS endpoints are guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.
+- Confirmed MFS Book derives only from `Voucher.status = POSTED` and `Voucher.isDeleted = false`.
+- Confirmed Cash Book remains CASH-only, Bank Book remains BANK-only, MFS Book remains MFS-only.
+- Confirmed voucher posting still rejects MFS cash-bank accounts.
+- Confirmed only `ACCOUNTANT` role exists in the implemented scope.
+- Confirmed auth uses HttpOnly cookie behavior; no localStorage token usage.
+- Confirmed no schema/migration/report table was added beyond the approved Phase 2E schema foundation.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`, and `pnpm doctor` (port warning only).
+- Docs updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, and `docs/handoff.md` reflect Phase 2E acceptance.
+- No backend or frontend source changes were made in 2E-7.
+
+## Phase 2E Chunk 2E-6 MFS Book Frontend and Print Foundation - completed this session (accepted)
 
 - Added frontend route/page `/app/reports/mfs-book` using the shared `CashBankBookReport` component scoped to `accountType="MFS"`.
 - Extended `CashBankBookReport.tsx` to support MFS alongside CASH and BANK with a safe wider type union; CASH and BANK behavior unchanged.
@@ -397,7 +412,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is implemented. `/app/reports/mfs-book` exists. The next recommended task is Phase 2E Chunk 2E-7 final integration and acceptance review, unless review finds issues. No MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2E MFS account setup and MFS Book foundation are accepted. The next recommended task is either pause and demo/testing, or a future MFS voucher posting requirement/implementation lock, only if the user explicitly confirms. No MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 
