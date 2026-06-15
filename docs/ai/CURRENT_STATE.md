@@ -40,9 +40,25 @@ Phase 2E MFS / bKash transaction support requirement/specification lock is compl
 
 Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`.
 
-Phase 2E Chunk 2E-3 backend validation/API changes are implemented. The backend Cash & Bank account API can manage MFS accounts. MFS runtime is still incomplete: no MFS frontend page, no MFS Book report, and no MFS voucher posting support exists yet.
+Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. The backend Cash & Bank account API can manage MFS accounts.
 
-## Phase 2E Chunk 2E-3 Backend Validation / API Changes - completed this session
+Phase 2E Chunk 2E-4 frontend MFS account setup UI is implemented. The accountant can create, view, edit, and deactivate MFS accounts from the existing Cash, Bank & MFS setup page. MFS runtime is still incomplete: no MFS Book report and no MFS voucher posting support exists yet.
+
+## Phase 2E Chunk 2E-4 Frontend MFS Account Setup UI - completed this session
+
+- Extended `apps/web/src/lib/api.ts`: `CashBankAccountType` now includes `MFS`; added the `MfsProvider` type (`BKASH`, `NAGAD`, `ROCKET`, `UPAY`, `OTHER`); added nullable `provider`, `providerOtherName`, `walletNumber`, and `accountHolderName` to the `CashBankAccount` type; and added the same optional fields to the `CashBankAccountInput` create/update payload type. The existing cookie-authenticated `apiFetch` with `credentials: "include"` is preserved; no tokens are stored in `localStorage`.
+- Updated `apps/web/src/app/app/cash-bank/page.tsx` into the Cash, Bank & MFS setup page:
+  - The account type dropdown now offers CASH, BANK, and MFS (labelled "MFS / Mobile Wallet").
+  - When MFS is selected, the form shows Provider (required), Provider name (required and shown only when provider is Other), Wallet number / account ID (required), and an optional Account holder name. Bank name, branch, and account number are hidden for MFS.
+  - CASH and BANK keep their existing Bank name / Branch / Account number fields and do not show MFS metadata.
+  - Client-side validation catches missing MFS provider, missing wallet number, and missing custom provider name (when provider is Other) before submit; backend validation errors continue to surface through the shared `Notice`.
+  - A calm informational note explains that MFS account setup is available now but MFS voucher posting is not enabled yet.
+  - The account list/table shows the friendly account type label, and for MFS rows it shows the provider (custom name for Other) plus the wallet identifier. Existing CASH/BANK rows display the bank name as before.
+  - `startEdit` populates MFS metadata so MFS accounts can be edited and deactivated.
+- Updated the sidebar label in `apps/web/src/app/app/layout.tsx` from "Cash & Bank" to "Cash, Bank & MFS" so MFS setup is discoverable. No new sidebar route or section was added.
+- No backend code, Prisma schema, or migration changes were made. No voucher UI changes, no MFS Book report API, no MFS Book frontend page, no Reports navigation change, no dashboard cards, no PDF/Excel export, no provider integration, and no seed data were added. MFS voucher posting remains blocked by the backend.
+
+## Phase 2E Chunk 2E-3 Backend Validation / API Changes - completed previous session
 
 - Opened the existing guarded `cash-bank-accounts` API to `accountType = MFS` while preserving the existing `ACCOUNTANT` route protection.
 - Added DTO support for MFS metadata: `provider`, `providerOtherName`, `walletNumber`, and `accountHolderName`.
@@ -339,9 +355,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS account setup UI, MFS Book report, MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS runtime implementation beyond the backend account setup API, or unconfirmed office roles.
+The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS Book report, MFS Book frontend page, MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS runtime implementation beyond the backend account setup API and the frontend account setup UI, or unconfirmed office roles.
 
-The Phase 2E MFS / bKash requirement lock is complete and accepted at `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are implemented, but MFS runtime is still incomplete beyond backend account setup. The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
+The Phase 2E MFS / bKash requirement lock is complete and accepted at `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is implemented, but MFS runtime is still incomplete beyond account setup. The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
 
 ## Database Port
 
@@ -357,7 +373,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2E Chunk 2E-3 backend validation/API changes are implemented. The next recommended task is Phase 2E Chunk 2E-4 frontend MFS account setup UI, unless review finds issues. No MFS Book report, MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2E Chunk 2E-4 frontend MFS account setup UI is implemented. The next recommended task is Phase 2E Chunk 2E-5 MFS Book report API, unless review finds issues. No MFS Book report, MFS Book frontend page, MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 

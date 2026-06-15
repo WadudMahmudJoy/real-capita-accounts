@@ -80,7 +80,9 @@ export type AccountClass = {
 
 export type AccountingPeriodStatus = "OPEN" | "LOCKED" | "CLOSED";
 
-export type CashBankAccountType = "CASH" | "BANK";
+export type CashBankAccountType = "CASH" | "BANK" | "MFS";
+
+export type MfsProvider = "BKASH" | "NAGAD" | "ROCKET" | "UPAY" | "OTHER";
 
 export type AccountingPeriod = {
   id: string;
@@ -143,6 +145,10 @@ export type CashBankAccount = {
   bankName: string | null;
   branch: string | null;
   accountNumber: string | null;
+  provider: MfsProvider | null;
+  providerOtherName: string | null;
+  walletNumber: string | null;
+  accountHolderName: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -314,6 +320,10 @@ export type CashBankAccountInput = {
   bankName?: string;
   branch?: string;
   accountNumber?: string;
+  provider?: MfsProvider | null;
+  providerOtherName?: string | null;
+  walletNumber?: string | null;
+  accountHolderName?: string | null;
   isActive?: boolean;
 };
 

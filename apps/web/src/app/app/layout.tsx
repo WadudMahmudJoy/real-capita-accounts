@@ -93,7 +93,7 @@ const primaryLinks: NavLink[] = [
   {
     href: "/app/cash-bank",
     icon: Wallet,
-    label: "Cash & Bank",
+    label: "Cash, Bank & MFS",
     match: (pathname) => pathname.startsWith("/app/cash-bank"),
   },
   {

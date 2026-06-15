@@ -15,6 +15,7 @@ import {
   type CashBankAccountInput,
   type CashBankAccountType,
   type LedgerAccount,
+  type MfsProvider,
 } from "@/lib/api";
 import {
   Button,
@@ -39,10 +40,15 @@ type FormState = {
   bankName: string;
   branch: string;
   accountNumber: string;
+  provider: MfsProvider | "";
+  providerOtherName: string;
+  walletNumber: string;
+  accountHolderName: string;
   isActive: boolean;
 };
 
 const emptyForm: FormState = {
+  accountHolderName: "",
   accountNumber: "",
   accountType: "CASH",
   bankName: "",
@@ -51,6 +57,31 @@ const emptyForm: FormState = {
   id: null,
   isActive: true,
   ledgerAccountId: "",
+  provider: "",
+  providerOtherName: "",
+  walletNumber: "",
+};
+
+const accountTypeLabels: Record<CashBankAccountType, string> = {
+  BANK: "Bank",
+  CASH: "Cash",
+  MFS: "MFS / Mobile Wallet",
+};
+
+const mfsProviderOptions: { value: MfsProvider; label: string }[] = [
+  { label: "bKash", value: "BKASH" },
+  { label: "Nagad", value: "NAGAD" },
+  { label: "Rocket", value: "ROCKET" },
+  { label: "Upay", value: "UPAY" },
+  { label: "Other", value: "OTHER" },
+];
+
+const mfsProviderLabels: Record<MfsProvider, string> = {
+  BKASH: "bKash",
+  NAGAD: "Nagad",
+  OTHER: "Other",
+  ROCKET: "Rocket",
+  UPAY: "Upay",
 };
 
 function optional(value: string): string | undefined {
@@ -70,6 +101,21 @@ function linkedLedgerLabel(cashBankAccount: CashBankAccount): string {
   }
 
   return ledgerLabel(ledgerAccount);
+}
+
+/** Human-readable provider name, using the custom name for the OTHER provider. */
+function providerLabel(account: CashBankAccount): string {
+  if (!account.provider) {
+    return "-";
+  }
+
+  if (account.provider === "OTHER") {
+    return account.providerOtherName?.trim()
+      ? account.providerOtherName
+      : "Other";
+  }
+
+  return mfsProviderLabels[account.provider];
 }
 
 export default function CashBankPage() {
@@ -146,6 +192,7 @@ export default function CashBankPage() {
 
   function startEdit(account: CashBankAccount) {
     setForm({
+      accountHolderName: account.accountHolderName ?? "",
       accountNumber: account.accountNumber ?? "",
       accountType: account.accountType,
       bankName: account.bankName ?? "",
@@ -154,6 +201,9 @@ export default function CashBankPage() {
       id: account.id,
       isActive: account.isActive,
       ledgerAccountId: account.ledgerAccountId,
+      provider: account.provider ?? "",
+      providerOtherName: account.providerOtherName ?? "",
+      walletNumber: account.walletNumber ?? "",
     });
     setFormError(null);
     setFormSuccess(null);
@@ -179,25 +229,61 @@ export default function CashBankPage() {
       return;
     }
 
-    const payload: CashBankAccountInput = {
-      accountNumber: optional(form.accountNumber),
-      accountType: form.accountType,
-      bankName: optional(form.bankName),
-      branch: optional(form.branch),
-      displayName,
-      isActive: form.isActive,
-      ledgerAccountId: form.ledgerAccountId,
-    };
+    const isMfs = form.accountType === "MFS";
+    let payload: CashBankAccountInput;
+
+    if (isMfs) {
+      if (!form.provider) {
+        setFormError("Select an MFS provider.");
+        return;
+      }
+
+      const walletNumber = optional(form.walletNumber);
+      if (!walletNumber) {
+        setFormError("Wallet number / account ID is required for MFS accounts.");
+        return;
+      }
+
+      const providerOtherName = optional(form.providerOtherName);
+      if (form.provider === "OTHER" && !providerOtherName) {
+        setFormError(
+          "Enter the provider name when the MFS provider is set to Other.",
+        );
+        return;
+      }
+
+      payload = {
+        accountHolderName: optional(form.accountHolderName) ?? null,
+        accountType: "MFS",
+        displayName,
+        isActive: form.isActive,
+        ledgerAccountId: form.ledgerAccountId,
+        provider: form.provider,
+        providerOtherName:
+          form.provider === "OTHER" ? providerOtherName : null,
+        walletNumber,
+      };
+    } else {
+      payload = {
+        accountNumber: optional(form.accountNumber),
+        accountType: form.accountType,
+        bankName: optional(form.bankName),
+        branch: optional(form.branch),
+        displayName,
+        isActive: form.isActive,
+        ledgerAccountId: form.ledgerAccountId,
+      };
+    }
 
     setIsSaving(true);
 
     try {
       if (form.id) {
         await updateCashBankAccount(form.id, payload);
-        setFormSuccess("Cash/bank account updated.");
+        setFormSuccess("Cash/bank/MFS account updated.");
       } else {
         await createCashBankAccount(payload);
-        setFormSuccess("Cash/bank account created.");
+        setFormSuccess("Cash/bank/MFS account created.");
       }
 
       setForm(emptyForm);
@@ -216,16 +302,17 @@ export default function CashBankPage() {
 
   const isEditing = form.id !== null;
   const hasCashBankLedgerAccounts = cashBankLedgerAccounts.length > 0;
+  const isMfs = form.accountType === "MFS";
 
   return (
     <div className="flex flex-col gap-6">
       <PageIntro
-        description="Define cash and bank accounts by linking them to ledger accounts marked as Cash/Bank. No cash book or reconciliation is included yet."
-        title="Cash & Bank"
+        description="Define cash, bank, and MFS / mobile wallet accounts by linking them to ledger accounts marked as Cash/Bank. No cash book or reconciliation is included yet."
+        title="Cash, Bank & MFS"
       />
 
       {status === "loading" ? (
-        <LoadingPanel message="Loading cash and bank accounts..." />
+        <LoadingPanel message="Loading cash, bank and MFS accounts..." />
       ) : null}
 
       {status === "error" ? (
@@ -240,7 +327,8 @@ export default function CashBankPage() {
               <Link className="font-medium underline" href="/app/accounts/ledger">
                 Ledger Account
               </Link>{" "}
-              with Cash/Bank enabled before adding cash or bank account details.
+              with Cash/Bank enabled before adding cash, bank, or MFS account
+              details.
             </Notice>
           ) : null}
 
@@ -255,10 +343,14 @@ export default function CashBankPage() {
               }
               description={
                 isEditing
-                  ? "Update the selected cash or bank account."
-                  : "Add cash or bank account details for an eligible ledger account."
+                  ? "Update the selected cash, bank, or MFS account."
+                  : "Add cash, bank, or MFS account details for an eligible ledger account."
               }
-              title={isEditing ? "Edit cash/bank account" : "New cash/bank account"}
+              title={
+                isEditing
+                  ? "Edit cash/bank/MFS account"
+                  : "New cash/bank/MFS account"
+              }
             />
 
             <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit}>
@@ -318,64 +410,164 @@ export default function CashBankPage() {
                     }
                     value={form.accountType}
                   >
-                    <option value="CASH">Cash</option>
-                    <option value="BANK">Bank</option>
+                    <option value="CASH">{accountTypeLabels.CASH}</option>
+                    <option value="BANK">{accountTypeLabels.BANK}</option>
+                    <option value="MFS">{accountTypeLabels.MFS}</option>
                   </Select>
                 </Field>
 
-                <Field htmlFor="cash-bank-bank-name" label="Bank name">
-                  <TextInput
-                    disabled={!hasCashBankLedgerAccounts}
-                    id="cash-bank-bank-name"
-                    onChange={(event) =>
-                      setForm((previous) => ({
-                        ...previous,
-                        bankName: event.target.value,
-                      }))
-                    }
-                    placeholder="Optional bank name"
-                    value={form.bankName}
-                  />
-                </Field>
+                {isMfs ? (
+                  <>
+                    <Field
+                      htmlFor="cash-bank-provider"
+                      label="Provider"
+                      required
+                    >
+                      <Select
+                        disabled={!hasCashBankLedgerAccounts}
+                        id="cash-bank-provider"
+                        onChange={(event) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            provider: event.target.value as MfsProvider | "",
+                          }))
+                        }
+                        value={form.provider}
+                      >
+                        <option value="">Select MFS provider</option>
+                        {mfsProviderOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
 
-                <Field htmlFor="cash-bank-branch" label="Branch">
-                  <TextInput
-                    disabled={!hasCashBankLedgerAccounts}
-                    id="cash-bank-branch"
-                    onChange={(event) =>
-                      setForm((previous) => ({
-                        ...previous,
-                        branch: event.target.value,
-                      }))
-                    }
-                    placeholder="Optional branch"
-                    value={form.branch}
-                  />
-                </Field>
+                    {form.provider === "OTHER" ? (
+                      <Field
+                        htmlFor="cash-bank-provider-other"
+                        label="Provider name"
+                        required
+                      >
+                        <TextInput
+                          disabled={!hasCashBankLedgerAccounts}
+                          id="cash-bank-provider-other"
+                          onChange={(event) =>
+                            setForm((previous) => ({
+                              ...previous,
+                              providerOtherName: event.target.value,
+                            }))
+                          }
+                          placeholder="Enter the MFS provider name"
+                          value={form.providerOtherName}
+                        />
+                      </Field>
+                    ) : null}
 
-                <Field
-                  className="sm:col-span-2"
-                  htmlFor="cash-bank-account-number"
-                  label="Account number"
-                >
-                  <TextInput
-                    disabled={!hasCashBankLedgerAccounts}
-                    id="cash-bank-account-number"
-                    onChange={(event) =>
-                      setForm((previous) => ({
-                        ...previous,
-                        accountNumber: event.target.value,
-                      }))
-                    }
-                    placeholder="Optional account number"
-                    value={form.accountNumber}
-                  />
-                </Field>
+                    <Field
+                      htmlFor="cash-bank-wallet"
+                      hint="Mobile number or account ID that identifies this wallet."
+                      label="Wallet number / account ID"
+                      required
+                    >
+                      <TextInput
+                        disabled={!hasCashBankLedgerAccounts}
+                        id="cash-bank-wallet"
+                        onChange={(event) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            walletNumber: event.target.value,
+                          }))
+                        }
+                        placeholder="e.g. 01XXXXXXXXX"
+                        value={form.walletNumber}
+                      />
+                    </Field>
+
+                    <Field
+                      htmlFor="cash-bank-holder"
+                      hint="Optional. Use when the wallet is registered under a different name."
+                      label="Account holder name"
+                    >
+                      <TextInput
+                        disabled={!hasCashBankLedgerAccounts}
+                        id="cash-bank-holder"
+                        onChange={(event) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            accountHolderName: event.target.value,
+                          }))
+                        }
+                        placeholder="Optional account holder name"
+                        value={form.accountHolderName}
+                      />
+                    </Field>
+
+                    <div className="sm:col-span-2">
+                      <Notice tone="info">
+                        MFS accounts can be set up here now. Posting vouchers
+                        against MFS accounts is not enabled yet and will arrive
+                        in a later step.
+                      </Notice>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Field htmlFor="cash-bank-bank-name" label="Bank name">
+                      <TextInput
+                        disabled={!hasCashBankLedgerAccounts}
+                        id="cash-bank-bank-name"
+                        onChange={(event) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            bankName: event.target.value,
+                          }))
+                        }
+                        placeholder="Optional bank name"
+                        value={form.bankName}
+                      />
+                    </Field>
+
+                    <Field htmlFor="cash-bank-branch" label="Branch">
+                      <TextInput
+                        disabled={!hasCashBankLedgerAccounts}
+                        id="cash-bank-branch"
+                        onChange={(event) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            branch: event.target.value,
+                          }))
+                        }
+                        placeholder="Optional branch"
+                        value={form.branch}
+                      />
+                    </Field>
+
+                    <Field
+                      className="sm:col-span-2"
+                      htmlFor="cash-bank-account-number"
+                      label="Account number"
+                    >
+                      <TextInput
+                        disabled={!hasCashBankLedgerAccounts}
+                        id="cash-bank-account-number"
+                        onChange={(event) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            accountNumber: event.target.value,
+                          }))
+                        }
+                        placeholder="Optional account number"
+                        value={form.accountNumber}
+                      />
+                    </Field>
+                  </>
+                )}
 
                 <div className="sm:col-span-2">
                   <CheckboxField
                     checked={form.isActive}
-                    description="Inactive cash/bank accounts will not be selectable in future workflows."
+                    description="Inactive accounts will not be selectable in future workflows."
                     disabled={!hasCashBankLedgerAccounts}
                     id="cash-bank-active"
                     label="Active"
@@ -403,7 +595,7 @@ export default function CashBankPage() {
                     ? "Saving..."
                     : isEditing
                       ? "Save changes"
-                      : "Create cash/bank account"}
+                      : "Create account"}
                 </Button>
               </div>
             </form>
@@ -411,26 +603,26 @@ export default function CashBankPage() {
 
           <Card>
             <CardHeader
-              description="Cash and bank setup records linked to eligible ledger accounts."
-              title="Cash and bank accounts"
+              description="Cash, bank, and MFS setup records linked to eligible ledger accounts."
+              title="Cash, bank and MFS accounts"
             />
 
             {cashBankAccounts.length === 0 ? (
               <div className="mt-4">
                 <EmptyState
-                  description="Create the first cash or bank account using the form above."
-                  title="No cash or bank accounts yet"
+                  description="Create the first cash, bank, or MFS account using the form above."
+                  title="No cash, bank or MFS accounts yet"
                 />
               </div>
             ) : (
               <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[840px] border-collapse text-sm">
+                <table className="w-full min-w-[920px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       <th className="px-3 py-2.5">Display name</th>
                       <th className="px-3 py-2.5">Type</th>
                       <th className="px-3 py-2.5">Ledger account</th>
-                      <th className="px-3 py-2.5">Bank</th>
+                      <th className="px-3 py-2.5">Details</th>
                       <th className="px-3 py-2.5">Status</th>
                       <th className="px-3 py-2.5 text-right">Actions</th>
                     </tr>
@@ -446,14 +638,25 @@ export default function CashBankPage() {
                         </td>
                         <td className="px-3 py-3">
                           <StatusBadge tone="neutral">
-                            {account.accountType}
+                            {accountTypeLabels[account.accountType]}
                           </StatusBadge>
                         </td>
                         <td className="px-3 py-3 text-muted-foreground">
                           {linkedLedgerLabel(account)}
                         </td>
                         <td className="px-3 py-3 text-muted-foreground">
-                          {account.bankName ?? "-"}
+                          {account.accountType === "MFS" ? (
+                            <span className="flex flex-col">
+                              <span className="font-medium text-foreground">
+                                {providerLabel(account)}
+                              </span>
+                              <span className="text-xs">
+                                {account.walletNumber ?? "-"}
+                              </span>
+                            </span>
+                          ) : (
+                            (account.bankName ?? "-")
+                          )}
                         </td>
                         <td className="px-3 py-3">
                           {account.isActive ? (

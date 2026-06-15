@@ -38,14 +38,18 @@ import {
 } from "./report-print";
 import { useReportReferences } from "./useReportReferences";
 
+// Cash Book and Bank Book are scoped to CASH and BANK only. MFS transactions
+// are intentionally excluded here; they belong to a separate MFS Book.
+type CashBankBookAccountType = Extract<CashBankAccountType, "CASH" | "BANK">;
+
 type Variant = {
-  accountType: CashBankAccountType;
+  accountType: CashBankBookAccountType;
   title: string;
   description: string;
   emptyAccountsLabel: string;
 };
 
-const VARIANTS: Record<CashBankAccountType, Variant> = {
+const VARIANTS: Record<CashBankBookAccountType, Variant> = {
   BANK: {
     accountType: "BANK",
     description:
@@ -69,7 +73,7 @@ const VARIANTS: Record<CashBankAccountType, Variant> = {
 export function CashBankBookReport({
   accountType,
 }: {
-  accountType: CashBankAccountType;
+  accountType: CashBankBookAccountType;
 }) {
   const variant = VARIANTS[accountType];
   const router = useRouter();

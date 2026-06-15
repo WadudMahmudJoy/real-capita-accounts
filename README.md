@@ -35,9 +35,14 @@ This repository is intentionally not a continuation of the previous Real Capita 
   - The backend Cash & Bank account API can create, list, update, and deactivate MFS accounts.
   - MFS accounts require provider and wallet metadata; CASH/BANK accounts continue without MFS metadata.
   - MFS voucher posting support was not added; posting rejects MFS cash-bank accounts until a later Phase 2E chunk.
-- No MFS Book report, frontend MFS account page, dashboard/report/export expansion, MFS provider integration, or MFS seed data exists yet.
-- Still not implemented: MFS account setup UI, MFS Book report, MFS voucher posting support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
-- The next recommended task is Phase 2E Chunk 2E-4 frontend MFS account setup UI, unless review finds issues. It must be explicitly confirmed before starting.
+- Phase 2E Chunk 2E-4 frontend MFS account setup UI is implemented:
+  - The existing Cash & Bank setup page is now the Cash, Bank & MFS setup page; the account type dropdown offers CASH, BANK, and MFS.
+  - ACCOUNTANT can create, view, edit, and deactivate MFS accounts with provider, wallet number / account ID, and an optional account holder name; a provider name field appears only when provider is Other.
+  - CASH and BANK forms are unchanged and do not show MFS metadata fields.
+  - The account list shows MFS provider and wallet identifier; existing CASH/BANK rows display as before.
+- No MFS Book report, MFS Book frontend page, dashboard/report/export expansion, MFS provider integration, or MFS seed data exists yet.
+- Still not implemented: MFS Book report, MFS Book frontend page, MFS voucher posting support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
+- The next recommended task is Phase 2E Chunk 2E-5 MFS Book report API, unless review finds issues. It must be explicitly confirmed before starting.
 
 ## Stack
 
@@ -176,4 +181,4 @@ Use `pnpm agent:start` for a quick local orientation report.
 
 ## Strict Current Boundary
 
-The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock and implementation (accepted), the Phase 2E MFS / bKash requirement lock accepted at `fdffcfb`, the Phase 2E Chunk 2E-2 backend schema/model foundation accepted at `c820d7b`, and the Phase 2E Chunk 2E-3 backend validation/API changes. MFS runtime is still incomplete: no MFS Book report, no frontend MFS account page, no dashboard/report/export expansion, no MFS provider integration, and no MFS voucher posting support exists yet. The backend Cash & Bank API can manage MFS accounts, but voucher posting rejects MFS cash-bank accounts until a later Phase 2E chunk. Do not start Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS Book, frontend MFS pages, MFS voucher posting support, or any new module without explicit user confirmation.
+The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock and implementation (accepted), the Phase 2E MFS / bKash requirement lock accepted at `fdffcfb`, the Phase 2E Chunk 2E-2 backend schema/model foundation accepted at `c820d7b`, the Phase 2E Chunk 2E-3 backend validation/API changes accepted at `97e69ab`, and the Phase 2E Chunk 2E-4 frontend MFS account setup UI. MFS runtime is still incomplete: no MFS Book report, no MFS Book frontend page, no dashboard/report/export expansion, no MFS provider integration, and no MFS voucher posting support exists yet. The backend Cash & Bank API can manage MFS accounts and the frontend Cash, Bank & MFS page can set them up, but voucher posting rejects MFS cash-bank accounts until a later Phase 2E chunk. Do not start Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS Book, an MFS Book frontend page, MFS voucher posting support, or any new module without explicit user confirmation.
