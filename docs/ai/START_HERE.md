@@ -12,7 +12,7 @@ Phase 1B documentation/specification lock is complete. Phase 2A accounting found
 
 Phase 2B voucher requirement documentation/specification lock is complete. Phase 2C voucher implementation is complete and accepted.
 
-Phase 2D accounting reports requirement documentation/specification lock is complete. Chunk 2D-2 implements backend report APIs for General Ledger, Cash Book, and Bank Book. Chunk 2D-3 implements the backend Trial Balance API. Chunk 2D-4 implements backend Income Statement and Balance Sheet APIs. Chunk 2D-5 implements frontend operational report pages for Ledger, Cash Book, Bank Book, and Trial Balance. Income Statement frontend, Balance Sheet frontend, project/cost-center summaries, report print layouts, and exports are not implemented.
+Phase 2D accounting reports implementation is complete and accepted. All six backend report APIs, all six frontend report pages, and the browser print foundation are implemented.
 
 The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represents AGM sir as the main accounting operator for now. Do not add other roles until Real Capita confirms exact responsibilities.
 

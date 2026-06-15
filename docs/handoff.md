@@ -2,11 +2,45 @@
 
 ## Current Phase
 
-Phase 2D: frontend financial statement report pages and the report print foundation are implemented (Chunk 2D-6 complete). All six report pages are live: Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, and Balance Sheet. Every report page can be printed through the browser. Stop before 2D-7 final integration and acceptance review.
+Phase 2D is complete and accepted. All six backend report APIs, all six frontend report pages, and the browser print foundation are implemented. Phase 2D final integration and acceptance review (Chunk 2D-7) confirmed scope, security, accounting correctness, frontend/print, regression, and documentation. Stop before any new phase without explicit user confirmation.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locked accounting report requirements before report implementation.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted.
 
-## Phase 2D Chunk 2D-6 Frontend Financial Statement Pages and Report Print Foundation - completed this session
+## Phase 2D Chunk 2D-7 Final Integration and Acceptance Review - completed this session
+
+- Full integration review across all six prior Phase 2D chunks: requirement lock review, backend report APIs, frontend operational report pages, frontend financial statement pages, and browser print foundation.
+- Verified scope boundaries: only backend report module (6 endpoints), frontend report pages (6 pages), and browser print foundation were implemented. No Project Summary, Cost Center Summary, report tables, Prisma schema changes beyond previously accepted voucher/report work, migrations in 2D, dashboard analytics, payroll, parties/customers/vendors, roles beyond ACCOUNTANT, uploads, seed data, PDF/Excel export, bKash/MFS runtime support, approval workflow, or voucher reversal/correction were added in Phase 2D.
+- Confirmed all six `/reports/*` routes are guarded by `AuthGuard` + `RolesGuard` + `ACCOUNTANT`. Unauthenticated access returns 401.
+- Confirmed all reports derive only from `VoucherLine` rows attached to `Voucher.status = POSTED` and `Voucher.isDeleted = false`.
+- Confirmed DRAFT and soft-deleted voucher data does not appear in any report.
+- Confirmed accounting correctness: Ledger opening/period/closing/running balance, Cash Book/Bank Book cash/bank linked lines, Trial Balance totals and difference, Income Statement uses INCOME/EXPENSE only with correct net income formula, Balance Sheet uses ASSET/LIABILITY/EQUITY only, does not force balance, does not invent retained earnings, all money output uses stable two-decimal Prisma.Decimal strings.
+- Confirmed all six frontend report routes render under protected app shell with appropriate filters per report type.
+- Confirmed browser print foundation: Print button appears after report load on all six pages, uses `window.print()` only, no PDF/Excel/file upload. Print layout includes Real Capita Group heading, report title, period/date context, filters, report body, totals, generated timestamp, and signature placeholders.
+- Confirmed existing areas still work: login/logout/auth session, `/app` shell, `/app/vouchers`, posted voucher print, all accounting foundation pages.
+- Confirmed bKash/MFS support is documented only as a future request with no runtime implementation, schema changes, or UI logic.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`, and `pnpm doctor`.
+- Manual API smoke tests passed: all six report endpoints return 401 unauthenticated; login succeeds; all six endpoints return valid structures with authenticated valid filters; IS rejects `ledgerAccountId`; BS rejects `startDate`; Ledger requires `ledgerAccountId`; trial balance returns `isBalanced` with zero difference.
+- Manual browser smoke tests passed: login to `/app` shell; all six report navigation links present; Income Statement page renders with date range (not asOfDate); vouchers page renders with posted/draft distinction; posted voucher detail shows read-only view with Print button; unauthenticated report page access redirects to `/login`.
+- Docs updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, and `docs/handoff.md` reflect Phase 2D completion and acceptance.
+
+## Phase 2D Chunk 2D-7 Final Integration and Acceptance Review
+
+Phase 2D final integration and acceptance review (Chunk 2D-7) confirmed scope, security, accounting correctness, frontend pages, print foundation, regression, and documentation. All six backend report endpoints are `AuthGuard + RolesGuard + ACCOUNTANT` protection. All six frontend report pages render under the protected app shell. All six report pages have a browser print button wired to `window.print()`. No Project Summary, Cost Center Summary, report tables, Prisma schema changes, migrations, PDF/Excel export, dashboard analytics, payroll, parties/customers/vendors, roles, uploads, seed data, bKash/MFS implementation, approval workflow, or voucher reversal/correction were added in Phase 2D. Phase 2D is now accepted.
+
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `pnpm check:all`, `pnpm doctor` (port warnings only).
+- All six backend report endpoints return 401 for unauthenticated requests and valid structures with authenticated requests.
+- All six frontend report pages render, show correct filters, handle errors and empty states.
+- All six print buttons appear after report load, trigger `window.print()`.
+- Existing voucher pages and foundation pages still build and render.
+- Posted voucher detail and print button still work.
+- Unauthenticated access to report pages redirects to `/login`.
+- bKash/MFS: documented only as a future request. No runtime implementation.
+
+## Next Stop Point
+
+Phase 2D is accepted and complete. Do not start Phase 2E, bKash/MFS implementation, Project Summary, Cost Center Summary, dashboard, payroll, parties, uploads, roles, PDF/Excel export, or any new module without explicit user confirmation. The next recommended task is to create a separate requirement lock for bKash/MFS support, or pause before Phase 2E.
+
+## Phase 2D Chunk 2D-6 Frontend Financial Statement Pages and Report Print Foundation - completed previous session
 
 - Added the accountant-facing Income Statement and Balance Sheet frontend pages plus a browser-print foundation for every approved report page, on top of the existing backend financial statement APIs. No backend code, Prisma schema, or migration changes were made.
 - Extended `apps/web/src/lib/api.ts` with string-money financial statement types (`FinancialStatementGroupSummary`, `IncomeStatementRow`, `IncomeStatementSection`, `IncomeStatementReport`, `BalanceSheetRow`, `BalanceSheetSection`, `BalanceSheetReport`), added an optional `asOfDate` to `ReportQueryParams` (carried through `buildReportQuery`), and added cookie-authenticated helpers `getIncomeStatementReport` and `getBalanceSheetReport`. Both use the existing `apiFetch` with `credentials: "include"`; no tokens are stored in `localStorage`. No Project Summary or Cost Center Summary helpers were added.
@@ -22,9 +56,9 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web` (routes `/app/reports/income-statement` and `/app/reports/balance-sheet` built), `pnpm build:api`, `docker compose config`, `pnpm check:all`, and `pnpm doctor` (doctor warns only that ports 3000/4000 are occupied by the running dev apps used for smoke tests).
 - Manual checks passed against the running API at `http://localhost:4000` and web at `http://localhost:3000`: unauthenticated `GET /reports/income-statement` returns 401; login as `accountant@realcapita.local` succeeds; `GET /reports/income-statement` without `fiscalYearId` returns 400; with a fiscal year it returns income/expense sections, `income.total`, `expenses.total`, `netIncome`, and `isProfit`; `GET /reports/balance-sheet` returns `asOfDate`, asset/liability/equity sections with totals, `totalLiabilitiesAndEquity`, `difference`, and `isBalanced`; the balance sheet rejects `startDate`/`endDate` with 400 and accepts an optional `asOfDate`. The web routes `/app/reports/income-statement`, `/app/reports/balance-sheet`, `/app/reports/ledger`, `/app/reports/cash-book`, `/app/reports/bank-book`, and `/app/reports/trial-balance` all serve 200. The "Print report" button is wired to `window.print()` and appears only after a report has loaded on each report page; existing voucher and foundation pages still build and serve.
 
-## Next Stop Point (2D-6)
+## Next Stop Point (2D-7 accepted)
 
-Review the Phase 2D-6 frontend financial statement pages and report print foundation. The next recommended task is 2D-6 review before 2D-7 final integration and acceptance review. Do not start 2D-7, Project Summary, Cost Center Summary, dashboard, payroll, parties, uploads, roles, PDF/Excel export, or any new phase without explicit user confirmation.
+Phase 2D is complete and accepted. The next recommended task is to create a separate requirement lock for bKash/MFS support, or pause before Phase 2E. Do not start any new phase without explicit user confirmation.
 
 ## Future Request Note: bKash / MFS Transaction Support
 

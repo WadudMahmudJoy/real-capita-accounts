@@ -16,16 +16,18 @@ This repository is intentionally not a continuation of the previous Real Capita 
   - Chunk 2C-5: posting UI and print foundation (post action with confirmation panel, posted read-only view with postedBy/postingDate, browser print layout with Real Capita Group header, amount-in-words, and signature areas).
   - Chunk 2C-6: final integration and acceptance review (API+browser smoke tests, docs update, scope verification).
 - Implemented voucher features now include: full voucher lifecycle from draft create through posting, with print layout for posted vouchers.
-- Phase 2D accounting reports requirement lock is complete, backend report APIs are implemented through Chunk 2D-4, and frontend operational report pages are implemented through Chunk 2D-5:
-  - Eight reports defined: General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary.
-  - Reports derive from posted VoucherLine records only; no primary report tables.
-  - Backend endpoints implemented for General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, and Balance Sheet.
-  - Frontend report pages implemented for Ledger, Cash Book, Bank Book, and Trial Balance.
-  - Opening balances through opening journal vouchers.
-  - Report print layout is deferred to Chunk 2D-6; PDF/Excel deferred.
-  - Implementation plan split into 7 chunks (2D-1 through 2D-7).
-- Still not implemented: Project Summary API, Cost Center Summary API, Income Statement frontend, Balance Sheet frontend, Project Summary frontend, Cost Center Summary frontend, report print layouts, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
-- The next coding phase must be confirmed before implementation.
+- Phase 2D accounting reports are complete and accepted after full integration review:
+  - Chunk 2D-1: requirement lock review.
+  - Chunk 2D-2: backend General Ledger, Cash Book, and Bank Book report APIs.
+  - Chunk 2D-3: backend Trial Balance report API.
+  - Chunk 2D-4: backend Income Statement and Balance Sheet report APIs.
+  - Chunk 2D-5: frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance).
+  - Chunk 2D-6: frontend financial statement pages (Income Statement, Balance Sheet) and browser print foundation for all six report pages.
+  - Chunk 2D-7: final integration and acceptance review (all backend+frontend+print smoke tests, docs update, scope verification).
+- Implemented report features: all six backend report endpoints, all six frontend report pages, and browser print foundation for all six report pages. Reports derive from posted VoucherLine records only; no primary report tables.
+- Still not implemented: Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
+- bKash/MFS transaction support was requested by AGM sir and is deferred to a separate future requirement lock/chunk.
+- The next phase must be confirmed before implementation.
 
 ## Stack
 

@@ -34,8 +34,9 @@ Phase 2D Chunk 2D-3 backend Trial Balance API is complete.
 Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete.
 Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance) are complete.
 Phase 2D Chunk 2D-6 frontend financial statement pages (Income Statement, Balance Sheet) and the report browser-print foundation are complete.
+Phase 2D Chunk 2D-7 final integration and acceptance review is complete. Phase 2D is now accepted.
 
-## Phase 2D Chunk 2D-6 Frontend Financial Statement Pages and Report Print Foundation
+## Phase 2D Chunk 2D-7 Final Integration and Acceptance Review
 
 Chunk 2D-6 added the accountant-facing Income Statement and Balance Sheet frontend pages and a browser-print foundation for every approved report page, on top of the existing backend financial statement APIs, with no backend, schema, or migration changes.
 
@@ -302,7 +303,7 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 The repo intentionally does not include journals beyond the voucher draft/post workflow, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS transaction support, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete and accepted. Phase 2D accounting reports requirement lock is documented: eight reports defined (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), derived from posted voucher lines only, no primary report tables, opening balances through opening journal vouchers, browser print foundation. Chunk 2D-2 implemented the backend APIs for General Ledger, Cash Book, and Bank Book. Chunk 2D-3 implemented the backend API for Trial Balance. Chunk 2D-4 implemented backend Income Statement and Balance Sheet APIs. Chunk 2D-5 implemented frontend operational report pages for Ledger, Cash Book, Bank Book, and Trial Balance. Chunk 2D-6 implemented the frontend Income Statement and Balance Sheet pages plus the browser-print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
+The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
 
 ## Database Port
 
@@ -318,7 +319,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D Chunk 2D-6 frontend financial statement pages (Income Statement, Balance Sheet) and the report browser-print foundation are complete. The next recommended task is 2D-6 review before Chunk 2D-7 final integration and acceptance review. No Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, bKash/MFS support, or new modules should be started without explicit user confirmation. bKash/MFS transaction support was requested by AGM sir and must be handled in a separate future requirement lock/chunk.
+Phase 2D is complete and accepted. The next recommended task is to create a separate requirement lock for bKash/MFS support, or pause before Phase 2E. No Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, bKash/MFS support, or new modules should be started without explicit user confirmation. bKash/MFS transaction support was requested by AGM sir and must be handled in a separate future requirement lock/chunk.
 
 Reference docs before continuing:
 
