@@ -22,7 +22,7 @@ Phase 2D must not add anything beyond what is locked in those documents.
 - No dashboard analytics, no payroll, no parties/customers/vendors.
 - No file uploads, no business seed data, no approval workflow.
 - No report tables as primary source; all reports derive from posted VoucherLine records.
-- No PDF or Excel export in the first implementation (browser print only).
+- No PDF or Excel export in the first implementation. Browser print foundation is deferred to Chunk 2D-6 unless Real Capita confirms a different split.
 
 ---
 
@@ -311,11 +311,10 @@ Stop if:
 
 ### Objective
 
-Implement frontend pages for the General Ledger, Cash Book, Bank Book, and Trial Balance reports with date filtering and print foundation.
+Implement frontend pages for the General Ledger, Cash Book, Bank Book, and Trial Balance reports with date filtering. Report print foundation is deferred to Chunk 2D-6.
 
 ### Files Likely to Change
 
-- `apps/web/src/app/app/reports/page.tsx` -- report landing/navigation page.
 - `apps/web/src/app/app/reports/ledger/page.tsx` -- Ledger report page.
 - `apps/web/src/app/app/reports/cash-book/page.tsx` -- Cash Book page.
 - `apps/web/src/app/app/reports/bank-book/page.tsx` -- Bank Book page.
@@ -326,17 +325,18 @@ Implement frontend pages for the General Ledger, Cash Book, Bank Book, and Trial
 
 ### Frontend Requirements
 
-- **Reports navigation**: Add "Reports" link to the `/app` layout sidebar.
-- **Ledger report**: Dropdown for ledger account and fiscal year/period/date range selectors. Table with voucher number, date, narration, debit, credit, running balance. Opening/closing balance summary. Print button.
-- **Cash Book**: Dropdown for cash account and fiscal year/period/date range selectors. Table with voucher number, date, narration, receipt, payment, running balance. Print button.
-- **Bank Book**: Dropdown for bank account and fiscal year/period/date range selectors. Same table structure as Cash Book. Print button.
-- **Trial Balance**: Fiscal year/period/date range selectors. Table with ledger account, debit total, credit total, net balance. Summary row with totals. Print button.
-- **Print foundation**: Each report page renders a `@media print` layout with Real Capita Group heading, report title, date range, data table, totals, and footer. Same pattern as voucher print layout.
+- **Reports navigation**: Add report links to the `/app` layout sidebar.
+- **Ledger report**: Dropdown for ledger account and fiscal year/period/date range selectors. Table with voucher number, date, narration, debit, credit, running balance. Opening/closing balance summary.
+- **Cash Book**: Dropdown for cash account and fiscal year/period/date range selectors. Table with voucher number, date, narration, receipt, payment, running balance.
+- **Bank Book**: Dropdown for bank account and fiscal year/period/date range selectors. Same table structure as Cash Book.
+- **Trial Balance**: Fiscal year/period/date range selectors. Table with ledger account, debit total, credit total, net balance. Summary row with totals.
+- **Print foundation**: Deferred to Chunk 2D-6. Chunk 2D-5 must not add print layouts or print/export buttons.
 
 ### Strict Out-of-Scope
 
 - No Income Statement or Balance Sheet pages (Chunk 2D-6).
 - No Project Summary or Cost Center Summary pages (can be added later if needed).
+- No report print layouts or print buttons (Chunk 2D-6).
 - No PDF/Excel export.
 - No dashboard analytics or charts.
 
@@ -352,12 +352,12 @@ pnpm doctor
 
 ### Manual Smoke Tests
 
-- Navigate to `/app/reports`.
+- Navigate through the app shell Reports links.
 - Select a ledger account, select a fiscal year, verify the Ledger report renders with correct data.
 - Select a cash account, verify the Cash Book renders.
 - Select a bank account, verify the Bank Book renders.
 - Select a fiscal year for Trial Balance, verify the trial balance table renders with correct totals.
-- Click "Print report" on each page; verify the print layout renders.
+- Verify no print/export controls are present in this chunk.
 - Verify draft voucher data does not appear in any report.
 
 ### Recommended Model
@@ -381,7 +381,7 @@ Stop if:
 - Cash Book or Bank Book shows incorrect running balance.
 - Trial balance difference is not shown or is nonzero when books are balanced.
 - Draft voucher data appears in any report page.
-- Print layout is missing or unusable.
+- Print/export controls are added before the approved print-foundation chunk.
 
 ---
 
@@ -389,29 +389,30 @@ Stop if:
 
 ### Objective
 
-Implement frontend pages for the Income Statement and Balance Sheet with print foundation. Also add Project Summary and Cost Center Summary pages.
+Implement frontend pages for the Income Statement and Balance Sheet, plus report print foundation for the approved operational and financial-statement report pages. Project Summary and Cost Center Summary frontend pages remain deferred until their APIs and implementation chunk are explicitly confirmed.
 
 ### Files Likely to Change
 
 - `apps/web/src/app/app/reports/income-statement/page.tsx` -- Income Statement page.
 - `apps/web/src/app/app/reports/balance-sheet/page.tsx` -- Balance Sheet page.
-- `apps/web/src/app/app/reports/project-summary/page.tsx` -- Project Summary page.
-- `apps/web/src/app/app/reports/cost-center-summary/page.tsx` -- Cost Center Summary page.
-- `apps/web/src/lib/api.ts` -- add financial statement and summary helpers.
+- `apps/web/src/app/app/reports/ledger/page.tsx` -- add print foundation for operational reports if approved.
+- `apps/web/src/app/app/reports/cash-book/page.tsx` -- add print foundation for operational reports if approved.
+- `apps/web/src/app/app/reports/bank-book/page.tsx` -- add print foundation for operational reports if approved.
+- `apps/web/src/app/app/reports/trial-balance/page.tsx` -- add print foundation for operational reports if approved.
+- `apps/web/src/lib/api.ts` -- add financial statement helpers only.
 
 ### Frontend Requirements
 
 - **Income Statement**: Fiscal year/period/date range selectors. Sections for Income and Expenses, grouped by AccountGroup or individual accounts. Net profit/loss at the bottom. Print button.
 - **Balance Sheet**: Fiscal year selector, optional end date (point-in-time). Sections for Assets, Liabilities, Equity. Total check. Print button.
-- **Project Summary**: Fiscal year/period selector, optional project filter. Table with project, debit total, credit total, net balance. Print button.
-- **Cost Center Summary**: Fiscal year/period selector, optional cost center filter. Table with cost center, expense debit, expense credit, net expense. Print button.
-- **Print foundation**: Same pattern as Chunk 2D-5.
+- **Print foundation**: Add browser print layouts and print controls for the approved report pages, following the voucher print pattern.
 
 ### Strict Out-of-Scope
 
 - No PDF/Excel export.
 - No comparative period reports.
 - No multi-step income statement format.
+- No Project Summary or Cost Center Summary pages unless a later chunk explicitly confirms their backend APIs and frontend scope.
 - No dashboard analytics.
 
 ### Verification Commands
@@ -428,9 +429,7 @@ pnpm doctor
 
 - Navigate to Income Statement page; verify income and expense sections render correctly.
 - Navigate to Balance Sheet page; verify asset/liability/equity sections render with balance check.
-- Navigate to Project Summary page; verify project totals render.
-- Navigate to Cost Center Summary page; verify cost center totals render.
-- Print each report; verify print layout.
+- Print each approved report page; verify the print layout.
 
 ### Recommended Model
 

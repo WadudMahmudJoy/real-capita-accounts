@@ -279,9 +279,9 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, report frontend pages, financial statements, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, or unconfirmed office roles.
+The repo intentionally does not include journals beyond the voucher draft/post workflow, Income Statement frontend, Balance Sheet frontend, Project Summary, Cost Center Summary, report print layouts, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, or unconfirmed office roles.
 
-The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete and accepted. Phase 2D accounting reports requirement lock is documented: eight reports defined (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), derived from posted voucher lines only, no primary report tables, opening balances through opening journal vouchers, browser print foundation. Chunk 2D-2 implemented the backend APIs for General Ledger, Cash Book, and Bank Book. Chunk 2D-3 implemented the backend API for Trial Balance.
+The Phase 2A accounting foundation frontend is implemented. Phase 2B voucher requirement lock is documented. Phase 2C voucher implementation is complete and accepted. Phase 2D accounting reports requirement lock is documented: eight reports defined (General Ledger, Cash Book, Bank Book, Trial Balance, Income Statement, Balance Sheet, Project Summary, Cost Center Summary), derived from posted voucher lines only, no primary report tables, opening balances through opening journal vouchers, browser print foundation. Chunk 2D-2 implemented the backend APIs for General Ledger, Cash Book, and Bank Book. Chunk 2D-3 implemented the backend API for Trial Balance. Chunk 2D-4 implemented backend Income Statement and Balance Sheet APIs. Chunk 2D-5 implemented frontend operational report pages for Ledger, Cash Book, Bank Book, and Trial Balance. Report print layouts remain deferred.
 
 ## Database Port
 
