@@ -713,6 +713,312 @@ export function postVoucher(id: string): Promise<Voucher> {
   return apiFetch<Voucher>(`/vouchers/${id}/post`, { method: "POST" });
 }
 
+// ---------------------------------------------------------------------------
+// Report resource types (Phase 2D)
+//
+// These mirror the JSON returned by the guarded `/reports/*` endpoints. All
+// money values are serialised by the API as fixed two-decimal strings.
+// ---------------------------------------------------------------------------
+
+export type ReportType =
+  | "LEDGER"
+  | "CASH_BOOK"
+  | "BANK_BOOK"
+  | "TRIAL_BALANCE"
+  | "INCOME_STATEMENT"
+  | "BALANCE_SHEET";
+
+/** Company summary embedded on the report fiscal year. */
+export type ReportCompanySummary = {
+  id: string;
+  name: string;
+  legalName: string | null;
+  currency: string;
+};
+
+export type ReportFiscalYearSummary = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  company: ReportCompanySummary;
+};
+
+export type ReportAccountingPeriodSummary = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+};
+
+export type ReportDateRange = {
+  startDate: string;
+  endDate: string;
+};
+
+export type ReportProjectSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type ReportCostCenterSummary = {
+  id: string;
+  code: string;
+  name: string;
+  project: ReportProjectSummary;
+};
+
+/** Project / cost-center filters echoed back by every report. */
+export type ReportFilterSummary = {
+  project: ReportProjectSummary | null;
+  costCenter: ReportCostCenterSummary | null;
+};
+
+/** Normal-balance-aware balance presentation. Money values are strings. */
+export type ReportBalanceSummary = {
+  debit: string;
+  credit: string;
+  signedAmount: string;
+  balanceSide: NormalBalanceSide;
+};
+
+export type ReportLedgerAccountSummary = {
+  id: string;
+  code: string;
+  name: string;
+  normalBalance: NormalBalanceSide;
+  isActive: boolean;
+};
+
+export type ReportAccountClassSummary = {
+  id: string;
+  code: AccountClassCode;
+  name: string;
+  normalBalance: NormalBalanceSide;
+};
+
+export type ReportAccountGroupSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type ReportCashBankAccountSummary = {
+  id: string;
+  displayName: string;
+  accountType: CashBankAccountType;
+  ledgerAccountId: string;
+  bankName: string | null;
+  branch: string | null;
+  accountNumber: string | null;
+  isActive: boolean;
+};
+
+/** Ledger account with its account group/class, as returned in report rows. */
+export type ReportLedgerAccountWithGroup = ReportLedgerAccountSummary & {
+  accountGroup: ReportAccountGroupSummary & {
+    accountClass: ReportAccountClassSummary;
+  };
+};
+
+// --- General Ledger / Ledger Statement ---
+
+export type LedgerReportLine = {
+  id: string;
+  voucherDate: string;
+  systemVoucherNo: string;
+  voucherType: VoucherType;
+  narration: string | null;
+  lineNo: number;
+  lineDescription: string | null;
+  debit: string;
+  credit: string;
+  runningBalance: ReportBalanceSummary;
+  project: ReportProjectSummary | null;
+  costCenter: ReportCostCenterSummary | null;
+  cashBankAccount: ReportCashBankAccountSummary | null;
+};
+
+export type LedgerReport = {
+  reportType: "LEDGER";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  ledgerAccount: ReportLedgerAccountWithGroup;
+  filters: ReportFilterSummary;
+  openingBalance: ReportBalanceSummary;
+  periodDebit: string;
+  periodCredit: string;
+  closingBalance: ReportBalanceSummary;
+  lines: LedgerReportLine[];
+};
+
+// --- Cash Book / Bank Book ---
+
+export type CashBankReportOppositeAccount = {
+  id: string;
+  ledgerAccount: ReportLedgerAccountSummary;
+  side: VoucherLineSide;
+  amount: string;
+};
+
+export type CashBankReportLine = {
+  id: string;
+  voucherDate: string;
+  systemVoucherNo: string;
+  voucherType: VoucherType;
+  narration: string | null;
+  cashBankAccount: ReportCashBankAccountSummary | null;
+  ledgerAccount: ReportLedgerAccountSummary;
+  oppositeAccounts: CashBankReportOppositeAccount[];
+  description: string | null;
+  debit: string;
+  credit: string;
+  runningBalance: ReportBalanceSummary;
+  project: ReportProjectSummary | null;
+  costCenter: ReportCostCenterSummary | null;
+};
+
+export type CashBankReport = {
+  reportType: "CASH_BOOK" | "BANK_BOOK";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  accountType: CashBankAccountType;
+  cashBankAccount: ReportCashBankAccountSummary | null;
+  filters: ReportFilterSummary & {
+    ledgerAccount: ReportLedgerAccountSummary | null;
+  };
+  openingBalance: ReportBalanceSummary;
+  periodDebit: string;
+  periodCredit: string;
+  closingBalance: ReportBalanceSummary;
+  lines: CashBankReportLine[];
+};
+
+// --- Trial Balance ---
+
+export type TrialBalanceTotals = {
+  openingDebit: string;
+  openingCredit: string;
+  periodDebit: string;
+  periodCredit: string;
+  closingDebit: string;
+  closingCredit: string;
+  difference: string;
+  isBalanced: boolean;
+};
+
+export type TrialBalanceRow = {
+  ledgerAccount: ReportLedgerAccountWithGroup;
+  openingDebit: string;
+  openingCredit: string;
+  periodDebit: string;
+  periodCredit: string;
+  closingDebit: string;
+  closingCredit: string;
+};
+
+export type TrialBalanceReport = {
+  reportType: "TRIAL_BALANCE";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  filters: ReportFilterSummary;
+  totals: TrialBalanceTotals;
+  rows: TrialBalanceRow[];
+};
+
+/**
+ * Shared report query parameters. `fiscalYearId` is always required; the rest
+ * are optional and report-specific. Empty values are omitted from the request.
+ */
+export type ReportQueryParams = {
+  fiscalYearId: string;
+  accountingPeriodId?: string;
+  startDate?: string;
+  endDate?: string;
+  ledgerAccountId?: string;
+  projectId?: string;
+  costCenterId?: string;
+  cashBankAccountId?: string;
+};
+
+// ---------------------------------------------------------------------------
+// Report resource helpers (Phase 2D)
+// ---------------------------------------------------------------------------
+
+function buildReportQuery(params: ReportQueryParams): string {
+  const search = new URLSearchParams();
+
+  search.set("fiscalYearId", params.fiscalYearId);
+
+  if (params.accountingPeriodId) {
+    search.set("accountingPeriodId", params.accountingPeriodId);
+  }
+  if (params.startDate) {
+    search.set("startDate", params.startDate);
+  }
+  if (params.endDate) {
+    search.set("endDate", params.endDate);
+  }
+  if (params.ledgerAccountId) {
+    search.set("ledgerAccountId", params.ledgerAccountId);
+  }
+  if (params.projectId) {
+    search.set("projectId", params.projectId);
+  }
+  if (params.costCenterId) {
+    search.set("costCenterId", params.costCenterId);
+  }
+  if (params.cashBankAccountId) {
+    search.set("cashBankAccountId", params.cashBankAccountId);
+  }
+
+  return `?${search.toString()}`;
+}
+
+export function getLedgerReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<LedgerReport> {
+  return apiFetch<LedgerReport>(`/reports/ledger${buildReportQuery(params)}`, {
+    signal,
+  });
+}
+
+export function getCashBookReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<CashBankReport> {
+  return apiFetch<CashBankReport>(
+    `/reports/cash-book${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getBankBookReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<CashBankReport> {
+  return apiFetch<CashBankReport>(
+    `/reports/bank-book${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getTrialBalanceReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<TrialBalanceReport> {
+  return apiFetch<TrialBalanceReport>(
+    `/reports/trial-balance${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
 /**
  * Narrow an unknown caught value to a user-facing message. Aborts are re-thrown
  * by {@link apiFetch}; everything else lands here.

@@ -2,9 +2,31 @@
 
 ## Current Phase
 
-Phase 2D: backend Income Statement and Balance Sheet API implemented (Chunk 2D-4 complete). Stop before frontend report pages.
+Phase 2D: frontend operational report pages implemented (Chunk 2D-5 complete). Ledger, Cash Book, Bank Book, and Trial Balance report pages are live. Stop before financial statement frontend pages and the report print foundation.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D locked accounting report requirements before report implementation.
+
+## Phase 2D Chunk 2D-5 Frontend Operational Report Pages - completed this session
+
+- Added the accountant-facing frontend report pages on top of the existing backend report APIs. No backend code, Prisma schema, or migration changes were made.
+- Extended `apps/web/src/lib/api.ts` with stable, string-money report types (`ReportFiscalYearSummary`, `ReportAccountingPeriodSummary`, `ReportDateRange`, `ReportFilterSummary`, `ReportBalanceSummary`, `ReportLedgerAccountWithGroup`, `ReportCashBankAccountSummary`, `LedgerReport`, `CashBankReport`, `TrialBalanceReport`, `ReportQueryParams`, and supporting summaries) and cookie-authenticated helpers `getLedgerReport`, `getCashBookReport`, `getBankBookReport`, and `getTrialBalanceReport`. All use the existing `apiFetch` with `credentials: "include"`; no tokens are stored in `localStorage`. No Income Statement or Balance Sheet helpers were added.
+- Added a `Reports` navigation section in `apps/web/src/app/app/layout.tsx` with links to Ledger Statement, Cash Book, Bank Book, and Trial Balance. No dashboard cards or analytics.
+- Added shared report utilities in `apps/web/src/app/app/reports/_lib/`:
+  - `useReportReferences.ts`: loads fiscal years, accounting periods, ledger accounts, projects, cost centers, and cash/bank accounts for the filter dropdowns; redirects unauthenticated users to `/login`.
+  - `report-ui.tsx`: money/date/normal-balance-aware formatting helpers, label helpers, presentational primitives (`ReportMeta`, `SummaryGrid`), and a reusable `ReportFilters` panel that validates the fiscal-year requirement, the optional ledger-account requirement, and custom date-range pairing before emitting a clean `ReportQueryParams`. Cash/bank reports scope the cash/bank dropdown and the ledger dropdown to the requested account type so the user cannot pick an account the backend would reject.
+  - `CashBankBookReport.tsx`: shared Cash Book / Bank Book page used by both routes, scoped by cash/bank account type.
+- Added routes and pages:
+  - `/app/reports/ledger`: requires fiscal year and ledger account; optional period, date range, project, cost center. Renders report header, opening balance, period debit, period credit, closing balance, and the line table (date, voucher no., type, narration, line description, debit, credit, running balance, project, cost center, cash/bank account).
+  - `/app/reports/cash-book` and `/app/reports/bank-book`: require fiscal year; optional period, date range, cash/bank account, ledger account, project, cost center. Render report header, opening/period/closing balances, and the line table (cash/bank account, ledger account, opposite accounts, debit, credit, running balance, project, cost center).
+  - `/app/reports/trial-balance`: requires fiscal year; optional period, date range, project, cost center. Renders totals (opening/period/closing debit and credit, difference, balanced flag), a clear balanced/unbalanced notice that never hides or forces the difference, and a row table (code, name, group/class, opening/period/closing debit and credit) with a totals footer.
+- Every page handles reference loading, report loading, empty reference data, client-side validation before submit, backend validation errors, unauthenticated redirect through the existing app shell, and calm empty states for empty results.
+- No Income Statement frontend, Balance Sheet frontend, Project Summary, Cost Center Summary, report print layout, PDF/Excel export, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, tooling, Prisma schema changes, migrations, or backend API changes were added.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `pnpm check:all`, and `pnpm doctor` (doctor warns only that ports 3000/4000 are occupied by the running dev apps used for smoke tests).
+- Manual checks passed against the running API at `http://localhost:4000`: unauthenticated `GET /reports/ledger` returns 401; login as `accountant@realcapita.local` succeeds; `GET /reports/ledger` without `ledgerAccountId` returns 400; `GET /reports/ledger` with fiscal year + ledger account returns opening/period/closing balances and lines; `GET /reports/cash-book` and `GET /reports/bank-book` return valid structures with the correct `accountType`; `GET /reports/trial-balance` returns closing debit/credit, `isBalanced`, and `difference` (balanced sample: closing debit 1500.00 = closing credit 1500.00, difference 0.00, 4 rows); a single custom date returns a clear 400. The web routes `/app/reports/ledger`, `/app/reports/cash-book`, `/app/reports/bank-book`, and `/app/reports/trial-balance` all serve, and existing voucher/foundation pages still build.
+
+## Next Stop Point (2D-5)
+
+Review the Phase 2D-5 frontend operational report pages. The next recommended task is 2D-5 frontend report pages review before starting Chunk 2D-6 financial statement frontend pages and print foundation. Do not start 2D-6, financial statement frontend, print/export, Project Summary, Cost Center Summary, dashboard, payroll, parties, uploads, roles, or any new phase without explicit user confirmation.
 
 ## Phase 2D Chunk 2D-4 Backend Income Statement and Balance Sheet API - completed this session
 
@@ -324,13 +346,14 @@ Reviewing the Phase 2C-1 schema foundation was the stop point before backend wor
 
 ## Next Planned Phase
 
-Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete. The next task is 2D-4 backend financial statement API review before starting Chunk 2D-5 frontend report pages.
+Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance) are complete. The next task is 2D-5 frontend report pages review before starting Chunk 2D-6 financial statement frontend pages and print foundation.
 
 Still not implemented:
 
 - Project Summary API.
 - Cost Center Summary API.
-- Report frontend pages.
+- Income Statement and Balance Sheet frontend pages.
+- Project Summary and Cost Center Summary frontend pages.
 - Report print layouts.
 - Financial statements or dashboard analytics.
 - Payroll or salary sheets.
@@ -343,16 +366,16 @@ Still not implemented:
 
 ## Last Verification Results
 
-Verification date: 2026-06-15, Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API.
+Verification date: 2026-06-15, Phase 2D Chunk 2D-5 frontend operational report pages.
 
 - `pnpm prisma:generate`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
+- `pnpm build:web`: passed (routes `/app/reports/ledger`, `/app/reports/cash-book`, `/app/reports/bank-book`, `/app/reports/trial-balance` built).
 - `pnpm build:api`: passed.
-- `pnpm build:web`: passed.
 - `pnpm check:all`: passed.
-- `pnpm doctor`: passed.
-- No Prisma schema changes, migrations, report tables, frontend report pages, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, Project Summary, or Cost Center Summary implementation in Phase 2D Chunk 2D-4.
+- `pnpm doctor`: passed with warnings only that ports 3000/4000 are occupied by the running dev apps used for smoke tests.
+- No Prisma schema changes, migrations, report tables, backend API changes, Income Statement/Balance Sheet frontend, Project Summary, Cost Center Summary, report print layout, PDF/Excel export, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, or seed data in Phase 2D Chunk 2D-5.
 
 ## Current GitHub Repository
 

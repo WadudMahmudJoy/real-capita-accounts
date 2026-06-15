@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Banknote,
+  BookText,
   Building2,
   CalendarClock,
   CalendarRange,
   Coins,
   FolderKanban,
+  Landmark,
   Layers,
   ListTree,
   LogOut,
   Network,
   ReceiptText,
+  Scale,
   ShieldCheck,
   Wallet,
   type LucideIcon,
@@ -95,6 +99,33 @@ const primaryLinks: NavLink[] = [
     icon: ReceiptText,
     label: "Vouchers",
     match: (pathname) => pathname.startsWith("/app/vouchers"),
+  },
+];
+
+const reportLinks: NavLink[] = [
+  {
+    href: "/app/reports/ledger",
+    icon: BookText,
+    label: "Ledger Statement",
+    match: (pathname) => pathname.startsWith("/app/reports/ledger"),
+  },
+  {
+    href: "/app/reports/cash-book",
+    icon: Banknote,
+    label: "Cash Book",
+    match: (pathname) => pathname.startsWith("/app/reports/cash-book"),
+  },
+  {
+    href: "/app/reports/bank-book",
+    icon: Landmark,
+    label: "Bank Book",
+    match: (pathname) => pathname.startsWith("/app/reports/bank-book"),
+  },
+  {
+    href: "/app/reports/trial-balance",
+    icon: Scale,
+    label: "Trial Balance",
+    match: (pathname) => pathname.startsWith("/app/reports/trial-balance"),
   },
 ];
 
@@ -224,6 +255,33 @@ export default function AppLayout({
           >
             <div className="flex flex-col gap-1">
               {primaryLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.match(pathname);
+
+                return (
+                  <Link
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
+                      isActive
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                    href={link.href}
+                    key={link.href}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Reports
+              </p>
+              {reportLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = link.match(pathname);
 

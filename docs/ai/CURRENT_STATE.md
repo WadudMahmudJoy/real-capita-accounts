@@ -32,6 +32,25 @@ Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API is complete.
 Phase 2D Chunk 2D-2 backend report API review is complete.
 Phase 2D Chunk 2D-3 backend Trial Balance API is complete.
 Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete.
+Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance) are complete.
+
+## Phase 2D Chunk 2D-5 Frontend Operational Report Pages
+
+Chunk 2D-5 added the accountant-facing frontend report pages on top of the existing backend report APIs, with no backend, schema, or migration changes.
+
+- Extended `apps/web/src/lib/api.ts` with stable report types (`ReportFiscalYearSummary`, `ReportAccountingPeriodSummary`, `ReportDateRange`, `ReportFilterSummary`, `ReportBalanceSummary`, `LedgerReport`, `CashBankReport`, `TrialBalanceReport`, `ReportQueryParams`, and supporting summaries) and cookie-authenticated helpers `getLedgerReport`, `getCashBookReport`, `getBankBookReport`, and `getTrialBalanceReport`. All use the existing `apiFetch` with `credentials: "include"`; no tokens are stored in `localStorage`. All money values are typed as strings to match the API serialization. No Income Statement or Balance Sheet helpers were added.
+- Added a `Reports` navigation section in `apps/web/src/app/app/layout.tsx` with links to Ledger Statement, Cash Book, Bank Book, and Trial Balance. No dashboard cards or analytics.
+- Added shared report utilities in `apps/web/src/app/app/reports/_lib/`:
+  - `useReportReferences.ts`: loads fiscal years, accounting periods, ledger accounts, projects, cost centers, and cash/bank accounts for the filter dropdowns; redirects unauthenticated users to `/login`.
+  - `report-ui.tsx`: formatting helpers (money, date, normal-balance-aware `formatBalance`), label helpers, presentational primitives (`ReportMeta`, `SummaryGrid`), and a reusable `ReportFilters` panel that validates the fiscal-year requirement, the optional ledger-account requirement, and the custom date-range pairing before emitting a clean `ReportQueryParams`.
+  - `CashBankBookReport.tsx`: shared Cash Book / Bank Book page used by both routes, scoped by cash/bank account type.
+- Added routes: `/app/reports/ledger`, `/app/reports/cash-book`, `/app/reports/bank-book`, `/app/reports/trial-balance`.
+- Ledger page requires a fiscal year and a ledger account; optional period, custom date range, project, and cost center. Renders report header, opening balance, period debit, period credit, closing balance, and a line table (date, voucher no., type, narration, line description, debit, credit, running balance, project, cost center, cash/bank account).
+- Cash Book and Bank Book pages require a fiscal year; optional period, date range, cash/bank account (scoped to CASH or BANK), ledger account (scoped to eligible cash/bank ledgers), project, and cost center. Render report header, opening/period/closing balances, and a line table including the cash/bank account, ledger account, opposite accounts, debit, credit, running balance, project, and cost center.
+- Trial Balance page requires a fiscal year; optional period, date range, project, and cost center. Renders totals (opening debit/credit, period debit/credit, closing debit/credit, difference, balanced flag), a clear balanced/unbalanced notice that never hides or forces the difference, and a row table (code, name, group/class, opening/period/closing debit and credit) with a totals footer.
+- Every page handles reference loading, report loading, empty reference data, client-side validation errors before submit, backend validation errors, unauthenticated redirect through the existing app shell, and calm empty states for empty results.
+
+No Income Statement frontend, Balance Sheet frontend, Project Summary, Cost Center Summary, report print layout, PDF/Excel export, dashboard analytics, payroll, parties/customers/vendors, uploads, roles, seed data, tooling, Prisma schema changes, migrations, or backend API changes were added.
 
 ## Phase 2D Chunk 2D-4 Backend Income Statement and Balance Sheet API
 
@@ -278,7 +297,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2D Chunk 2D-4 backend Income Statement and Balance Sheet API is complete. The next recommended task is 2D-4 backend financial statement API review before starting Chunk 2D-5 frontend report pages. No frontend report pages, report UI, dashboard analytics, payroll, parties, uploads, roles, Project Summary, Cost Center Summary, or new modules should be started without explicit user confirmation.
+Phase 2D Chunk 2D-5 frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance) are complete. The next recommended task is 2D-5 frontend report pages review before starting Chunk 2D-6 financial statement frontend pages and print foundation. No Income Statement/Balance Sheet frontend, Project Summary, Cost Center Summary, report print layout, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 
