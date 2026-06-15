@@ -97,7 +97,31 @@ export function costCenterLabel(center: CostCenter): string {
 }
 
 export function cashBankLabel(account: CashBankAccount): string {
+  if (account.accountType === "MFS") {
+    const providerLabel =
+      account.provider === "OTHER"
+        ? account.providerOtherName?.trim() ?? "Other MFS"
+        : account.provider
+          ? providerDisplayName(account.provider)
+          : "MFS";
+
+    return `${account.displayName} (${providerLabel})`;
+  }
+
   return `${account.displayName} (${account.accountType === "CASH" ? "Cash" : "Bank"})`;
+}
+
+/** Human-readable MFS provider display name. */
+export function providerDisplayName(provider: string): string {
+  const labels: Record<string, string> = {
+    BKASH: "bKash",
+    NAGAD: "Nagad",
+    OTHER: "Other",
+    ROCKET: "Rocket",
+    UPAY: "Upay",
+  };
+
+  return labels[provider] ?? provider;
 }
 
 // ---------------------------------------------------------------------------

@@ -2,11 +2,21 @@
 
 ## Current Phase
 
-Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at commit `be2392a`. Phase 2E Chunk 2E-5 MFS Book report API is implemented: `GET /reports/mfs-book` exists and derives from posted voucher lines filtered to MFS accounts only. Cash Book remains CASH-only and Bank Book remains BANK-only. No MFS Book frontend page and no MFS voucher posting support exists yet. Stop before starting the next implementation chunk without explicit user confirmation.
+Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at commit `be2392a`. Phase 2E Chunk 2E-5 MFS Book report API is accepted at commit `d90ffd4`. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is implemented: `/app/reports/mfs-book` renders the MFS Book report page with filters, transaction lines (provider info for MFS), and browser print. Cash Book remains CASH-only and Bank Book remains BANK-only. No MFS voucher posting support exists yet. Stop before starting the next implementation chunk without explicit user confirmation.
 
-Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API.
+Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation.
 
-## Phase 2E Chunk 2E-5 MFS Book Report API - completed this session
+## Phase 2E Chunk 2E-6 MFS Book Frontend and Print Foundation - completed this session
+
+- Added frontend route/page `/app/reports/mfs-book` using the shared `CashBankBookReport` component scoped to `accountType="MFS"`, following the same filter/table/print pattern as Cash Book and Bank Book.
+- Extended `apps/web/src/lib/api.ts`: added `"MFS_BOOK"` to `CashBankReport.reportType` union, added MFS metadata fields to `ReportCashBankAccountSummary`, added cookie-authenticated `getMfsBookReport` helper.
+- Extended `CashBankBookReport.tsx`: widened the allowed account type to CASH | BANK | MFS, added MFS variant (title, description, empty label), wired the `getMfsBookReport` endpoint, and added MFS-specific display in the report summary (provider, wallet/account ID, account holder), transaction line table (Provider column for MFS), and print layout (provider, wallet).
+- Extended `report-ui.tsx`: updated `cashBankLabel` to show MFS provider name, added `providerDisplayName` helper.
+- Added MFS Book navigation link under Reports in the app sidebar with the `Smartphone` icon.
+- Print foundation reuses existing `ReportPrintFrame` with MFS-specific metadata.
+- No backend code, Prisma schema, or migration changes. No MFS voucher posting support. Cash Book remains CASH-only and Bank Book remains BANK-only.
+
+## Phase 2E Chunk 2E-5 MFS Book Report API - completed this session (accepted)
 
 - Added guarded backend endpoint `GET /reports/mfs-book` in the existing report module.
 - The endpoint uses the existing class-level `AuthGuard` + `RolesGuard` + `ACCOUNTANT` report-route protection.
@@ -47,7 +57,7 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 
 ## Next Stop Point
 
-Phase 2E Chunk 2E-5 MFS Book report API is implemented. `GET /reports/mfs-book` exists. The next recommended task is Phase 2E Chunk 2E-6 MFS Book frontend and print foundation, unless review finds issues. Do not start MFS Book frontend, MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
+Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is implemented. `/app/reports/mfs-book` exists. The next recommended task is Phase 2E Chunk 2E-7 final integration and acceptance review, unless review finds issues. Do not start MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
 
 ## Phase 2E MFS / bKash Requirement Lock - completed this session
 

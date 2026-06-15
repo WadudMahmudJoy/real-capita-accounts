@@ -824,6 +824,10 @@ export type ReportCashBankAccountSummary = {
   branch: string | null;
   accountNumber: string | null;
   isActive: boolean;
+  provider: MfsProvider | null;
+  providerOtherName: string | null;
+  walletNumber: string | null;
+  accountHolderName: string | null;
 };
 
 /** Ledger account with its account group/class, as returned in report rows. */
@@ -892,7 +896,7 @@ export type CashBankReportLine = {
 };
 
 export type CashBankReport = {
-  reportType: "CASH_BOOK" | "BANK_BOOK";
+  reportType: "CASH_BOOK" | "BANK_BOOK" | "MFS_BOOK";
   fiscalYear: ReportFiscalYearSummary;
   accountingPeriod: ReportAccountingPeriodSummary | null;
   dateRange: ReportDateRange;
@@ -1094,6 +1098,16 @@ export function getBankBookReport(
 ): Promise<CashBankReport> {
   return apiFetch<CashBankReport>(
     `/reports/bank-book${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getMfsBookReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<CashBankReport> {
+  return apiFetch<CashBankReport>(
+    `/reports/mfs-book${buildReportQuery(params)}`,
     { signal },
   );
 }

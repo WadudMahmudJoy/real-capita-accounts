@@ -6,6 +6,7 @@ import {
   ApiError,
   getBankBookReport,
   getCashBookReport,
+  getMfsBookReport,
   toErrorMessage,
   type CashBankAccountType,
   type CashBankReport,
@@ -26,6 +27,7 @@ import {
   formatBalance,
   formatDate,
   formatMoney,
+  providerDisplayName,
   voucherTypeLabel,
 } from "./report-ui";
 import {
@@ -38,9 +40,10 @@ import {
 } from "./report-print";
 import { useReportReferences } from "./useReportReferences";
 
-// Cash Book and Bank Book are scoped to CASH and BANK only. MFS transactions
-// are intentionally excluded here; they belong to a separate MFS Book.
-type CashBankBookAccountType = Extract<CashBankAccountType, "CASH" | "BANK">;
+// Cash Book, Bank Book, and MFS Book are each scoped to their own account type.
+// CASH and BANK share the CashBankBookReport component; MFS joins here so the
+// same report structure serves all three cash/bank/MFS operational books.
+type CashBankBookAccountType = Extract<CashBankAccountType, "CASH" | "BANK" | "MFS">;
 
 type Variant = {
   accountType: CashBankBookAccountType;
@@ -63,6 +66,13 @@ const VARIANTS: Record<CashBankBookAccountType, Variant> = {
       "Review posted cash transactions for cash-type cash/bank accounts over a fiscal year, period, or custom date range, with a running balance.",
     emptyAccountsLabel: "All cash accounts",
     title: "Cash Book",
+  },
+  MFS: {
+    accountType: "MFS",
+    description:
+      "Review posted MFS / mobile wallet transactions for MFS-type cash/bank accounts over a fiscal year, period, or custom date range, with a running balance.",
+    emptyAccountsLabel: "All MFS accounts",
+    title: "MFS Book",
   },
 };
 
@@ -89,10 +99,16 @@ export function CashBankBookReport({
     setRunError(null);
 
     try {
-      const result =
-        accountType === "CASH"
-          ? await getCashBookReport(params)
-          : await getBankBookReport(params);
+      let result: CashBankReport;
+
+      if (accountType === "MFS") {
+        result = await getMfsBookReport(params);
+      } else if (accountType === "BANK") {
+        result = await getBankBookReport(params);
+      } else {
+        result = await getCashBookReport(params);
+      }
+
       setReport(result);
       setRunState("idle");
     } catch (caught) {
@@ -171,50 +187,71 @@ function CashBankResult({
     ? report.accountingPeriod.name
     : "All periods in the fiscal year";
 
-  return (
+  const accountLabel =
+    variant.accountType === "MFS" ? "Cash/bank/MFS account" : "Cash/bank account";
+
+  const metaItems: { label: string; value: React.ReactNode }[] = [
+    { label: "Report", value: variant.title },
+    { label: "Company", value: report.fiscalYear.company.name },
+    {
+      label: "Fiscal year",
+      value: `${report.fiscalYear.name} (${formatDate(report.fiscalYear.startDate)} to ${formatDate(report.fiscalYear.endDate)})`,
+    },
+    { label: "Accounting period", value: periodLabel },
+    {
+      label: "Date range",
+      value: `${formatDate(report.dateRange.startDate)} to ${formatDate(report.dateRange.endDate)}`,
+    },
+    {
+      label: accountLabel,
+      value: report.cashBankAccount
+        ? report.cashBankAccount.displayName
+        : variant.emptyAccountsLabel,
+    },
+    ...(variant.accountType === "MFS" && report.cashBankAccount
+      ? ([
+          {
+            label: "Provider",
+            value: report.cashBankAccount.provider === "OTHER"
+              ? report.cashBankAccount.providerOtherName?.trim() ?? "Other"
+              : providerDisplayName(report.cashBankAccount.provider ?? ""),
+          },
+          {
+            label: "Wallet / account ID",
+            value: report.cashBankAccount.walletNumber ?? "-",
+          },
+          {
+            label: "Account holder",
+            value: report.cashBankAccount.accountHolderName?.trim() ?? "-",
+          },
+        ] as const)
+      : []),
+    {
+      label: "Ledger account filter",
+      value: report.filters.ledgerAccount
+        ? `${report.filters.ledgerAccount.code} - ${report.filters.ledgerAccount.name}`
+        : "All eligible ledger accounts",
+    },
+    {
+      label: "Project filter",
+      value: report.filters.project
+        ? `${report.filters.project.code} - ${report.filters.project.name}`
+        : "All projects",
+    },
+    {
+      label: "Cost center filter",
+      value: report.filters.costCenter
+        ? `${report.filters.costCenter.code} - ${report.filters.costCenter.name}`
+        : "All cost centers",
+    },
+  ];
+
+          return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader actions={<PrintReportButton />} title="Report summary" />
         <div className="mt-5 flex flex-col gap-6">
-          <ReportMeta
-            items={[
-              { label: "Report", value: variant.title },
-              { label: "Company", value: report.fiscalYear.company.name },
-              {
-                label: "Fiscal year",
-                value: `${report.fiscalYear.name} (${formatDate(report.fiscalYear.startDate)} to ${formatDate(report.fiscalYear.endDate)})`,
-              },
-              { label: "Accounting period", value: periodLabel },
-              {
-                label: "Date range",
-                value: `${formatDate(report.dateRange.startDate)} to ${formatDate(report.dateRange.endDate)}`,
-              },
-              {
-                label: "Cash/bank account",
-                value: report.cashBankAccount
-                  ? report.cashBankAccount.displayName
-                  : variant.emptyAccountsLabel,
-              },
-              {
-                label: "Ledger account filter",
-                value: report.filters.ledgerAccount
-                  ? `${report.filters.ledgerAccount.code} - ${report.filters.ledgerAccount.name}`
-                  : "All eligible ledger accounts",
-              },
-              {
-                label: "Project filter",
-                value: report.filters.project
-                  ? `${report.filters.project.code} - ${report.filters.project.name}`
-                  : "All projects",
-              },
-              {
-                label: "Cost center filter",
-                value: report.filters.costCenter
-                  ? `${report.filters.costCenter.code} - ${report.filters.costCenter.name}`
-                  : "All cost centers",
-              },
-            ]}
-          />
+          <ReportMeta items={metaItems} />
 
           <SummaryGrid
             stats={[
@@ -249,7 +286,7 @@ function CashBankResult({
         {report.lines.length === 0 ? (
           <div className="mt-4">
             <EmptyState
-              description="No posted cash/bank transactions matched the selected filters."
+              description={`No posted ${variant.accountType === "MFS" ? "MFS" : "cash/bank"} transactions matched the selected filters.`}
               title="No transactions"
             />
           </div>
@@ -262,7 +299,14 @@ function CashBankResult({
                   <th className="px-3 py-2.5">Voucher no.</th>
                   <th className="px-3 py-2.5">Type</th>
                   <th className="px-3 py-2.5">Narration</th>
-                  <th className="px-3 py-2.5">Cash/bank account</th>
+                  <th className="px-3 py-2.5">
+                    {variant.accountType === "MFS"
+                      ? "MFS account"
+                      : "Cash/bank account"}
+                  </th>
+                  {variant.accountType === "MFS" ? (
+                    <th className="px-3 py-2.5">Provider</th>
+                  ) : null}
                   <th className="px-3 py-2.5">Ledger account</th>
                   <th className="px-3 py-2.5">Opposite accounts</th>
                   <th className="px-3 py-2.5 text-right">Debit</th>
@@ -295,6 +339,18 @@ function CashBankResult({
                         ? line.cashBankAccount.displayName
                         : "-"}
                     </td>
+                    {variant.accountType === "MFS" ? (
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {line.cashBankAccount?.provider
+                          ? line.cashBankAccount.provider === "OTHER"
+                            ? line.cashBankAccount.providerOtherName?.trim() ??
+                              "Other"
+                            : providerDisplayName(
+                                line.cashBankAccount.provider,
+                              )
+                          : "-"}
+                      </td>
+                    ) : null}
                     <td className="px-3 py-3 text-muted-foreground">
                       {line.ledgerAccount.code} - {line.ledgerAccount.name}
                     </td>
@@ -341,11 +397,32 @@ function CashBankResult({
             value: `${formatDate(report.dateRange.startDate)} to ${formatDate(report.dateRange.endDate)}`,
           },
           {
-            label: "Cash/bank account",
+            label:
+              variant.accountType === "MFS"
+                ? "MFS account"
+                : "Cash/bank account",
             value: report.cashBankAccount
               ? report.cashBankAccount.displayName
               : variant.emptyAccountsLabel,
           },
+          ...(variant.accountType === "MFS" && report.cashBankAccount
+            ? ([
+                {
+                  label: "Provider",
+                  value:
+                    report.cashBankAccount.provider === "OTHER"
+                      ? report.cashBankAccount.providerOtherName?.trim() ??
+                        "Other"
+                      : providerDisplayName(
+                          report.cashBankAccount.provider ?? "",
+                        ),
+                },
+                {
+                  label: "Wallet / account ID",
+                  value: report.cashBankAccount.walletNumber ?? "-",
+                },
+              ] as const)
+            : []),
           {
             label: "Opening balance",
             value: formatBalance(report.openingBalance),

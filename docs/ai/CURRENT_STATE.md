@@ -42,9 +42,21 @@ Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d
 
 Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. The backend Cash & Bank account API can manage MFS accounts.
 
-Phase 2E Chunk 2E-4 frontend MFS account setup UI is implemented. The accountant can create, view, edit, and deactivate MFS accounts from the existing Cash, Bank & MFS setup page. MFS runtime is still incomplete: no MFS Book frontend page and no MFS voucher posting support exists yet.
+Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at `be2392a`. The accountant can create, view, edit, and deactivate MFS accounts from the existing Cash, Bank & MFS setup page. Phase 2E Chunk 2E-5 MFS Book report API is implemented: `GET /reports/mfs-book` exists. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is implemented: `/app/reports/mfs-book` exists. MFS runtime is still incomplete: no MFS voucher posting support exists yet.
 
-## Phase 2E Chunk 2E-5 MFS Book Report API - completed this session
+## Phase 2E Chunk 2E-6 MFS Book Frontend and Print Foundation - completed this session
+
+- Added frontend route/page `/app/reports/mfs-book` using the shared `CashBankBookReport` component scoped to `accountType="MFS"`.
+- Extended `CashBankBookReport.tsx` to support MFS alongside CASH and BANK with a safe wider type union; CASH and BANK behavior unchanged.
+- MFS Book page uses the same filter panel, report summary, transaction line table, and print layout pattern as Cash Book and Bank Book.
+- MFS-specific display: MFS Book title and description, provider/wallet/account holder metadata in report summary when an MFS account is selected, Provider column in the transaction line table for MFS accounts, and MFS metadata in the print layout.
+- Added MFS Book navigation link under Reports in `apps/web/src/app/app/layout.tsx` with the `Smartphone` icon.
+- Extended `apps/web/src/lib/api.ts`: added `"MFS_BOOK"` to `CashBankReport.reportType` union, added MFS metadata fields (`provider`, `providerOtherName`, `walletNumber`, `accountHolderName`) to `ReportCashBankAccountSummary`, added cookie-authenticated `getMfsBookReport` helper using `apiFetch` with `credentials: "include"`.
+- Extended `report-ui.tsx`: updated `cashBankLabel` to show MFS provider name, added `providerDisplayName` helper for "BKASH" → "bKash" etc.
+- Print foundation reuses existing `ReportPrintFrame` with MFS-specific meta (provider, wallet/account ID) and the MFS Book title.
+- No backend code, Prisma schema, or migration changes. No dashboard analytics, no PDF/Excel export, no MFS voucher posting support. Cash Book remains CASH-only and Bank Book remains BANK-only.
+
+## Phase 2E Chunk 2E-5 MFS Book Report API - completed this session (accepted)
 
 - Added guarded backend endpoint `GET /reports/mfs-book` in the existing report module.
 - The endpoint uses the existing class-level `AuthGuard` + `RolesGuard` + `ACCOUNTANT` report-route protection.
@@ -385,7 +397,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2E Chunk 2E-5 MFS Book report API is implemented. `GET /reports/mfs-book` exists. The next recommended task is Phase 2E Chunk 2E-6 MFS Book frontend and print foundation, unless review finds issues. No MFS Book frontend page, MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is implemented. `/app/reports/mfs-book` exists. The next recommended task is Phase 2E Chunk 2E-7 final integration and acceptance review, unless review finds issues. No MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 

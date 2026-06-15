@@ -21,6 +21,7 @@ import {
   Scale,
   ScrollText,
   ShieldCheck,
+  Smartphone,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -122,6 +123,12 @@ const reportLinks: NavLink[] = [
     icon: Landmark,
     label: "Bank Book",
     match: (pathname) => pathname.startsWith("/app/reports/bank-book"),
+  },
+  {
+    href: "/app/reports/mfs-book",
+    icon: Smartphone,
+    label: "MFS Book",
+    match: (pathname) => pathname.startsWith("/app/reports/mfs-book"),
   },
   {
     href: "/app/reports/trial-balance",
