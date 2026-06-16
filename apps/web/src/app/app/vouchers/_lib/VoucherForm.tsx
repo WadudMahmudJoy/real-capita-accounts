@@ -41,6 +41,7 @@ import {
   VOUCHER_TYPE_OPTIONS,
   cashBankLabel,
   costCenterLabel,
+  deriveVoucherLineFieldRequirements,
   fiscalYearLabel,
   formatDate,
   formatMoney,
@@ -611,7 +612,42 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
               const ledger = line.ledgerAccountId
                 ? ledgerById.get(line.ledgerAccountId)
                 : undefined;
-              const showCashBank = ledger?.isCashBank ?? false;
+              // Cash/bank/MFS accounts the backend will accept for this line:
+              // active accounts linked to the selected ledger account.
+              const matchingCashBankAccounts = activeCashBankAccounts.filter(
+                (account) => account.ledgerAccountId === line.ledgerAccountId,
+              );
+              const requirements = deriveVoucherLineFieldRequirements(
+                ledger,
+                matchingCashBankAccounts,
+              );
+              // A field is shown when the ledger requires it, or when the line
+              // already carries a value for it (e.g. a draft or posted voucher
+              // whose stored Project/Cost Center/Cash-Bank value must stay
+              // visible even if the current ledger does not require it). Fresh
+              // lines on a non-requiring ledger keep these fields hidden.
+              const hasProjectValue = line.projectId !== "";
+              const hasCostCenterValue = line.costCenterId !== "";
+              const hasCashBankValue = line.cashBankAccountId !== "";
+              const showProject =
+                requirements.requiresProject || hasProjectValue;
+              const showCostCenter =
+                requirements.requiresCostCenter || hasCostCenterValue;
+              const showCashBank = requirements.isCashBank || hasCashBankValue;
+              // Cost centers are project-specific; only offer those that belong
+              // to the line's selected project.
+              const costCentersForProject = line.projectId
+                ? activeCostCenters.filter(
+                    (center) => center.projectId === line.projectId,
+                  )
+                : [];
+              const cashBankExtraColumn =
+                Number(showCashBank) +
+                Number(showProject) +
+                Number(showCostCenter);
+              // The description field fills the row when no optional field
+              // leaves an odd column open in the two-column grid.
+              const descriptionSpansRow = cashBankExtraColumn % 2 === 0;
 
               return (
                 <div
@@ -623,14 +659,9 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                       <StatusBadge tone="neutral">
                         Line {index + 1}
                       </StatusBadge>
-                      {ledger?.requiresProject ? (
+                      {requirements.guidance ? (
                         <span className="text-xs text-muted-foreground">
-                          Project recommended
-                        </span>
-                      ) : null}
-                      {ledger?.requiresCostCenter ? (
-                        <span className="text-xs text-muted-foreground">
-                          Cost center recommended
+                          {requirements.guidance}
                         </span>
                       ) : null}
                     </div>
@@ -691,14 +722,31 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                       <Select
                         disabled={isReadOnly}
                         id={`${line.key}-ledger`}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          const nextLedgerId = event.target.value;
+                          const nextLedger = nextLedgerId
+                            ? ledgerById.get(nextLedgerId)
+                            : undefined;
+                          // When the ledger changes, clear field values that the
+                          // new ledger does not require/allow so stale Project,
+                          // Cost Center, or Cash/Bank/MFS data is never carried
+                          // forward hidden from view.
+                          const nextMatching = activeCashBankAccounts.filter(
+                            (account) =>
+                              account.ledgerAccountId === nextLedgerId,
+                          );
+                          const autoCashBankId =
+                            nextLedger?.isCashBank && nextMatching.length === 1
+                              ? nextMatching[0].id
+                              : "";
+
                           updateLine(line.key, {
-                            ledgerAccountId: event.target.value,
-                            // Cash/bank selection only applies to cash/bank
-                            // ledgers; clear it when the ledger changes.
-                            cashBankAccountId: "",
-                          })
-                        }
+                            ledgerAccountId: nextLedgerId,
+                            projectId: "",
+                            costCenterId: "",
+                            cashBankAccountId: autoCashBankId,
+                          });
+                        }}
                         value={line.ledgerAccountId}
                       >
                         <option value="">Select ledger account</option>
@@ -715,53 +763,101 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                       </Select>
                     </Field>
 
-                    <Field htmlFor={`${line.key}-project`} label="Project">
-                      <Select
-                        disabled={isReadOnly}
-                        id={`${line.key}-project`}
-                        onChange={(event) =>
-                          updateLine(line.key, {
-                            projectId: event.target.value,
-                          })
+                    {showProject ? (
+                      <Field
+                        hint={
+                          requirements.requiresProject
+                            ? undefined
+                            : "Optional for this ledger."
                         }
-                        value={line.projectId}
+                        htmlFor={`${line.key}-project`}
+                        label="Project"
+                        required={requirements.requiresProject}
                       >
-                        <option value="">None</option>
-                        {activeProjects.map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {projectLabel(project)}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
+                        <Select
+                          disabled={isReadOnly}
+                          id={`${line.key}-project`}
+                          onChange={(event) => {
+                            const nextProjectId = event.target.value;
+                            // A cost center belongs to exactly one project;
+                            // drop a stale selection that no longer fits.
+                            const keepCostCenter = activeCostCenters.some(
+                              (center) =>
+                                center.id === line.costCenterId &&
+                                center.projectId === nextProjectId,
+                            );
 
-                    <Field
-                      htmlFor={`${line.key}-cost-center`}
-                      label="Cost center"
-                    >
-                      <Select
-                        disabled={isReadOnly}
-                        id={`${line.key}-cost-center`}
-                        onChange={(event) =>
-                          updateLine(line.key, {
-                            costCenterId: event.target.value,
-                          })
+                            updateLine(line.key, {
+                              projectId: nextProjectId,
+                              ...(keepCostCenter ? {} : { costCenterId: "" }),
+                            });
+                          }}
+                          value={line.projectId}
+                        >
+                          <option value="">Select project</option>
+                          {activeProjects.map((project) => (
+                            <option key={project.id} value={project.id}>
+                              {projectLabel(project)}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    ) : null}
+
+                    {showCostCenter ? (
+                      <Field
+                        hint={
+                          requirements.requiresCostCenter &&
+                          showProject &&
+                          !line.projectId
+                            ? "Select a project first to choose its cost center."
+                            : requirements.requiresCostCenter
+                              ? undefined
+                              : "Optional for this ledger."
                         }
-                        value={line.costCenterId}
+                        htmlFor={`${line.key}-cost-center`}
+                        label="Cost center"
+                        required={requirements.requiresCostCenter}
                       >
-                        <option value="">None</option>
-                        {activeCostCenters.map((center) => (
-                          <option key={center.id} value={center.id}>
-                            {costCenterLabel(center)}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
+                        <Select
+                          disabled={
+                            isReadOnly ||
+                            (requirements.requiresCostCenter &&
+                              showProject &&
+                              !line.projectId)
+                          }
+                          id={`${line.key}-cost-center`}
+                          onChange={(event) =>
+                            updateLine(line.key, {
+                              costCenterId: event.target.value,
+                            })
+                          }
+                          value={line.costCenterId}
+                        >
+                          <option value="">Select cost center</option>
+                          {(showProject
+                            ? costCentersForProject
+                            : activeCostCenters
+                          ).map((center) => (
+                            <option key={center.id} value={center.id}>
+                              {costCenterLabel(center)}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    ) : null}
 
                     {showCashBank ? (
                       <Field
+                        hint={
+                          requirements.isCashBank &&
+                          matchingCashBankAccounts.length === 0
+                            ? "No active cash/bank/MFS account is linked to this ledger. Add one in Cash, Bank & MFS setup before posting."
+                            : undefined
+                        }
                         htmlFor={`${line.key}-cash-bank`}
-                        label="Cash/bank account"
+                        label={requirements.cashBankFieldLabel}
+                        required={requirements.isCashBank}
                       >
                         <Select
                           disabled={isReadOnly}
@@ -773,23 +869,18 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                           }
                           value={line.cashBankAccountId}
                         >
-                          <option value="">None</option>
-                          {activeCashBankAccounts
-                            .filter(
-                              (account) =>
-                                account.ledgerAccountId === line.ledgerAccountId,
-                            )
-                            .map((account) => (
-                              <option key={account.id} value={account.id}>
-                                {cashBankLabel(account)}
-                              </option>
-                            ))}
+                          <option value="">Select account</option>
+                          {matchingCashBankAccounts.map((account) => (
+                            <option key={account.id} value={account.id}>
+                              {cashBankLabel(account)}
+                            </option>
+                          ))}
                         </Select>
                       </Field>
                     ) : null}
 
                     <Field
-                      className={cn(showCashBank ? "" : "lg:col-span-2")}
+                      className={cn(descriptionSpansRow ? "lg:col-span-2" : "")}
                       htmlFor={`${line.key}-description`}
                       label="Description"
                     >

@@ -87,8 +87,103 @@ export function costCenterLabel(center: CostCenter): string {
   return `${center.code} - ${center.name}`;
 }
 
+function cashBankTypeWord(accountType: CashBankAccount["accountType"]): string {
+  if (accountType === "CASH") {
+    return "Cash";
+  }
+
+  if (accountType === "BANK") {
+    return "Bank";
+  }
+
+  return "MFS";
+}
+
 export function cashBankLabel(account: CashBankAccount): string {
-  return `${account.displayName} (${account.accountType === "CASH" ? "Cash" : "Bank"})`;
+  return `${account.displayName} (${cashBankTypeWord(account.accountType)})`;
+}
+
+// ---------------------------------------------------------------------------
+// Selection-aware voucher line field requirements (Phase 2F, Chunk 2F-5)
+//
+// This is the reusable selection-aware UX pattern for voucher line entry: the
+// fields shown for a line are derived from the selected ledger account (and the
+// cash/bank/MFS accounts linked to it), instead of showing Project, Cost Center,
+// and Cash/Bank/MFS generically for every line. The same idea ("UI reacts to the
+// selected reference") is intended to be reused across report filters and setup
+// forms in later chunks; keep this helper small and pure so it can be lifted to a
+// shared module when that work happens. The backend posting validation in
+// `voucher.service.ts` remains the authority; this only guides the accountant.
+// ---------------------------------------------------------------------------
+
+export type VoucherLineFieldRequirements = {
+  /** Project is mandatory for posting this ledger (backend `requiresProject`). */
+  requiresProject: boolean;
+  /** Cost center is mandatory for posting this ledger (backend `requiresCostCenter`). */
+  requiresCostCenter: boolean;
+  /** Ledger is a cash/bank/MFS ledger (backend `isCashBank`). */
+  isCashBank: boolean;
+  /** Type-aware label for the cash/bank/MFS account field, e.g. "Bank account". */
+  cashBankFieldLabel: string;
+  /** Concise one-line guidance for the accountant, or null when nothing useful. */
+  guidance: string | null;
+};
+
+// Derive a type-aware label from the active cash/bank/MFS accounts linked to the
+// selected ledger. When the accounts are all one type the label is specific;
+// otherwise (or when none are linked yet) it falls back to the generic label.
+export function cashBankFieldLabel(accounts: CashBankAccount[]): string {
+  const types = new Set(accounts.map((account) => account.accountType));
+
+  if (types.size === 1) {
+    if (types.has("CASH")) {
+      return "Cash account";
+    }
+
+    if (types.has("BANK")) {
+      return "Bank account";
+    }
+
+    if (types.has("MFS")) {
+      return "MFS wallet";
+    }
+  }
+
+  return "Cash/Bank/MFS account";
+}
+
+export function deriveVoucherLineFieldRequirements(
+  ledger: LedgerAccount | undefined,
+  matchingCashBankAccounts: CashBankAccount[],
+): VoucherLineFieldRequirements {
+  const requiresProject = ledger?.requiresProject ?? false;
+  const requiresCostCenter = ledger?.requiresCostCenter ?? false;
+  const isCashBank = ledger?.isCashBank ?? false;
+  const fieldLabel = cashBankFieldLabel(matchingCashBankAccounts);
+
+  let guidance: string | null = null;
+
+  if (ledger) {
+    if (isCashBank) {
+      guidance = `${fieldLabel} is required for this cash/bank ledger.`;
+    } else if (requiresProject && requiresCostCenter) {
+      guidance = "This ledger requires project and cost center.";
+    } else if (requiresProject) {
+      guidance = "This ledger requires project.";
+    } else if (requiresCostCenter) {
+      guidance = "This ledger requires cost center.";
+    } else {
+      guidance = "No project or cost center is required for this ledger.";
+    }
+  }
+
+  return {
+    cashBankFieldLabel: fieldLabel,
+    guidance,
+    isCashBank,
+    requiresCostCenter,
+    requiresProject,
+  };
 }
 
 export function fiscalYearLabel(fiscalYear: FiscalYear): string {
