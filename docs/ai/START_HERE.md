@@ -20,6 +20,10 @@ Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. Th
 
 Phase 2E Chunk 2E-3 backend validation/API changes are accepted at `97e69ab`. The backend Cash & Bank account API can create, list, update, and deactivate MFS accounts with provider and wallet metadata. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at `be2392a`: the existing Cash, Bank & MFS setup page lets the accountant create, view, edit, and deactivate MFS accounts alongside CASH and BANK. Phase 2E Chunk 2E-5 MFS Book report API is accepted at `d90ffd4`: `GET /reports/mfs-book` exists and derives from posted voucher lines filtered to MFS accounts only. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted: `/app/reports/mfs-book` renders the MFS Book report page with filters, transaction lines, and browser print. Phase 2E MFS account setup and MFS Book foundation are now accepted. MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
 
+Phase 2F Accounting Report + Accountant UX Refinement requirement lock is complete and accepted. It locks six issues: (A) Balance Sheet current-period profit/loss inclusion in equity, (B) report/table layout readability and textbook-style accounting tables, (C) voucher line dynamic field visibility, (D) Cash/Bank/MFS report filter UX clarity, (E) dropdown/table text clipping fixes, (F) demo/test data cleanliness planning. No runtime code, schema, migration, or seed data changes were made in Phase 2F documentation lock.
+
+Phase 2F Accounting Report + Accountant UX Refinement requirement lock is complete and accepted. It locks six issues: (A) Balance Sheet current-period profit/loss inclusion in equity, (B) report/table layout readability and textbook-style accounting tables, (C) voucher line dynamic field visibility, (D) Cash/Bank/MFS report filter UX clarity, (E) dropdown/table text clipping fixes, (F) demo/test data cleanliness planning. No runtime code, schema, migration, or seed data changes were made in Phase 2F documentation lock. See `docs/requirements/phase-2f-accounting-report-ux-refinement-requirement-lock.md`, `docs/acceptance/phase-2f-acceptance-criteria.md`, and `docs/plans/phase-2f-accounting-report-ux-refinement-plan.md`.
+
 The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represents AGM sir as the main accounting operator for now. Do not add other roles until Real Capita confirms exact responsibilities.
 
 ## Where To Look First
@@ -32,7 +36,8 @@ The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represent
 6. `apps/api/src` and `apps/web/src` for implementation.
 7. `docs/requirements/phase-2d-accounting-reports-requirement-lock.md` before any report-module coding.
 8. `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md` and `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md` before any further MFS implementation.
-9. `docs/prompts/phase-2d-next-prompt.md` if continuing in Droid CLI or another agent.
+9. `docs/requirements/phase-2f-accounting-report-ux-refinement-requirement-lock.md` and `docs/plans/phase-2f-accounting-report-ux-refinement-plan.md` before any Phase 2F implementation.
+10. `docs/prompts/phase-2d-next-prompt.md` if continuing in Droid CLI or another agent.
 
 ## Local Setup
 
@@ -73,4 +78,4 @@ Do not rely on hidden chat memory. Reconstruct state from this repo:
 4. Check `git status --short --branch`.
 5. Continue only from documented requirements.
 
-If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md` and `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md` before coding. The next recommended task is either pause and demo/testing, or a future MFS voucher posting requirement/implementation lock, only if the user explicitly confirms.
+If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/plans/phase-2f-accounting-report-ux-refinement-plan.md` and `docs/requirements/phase-2f-accounting-report-ux-refinement-requirement-lock.md` before coding. The next recommended task is Phase 2F Chunk 2F-2 backend Balance Sheet P/L computation, only if the user explicitly confirms.

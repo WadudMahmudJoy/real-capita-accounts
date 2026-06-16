@@ -44,6 +44,8 @@ Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69
 
 Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at `be2392a`. The accountant can create, view, edit, and deactivate MFS accounts from the existing Cash, Bank & MFS setup page. Phase 2E Chunk 2E-5 MFS Book report API is accepted at `d90ffd4`: `GET /reports/mfs-book` exists. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted: `/app/reports/mfs-book` exists. Phase 2E MFS account setup and MFS Book foundation are now accepted. MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
 
+Phase 2F Accounting Report + Accountant UX Refinement requirement lock is complete and accepted. Phase 2F locks six issues for future implementation: (A) Balance Sheet current-period profit/loss inclusion in equity, (B) report/table layout readability and textbook-style accounting tables, (C) voucher line dynamic field visibility, (D) Cash/Bank/MFS report filter UX clarity, (E) dropdown/table text clipping fixes, (F) demo/test data cleanliness planning. No runtime code, schema, migration, or seed data changes were made in Phase 2F documentation lock.
+
 ## Phase 2E Chunk 2E-7 Final Integration and Acceptance Review - completed this session (accepted)
 
 - Full integration review across all Phase 2E chunks: schema, backend account API, frontend MFS account setup, backend MFS Book report API, frontend MFS Book report page, and print foundation.
@@ -394,7 +396,7 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS Book frontend page, MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS runtime implementation beyond the backend MFS account API, the frontend MFS account setup UI, and the backend MFS Book report API, or unconfirmed office roles.
+The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS Book frontend page, MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, salary sheets, project finance reports, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS runtime implementation beyond the backend MFS account API, the frontend MFS account setup UI, and the backend MFS Book report API, or unconfirmed office roles, Balance Sheet current period P/L line, report layout widening, voucher line dynamic field visibility, report filter UX clarity, dropdown/table text clipping fixes, demo data cleanliness.
 
 The Phase 2E MFS / bKash requirement lock is complete and accepted at `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is implemented, but MFS runtime is still incomplete beyond account setup. The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Project Summary and Cost Center Summary (backend and frontend) and PDF/Excel export remain deferred.
 
@@ -412,11 +414,12 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2E MFS account setup and MFS Book foundation are accepted. The next recommended task is either pause and demo/testing, or a future MFS voucher posting requirement/implementation lock, only if the user explicitly confirms. No MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted. The next recommended task is Phase 2F Chunk 2F-2 backend Balance Sheet P/L computation, only if the user explicitly confirms. No Balance Sheet P/L line, report layout widening, voucher line dynamic field visibility, report filter UX, dropdown/table clipping, demo data cleanup, MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 
+- `docs/plans/phase-2f-accounting-report-ux-refinement-plan.md`
+- `docs/requirements/phase-2f-accounting-report-ux-refinement-requirement-lock.md`
+- `docs/acceptance/phase-2f-acceptance-criteria.md`
 - `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md`
 - `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md`
-- `docs/architecture/phase-2e-mfs-accounting-model-proposal.md`
-- `docs/acceptance/phase-2e-acceptance-criteria.md`
