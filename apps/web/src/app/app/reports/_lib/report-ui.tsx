@@ -218,14 +218,20 @@ type FilterValues = {
   ledgerAccountId: string;
   cashBankAccountId: string;
   voucherType: string;
+  accountClassCode: string;
+  accountGroupId: string;
+  expenseOnly: boolean;
 };
 
 const emptyFilters: FilterValues = {
   accountingPeriodId: "",
+  accountClassCode: "",
+  accountGroupId: "",
   asOfDate: "",
   cashBankAccountId: "",
   costCenterId: "",
   endDate: "",
+  expenseOnly: false,
   fiscalYearId: "",
   ledgerAccountId: "",
   projectId: "",
@@ -244,6 +250,12 @@ export type ReportFiltersConfig = {
   requireProject?: boolean;
   /** Show the voucher type dropdown. */
   showVoucherType?: boolean;
+  /** Show the expense-only toggle (checkbox). */
+  showExpenseOnly?: boolean;
+  /** Show the account class dropdown. */
+  showAccountClass?: boolean;
+  /** Show the account group dropdown. */
+  showAccountGroup?: boolean;
   /**
    * Show the custom start/end date range inputs. Defaults to true. The balance
    * sheet hides this because it is a point-in-time report driven by asOfDate.
@@ -420,6 +432,15 @@ export function ReportFilters({
       ...(config?.showVoucherType && values.voucherType
         ? { voucherType: values.voucherType }
         : {}),
+      ...(config?.showAccountClass && values.accountClassCode
+        ? { accountClassCode: values.accountClassCode }
+        : {}),
+      ...(config?.showAccountGroup && values.accountGroupId
+        ? { accountGroupId: values.accountGroupId }
+        : {}),
+      ...(config?.showExpenseOnly && values.expenseOnly
+        ? { expenseOnly: values.expenseOnly }
+        : {}),
     });
   }
 
@@ -595,6 +616,61 @@ export function ReportFilters({
               <option value="PAYMENT">Payment</option>
               <option value="RECEIPT">Receipt</option>
             </Select>
+          </Field>
+        ) : null}
+
+        {config?.showAccountClass ? (
+          <Field htmlFor="report-account-class" label="Account class">
+            <Select
+              id="report-account-class"
+              onChange={(event) =>
+                update({ accountClassCode: event.target.value })
+              }
+              value={values.accountClassCode}
+            >
+              <option value="">All account classes</option>
+              <option value="ASSET">Asset</option>
+              <option value="LIABILITY">Liability</option>
+              <option value="EQUITY">Equity</option>
+              <option value="INCOME">Income</option>
+              <option value="EXPENSE">Expense</option>
+            </Select>
+          </Field>
+        ) : null}
+
+        {config?.showAccountGroup ? (
+          <Field htmlFor="report-account-group" label="Account group">
+            <Select
+              id="report-account-group"
+              onChange={(event) =>
+                update({ accountGroupId: event.target.value })
+              }
+              value={values.accountGroupId}
+            >
+              <option value="">All account groups</option>
+              {reference.accountGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.code} - {group.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
+
+        {config?.showExpenseOnly ? (
+          <Field htmlFor="report-expense-only" label="Expense only">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                checked={values.expenseOnly}
+                className="size-4 rounded border-border"
+                id="report-expense-only"
+                onChange={(event) =>
+                  update({ expenseOnly: event.target.checked })
+                }
+                type="checkbox"
+              />
+              Show only expense and asset class lines
+            </label>
           </Field>
         ) : null}
       </div>

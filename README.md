@@ -12,8 +12,8 @@ This repository is intentionally not a continuation of the previous Real Capita 
 - Phase 2D accounting reports are complete and accepted.
 - Phase 2E MFS / bKash transaction support is accepted (MFS account setup + MFS Book foundation).
 - Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented (Balance Sheet current P/L, report/table readability, voucher line dynamic field visibility, report filter UX clarity). Issue E mostly addressed. Issue F deferred.
-- Phase 2G Project/Cost-Center Financial Reporting is in progress. Phase 2G Chunk 2G-1 Project Ledger API + Frontend Project Ledger Report Page is implemented. The report derives from posted VoucherLine records only; `projectId` is required; draft vouchers excluded; no schema/migration/report table/new role added. Phase 2G Chunks 2G-2 through 2G-4 (Project Cost Report, Cost Center Summary, Project Financial Summary) and the optional Report E remain locked for future implementation.
-- Still not implemented: Project Cost Report, Cost Center Summary, Project Financial Summary, Project Cash/Bank Movement View, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
+- Phase 2G Project/Cost-Center Financial Reporting is in progress. Phase 2G Chunk 2G-1 Project Ledger and Chunk 2G-2 Project Cost Report are implemented. The Project Cost Report summarizes project-tagged posted voucher lines by cost center, account class, account group, and ledger. Expense and Asset/project-cost totals are labeled separately. No schema/migration/report table/new role added. Phase 2G Chunks 2G-3 and 2G-4 (Cost Center Summary, Project Financial Summary) and the optional Report E remain locked.
+- Still not implemented: Cost Center Summary, Project Financial Summary, Project Cash/Bank Movement View, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
 
 ## Stack
 

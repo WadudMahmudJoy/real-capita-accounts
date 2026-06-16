@@ -132,6 +132,30 @@ type DebitCreditTotals = {
   credit: Prisma.Decimal;
 };
 
+type ProjectCostRow = {
+  accountClass: {
+    code: string;
+    id: string;
+    name: string;
+    normalBalance: NormalBalanceSide;
+  };
+  accountGroup: {
+    code: string;
+    id: string;
+    name: string;
+  };
+  costCenterId: string | null;
+  costCenterCode: string | null;
+  costCenterName: string | null;
+  creditTotal: Prisma.Decimal;
+  debitTotal: Prisma.Decimal;
+  ledgerAccount: {
+    code: string;
+    id: string;
+    name: string;
+  };
+};
+
 type ReportType =
   | "LEDGER"
   | "CASH_BOOK"
@@ -140,7 +164,8 @@ type ReportType =
   | "TRIAL_BALANCE"
   | "INCOME_STATEMENT"
   | "BALANCE_SHEET"
-  | "PROJECT_LEDGER";
+  | "PROJECT_LEDGER"
+  | "PROJECT_COST";
 
 const ZERO = new Prisma.Decimal(0);
 
@@ -378,6 +403,351 @@ export class ReportService {
       CashBankAccountType.MFS,
       "MFS_BOOK",
     );
+  }
+
+  async getProjectCost(query: ReportQueryDto) {
+    if (!query.projectId) {
+      throw new BadRequestException(
+        "projectId is required for the project cost report.",
+      );
+    }
+
+    const context = await this.resolveReportContext(query);
+    const project = context.project!;
+
+    const lineWhere = this.buildProjectCostLineFilter(query);
+    const voucherWhere = this.buildVoucherDateFilter(context, "period");
+
+    const byLedger = await this.sumDebitCreditByLedger(lineWhere, voucherWhere);
+
+    const ledgerIds = [...byLedger.keys()];
+    const ledgerAccounts = ledgerIds.length
+      ? await this.prisma.ledgerAccount.findMany({
+          include: {
+            accountGroup: { include: { accountClass: true } },
+          },
+          where: { id: { in: ledgerIds } },
+        })
+      : [];
+
+    const costCenterIds = new Set<string>();
+    const rows: ProjectCostRow[] = [];
+
+    for (const ledger of ledgerAccounts) {
+      const totals = this.getDebitCreditForLedger(byLedger, ledger.id);
+
+      if (totals.debit.equals(ZERO) && totals.credit.equals(ZERO)) {
+        continue;
+      }
+
+      const accountClass = ledger.accountGroup.accountClass;
+      const classCode = accountClass.code;
+
+      rows.push({
+        accountClass: {
+          code: classCode,
+          id: accountClass.id,
+          name: accountClass.name,
+          normalBalance: accountClass.normalBalance,
+        },
+        accountGroup: {
+          code: ledger.accountGroup.code,
+          id: ledger.accountGroup.id,
+          name: ledger.accountGroup.name,
+        },
+        costCenterId: null,
+        costCenterCode: null,
+        costCenterName: null,
+        creditTotal: totals.credit,
+        debitTotal: totals.debit,
+        ledgerAccount: {
+          code: ledger.code,
+          id: ledger.id,
+          name: ledger.name,
+        },
+      });
+
+      costCenterIds.add("__NONE__");
+    }
+
+    // Fetch cost-center-grouped rows for lines that have a costCenterId
+    const costCenterRows = await this.prisma.voucherLine.groupBy({
+      _sum: { amount: true },
+      by: ["costCenterId", "ledgerAccountId", "side"],
+      where: {
+        ...lineWhere,
+        costCenterId: { not: null },
+        voucher: voucherWhere,
+      },
+    });
+
+    const ccLedgerIds = new Set(
+      costCenterRows.map((r) => r.ledgerAccountId),
+    );
+    const ccLedgerMap = new Map<string, typeof ledgerAccounts[number]>();
+
+    if (ccLedgerIds.size > 0) {
+      const ccs = await this.prisma.ledgerAccount.findMany({
+        include: {
+          accountGroup: { include: { accountClass: true } },
+        },
+        where: { id: { in: [...ccLedgerIds] } },
+      });
+
+      for (const la of ccs) {
+        ccLedgerMap.set(la.id, la);
+      }
+    }
+
+    const ccMap = new Map<string, { id: string; code: string; name: string }>();
+    const allCcIds = new Set(
+      costCenterRows
+        .map((r) => r.costCenterId)
+        .filter((id): id is string => id !== null),
+    );
+
+    if (allCcIds.size > 0) {
+      const costCenters = await this.prisma.costCenter.findMany({
+        where: { id: { in: [...allCcIds] } },
+      });
+
+      for (const cc of costCenters) {
+        ccMap.set(cc.id, { code: cc.code, id: cc.id, name: cc.name });
+      }
+    }
+
+    // Aggregate by (costCenterId, ledgerAccountId)
+    const ccAgg = new Map<string, { debit: Prisma.Decimal; credit: Prisma.Decimal }>();
+
+    for (const row of costCenterRows) {
+      const key = `${row.costCenterId}::${row.ledgerAccountId}`;
+      const cur = ccAgg.get(key) ?? { credit: ZERO, debit: ZERO };
+      const amount = row._sum.amount ?? ZERO;
+
+      ccAgg.set(key, {
+        credit:
+          row.side === VoucherLineSide.CREDIT
+            ? cur.credit.plus(amount)
+            : cur.credit,
+        debit:
+          row.side === VoucherLineSide.DEBIT
+            ? cur.debit.plus(amount)
+            : cur.debit,
+      });
+    }
+
+    // Add cost-center-specific rows
+    for (const [key, totals] of ccAgg) {
+      const [ccId, ledgerId] = key.split("::");
+      const ledger = ccLedgerMap.get(ledgerId);
+
+      if (!ledger || (totals.debit.equals(ZERO) && totals.credit.equals(ZERO))) {
+        continue;
+      }
+
+      const cc = ccMap.get(ccId);
+      const accountClass = ledger.accountGroup.accountClass;
+
+      rows.push({
+        accountClass: {
+          code: accountClass.code,
+          id: accountClass.id,
+          name: accountClass.name,
+          normalBalance: accountClass.normalBalance,
+        },
+        accountGroup: {
+          code: ledger.accountGroup.code,
+          id: ledger.accountGroup.id,
+          name: ledger.accountGroup.name,
+        },
+        costCenterId: ccId,
+        costCenterCode: cc?.code ?? null,
+        costCenterName: cc?.name ?? null,
+        creditTotal: totals.credit,
+        debitTotal: totals.debit,
+        ledgerAccount: {
+          code: ledger.code,
+          id: ledger.id,
+          name: ledger.name,
+        },
+      });
+    }
+
+    // Sort rows by cost center, then class sort key, then group code/name, then ledger code/name
+    rows.sort((left, right) => {
+      const ccLeft = left.costCenterCode ?? "";
+      const ccRight = right.costCenterCode ?? "";
+
+      if (ccLeft !== ccRight) {
+        return ccLeft.localeCompare(ccRight);
+      }
+
+      const classOrder =
+        this.accountClassSortKey(left.accountClass.code) -
+        this.accountClassSortKey(right.accountClass.code);
+
+      if (classOrder !== 0) {
+        return classOrder;
+      }
+
+      const groupCode = left.accountGroup.code.localeCompare(
+        right.accountGroup.code,
+      );
+
+      if (groupCode !== 0) {
+        return groupCode;
+      }
+
+      const groupName = left.accountGroup.name.localeCompare(
+        right.accountGroup.name,
+      );
+
+      if (groupName !== 0) {
+        return groupName;
+      }
+
+      const ledgerCode = left.ledgerAccount.code.localeCompare(
+        right.ledgerAccount.code,
+      );
+
+      if (ledgerCode !== 0) {
+        return ledgerCode;
+      }
+
+      return left.ledgerAccount.name.localeCompare(right.ledgerAccount.name);
+    });
+
+    // Compute totals
+    let debitTotal = ZERO;
+    let creditTotal = ZERO;
+    let expenseTotal = ZERO;
+    let assetTotal = ZERO;
+    let incomeTotal = ZERO;
+    let liabilityTotal = ZERO;
+    let equityTotal = ZERO;
+
+    for (const row of rows) {
+      const net = row.debitTotal.minus(row.creditTotal);
+      debitTotal = debitTotal.plus(row.debitTotal);
+      creditTotal = creditTotal.plus(row.creditTotal);
+
+      const code = row.accountClass.code;
+
+      if (code === AccountClassCode.EXPENSE) {
+        expenseTotal = expenseTotal.plus(net);
+      } else if (code === AccountClassCode.ASSET) {
+        assetTotal = assetTotal.plus(net);
+      } else if (code === AccountClassCode.INCOME) {
+        incomeTotal = incomeTotal.plus(net);
+      } else if (code === AccountClassCode.LIABILITY) {
+        liabilityTotal = liabilityTotal.plus(net);
+      } else if (code === AccountClassCode.EQUITY) {
+        equityTotal = equityTotal.plus(net);
+      }
+    }
+
+    const netMovement = debitTotal.minus(creditTotal);
+
+    // Scan for last transaction date per ledger per cost center
+    const lastDateMap = new Map<string, Date>();
+    const dateRows = await this.prisma.voucherLine.findMany({
+      select: {
+        costCenterId: true,
+        ledgerAccountId: true,
+        voucher: { select: { voucherDate: true } },
+      },
+      where: {
+        ...lineWhere,
+        voucher: voucherWhere,
+      },
+    });
+
+    for (const dr of dateRows) {
+      const key = `${dr.costCenterId ?? "__NONE__"}::${dr.ledgerAccountId}`;
+      const cur = lastDateMap.get(key);
+
+      if (!cur || dr.voucher.voucherDate > cur) {
+        lastDateMap.set(key, dr.voucher.voucherDate);
+      }
+    }
+
+    const lineCount = dateRows.length;
+
+    return {
+      reportType: "PROJECT_COST" satisfies string,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      project: {
+        id: project.id,
+        code: project.code,
+        name: project.name,
+      },
+      costCenter: context.costCenter
+        ? {
+            code: context.costCenter.code,
+            id: context.costCenter.id,
+            name: context.costCenter.name,
+          }
+        : null,
+      filters: {
+        costCenter: context.costCenter
+          ? {
+              code: context.costCenter.code,
+              id: context.costCenter.id,
+              name: context.costCenter.name,
+            }
+          : null,
+        expenseOnly: query.expenseOnly ?? false,
+        ledgerAccount: query.ledgerAccountId ?? null,
+        accountClass: query.accountClassCode ?? null,
+        accountGroup: query.accountGroupId ?? null,
+      },
+      totals: {
+        assetProjectCostTotal: this.toMoney(assetTotal),
+        creditTotal: this.toMoney(creditTotal),
+        debitTotal: this.toMoney(debitTotal),
+        equityTotal: this.toMoney(equityTotal),
+        expenseTotal: this.toMoney(expenseTotal),
+        incomeTotal: this.toMoney(incomeTotal),
+        liabilityTotal: this.toMoney(liabilityTotal),
+        netMovement: this.toMoney(netMovement),
+      },
+      lineCount,
+      groupedRowCount: rows.length,
+      rows: rows.map((row) => {
+        const net = row.debitTotal.minus(row.creditTotal);
+        const key = `${row.costCenterId ?? "__NONE__"}::${row.ledgerAccount.id}`;
+        const lastDate = lastDateMap.get(key);
+
+        return {
+          accountClass: {
+            code: row.accountClass.code,
+            name: row.accountClass.name,
+          },
+          accountGroup: {
+            code: row.accountGroup.code,
+            name: row.accountGroup.name,
+          },
+          costCenterCode: row.costCenterCode,
+          costCenterId: row.costCenterId,
+          costCenterName: row.costCenterName,
+          creditTotal: this.toMoney(row.creditTotal),
+          debitTotal: this.toMoney(row.debitTotal),
+          lastTransactionDate: lastDate
+            ? this.formatDate(lastDate)
+            : null,
+          ledgerAccount: {
+            code: row.ledgerAccount.code,
+            id: row.ledgerAccount.id,
+            name: row.ledgerAccount.name,
+          },
+          netAmount: this.toMoney(net),
+        };
+      }),
+    };
   }
 
   async getTrialBalance(query: ReportQueryDto) {
@@ -1342,6 +1712,53 @@ export class ReportService {
       where.voucher = {
         is: { voucherType: query.voucherType as VoucherType },
       };
+    }
+
+    return where;
+  }
+
+  private buildProjectCostLineFilter(
+    query: ReportQueryDto,
+  ): Prisma.VoucherLineWhereInput {
+    const where: Prisma.VoucherLineWhereInput = {
+      projectId: query.projectId!,
+    };
+
+    if (query.costCenterId) {
+      where.costCenterId = query.costCenterId;
+    }
+
+    if (query.ledgerAccountId) {
+      where.ledgerAccountId = query.ledgerAccountId;
+    }
+
+    const laWhere: Record<string, unknown> = {};
+
+    if (query.accountGroupId) {
+      laWhere.accountGroupId = query.accountGroupId;
+    }
+
+    if (query.accountClassCode) {
+      laWhere.accountGroup = {
+        accountClass: {
+          code: query.accountClassCode as AccountClassCode,
+        },
+      };
+    }
+
+    if (query.expenseOnly) {
+      const existingGroup =
+        laWhere.accountGroup as Record<string, unknown> | undefined;
+      laWhere.accountGroup = {
+        ...(existingGroup ?? {}),
+        accountClass: {
+          code: { in: [AccountClassCode.EXPENSE, AccountClassCode.ASSET] },
+        },
+      };
+    }
+
+    if (Object.keys(laWhere).length > 0) {
+      where.ledgerAccount = laWhere;
     }
 
     return where;

@@ -20,7 +20,60 @@ Phase 2E MFS / bKash transaction support is complete and accepted (MFS account s
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred.
 
-## Phase 2G Chunk 2G-1 Project Ledger - completed this session
+## Phase 2G Chunk 2G-2 Project Cost Report - completed this session
+
+Phase 2G Chunk 2G-2 Project Cost Report API + Frontend Project Cost Report Page is implemented.
+
+### Backend
+
+- Added `GET /reports/project-cost` endpoint guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.
+- `projectId` is required; returns 400 when missing.
+- Report derives from posted voucher lines only (`Voucher.status = POSTED`, `Voucher.isDeleted = false`).
+- Groups project-tagged lines by cost center, account class, account group, and ledger account.
+- Optional filters: `costCenterId`, `ledgerAccountId`, `accountGroupId`, `accountClassCode`, `expenseOnly`.
+- `expenseOnly=true` filters to EXPENSE and ASSET class lines only.
+- Totals include per-class breakdown: debitTotal, creditTotal, netMovement, expenseTotal, assetProjectCostTotal, incomeTotal, liabilityTotal, equityTotal.
+- Added `buildProjectCostLineFilter` helper with separate variable for ledger-account filter composition.
+- Added `accountGroupId`, `accountClassCode`, and `expenseOnly` fields to `ReportQueryDto`.
+
+### Frontend
+
+- Added `ProjectCostReport` and `ProjectCostReportRow` types in `apps/web/src/lib/api.ts`.
+- Added `getProjectCostReport` helper.
+- Added `accountGroupId`, `accountClassCode`, `expenseOnly` to `ReportQueryParams` and `buildReportQuery`.
+- Added `showExpenseOnly`, `showAccountClass`, `showAccountGroup` config options and UI controls (account class dropdown, account group dropdown, expense-only checkbox) to `ReportFilters`.
+- Added `accountGroups` to `useReportReferences` hook.
+- Created `/app/reports/project-cost/page.tsx` with required project + fiscal year filters, optional cost center/ledger/account class/account group/expense-only.
+- Page renders summary cards (Total Debit, Total Credit, Net Movement, Project Expense, Project Asset/Cap. Cost, Project Income, Liability, Equity, Line Count, Grouped Rows).
+- Table columns: Cost Center, Account Class (with human labels), Account Group, Ledger (with drill-down link to Project Ledger), Debit, Credit, Net Amount, Last Date.
+- Class labels: EXPENSE="Project Expense", ASSET="Project Asset / Capitalized Project Cost", INCOME="Project Income", LIABILITY="Liability", EQUITY="Equity".
+- Helper text explains asset/expense separation.
+- Browser print foundation via `ReportPrintFrame`.
+- Added Project Cost Report navigation link under Reports in sidebar.
+
+### Files changed
+
+- `apps/api/src/report/dto/report-query.dto.ts` -- added `accountGroupId`, `accountClassCode`, `expenseOnly` fields.
+- `apps/api/src/report/report.service.ts` -- added `getProjectCost` method, `buildProjectCostLineFilter` helper, `ProjectCostRow` type.
+- `apps/api/src/report/report.controller.ts` -- added `GET /reports/project-cost` endpoint.
+- `apps/web/src/lib/api.ts` -- added `ProjectCostReport`, `ProjectCostReportRow` types, `getProjectCostReport` helper, new query params.
+- `apps/web/src/app/app/reports/_lib/report-ui.tsx` -- added `showExpenseOnly`, `showAccountClass`, `showAccountGroup` config, filter controls.
+- `apps/web/src/app/app/reports/_lib/useReportReferences.ts` -- added `accountGroups` loading.
+- `apps/web/src/app/app/reports/project-cost/page.tsx` -- new file.
+- `apps/web/src/app/app/layout.tsx` -- added Project Cost Report navigation link.
+
+### Not added
+
+- No Prisma schema change, no migration, no report table, no new role.
+- No MFS voucher posting support.
+- No PDF/Excel export, no dashboard analytics.
+- No Cost Center Summary, Project Financial Summary (Chunks 2G-3, 2G-4).
+
+### Verification
+
+All passes: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`.
+
+## Phase 2G Chunk 2G-1 Project Ledger - completed previous session
 
 Phase 2G Chunk 2G-1 Project Ledger API + Frontend Project Ledger Report Page is implemented.
 
@@ -499,7 +552,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2G Chunk 2G-1 Project Ledger is implemented. The next recommended step is Phase 2G Chunk 2G-2: Backend Project Cost Report API + Frontend Project Cost Report Page. Do not start Project Cost Report, Cost Center Summary, Project Financial Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2G Chunks 2G-1 (Project Ledger) and 2G-2 (Project Cost Report) are implemented. The next recommended step is Phase 2G Chunk 2G-3: Backend Cost Center Summary API + Frontend Cost Center Summary Page. Do not start Cost Center Summary, Project Financial Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 Reference docs before continuing:
 

@@ -1,4 +1,11 @@
-import { IsIn, IsISO8601, IsOptional, IsString, MinLength } from "class-validator";
+import {
+  IsIn,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  MinLength,
+} from "class-validator";
+import { Transform } from "class-transformer";
 import { Trim } from "../../common/dto-transforms";
 
 const VOUCHER_TYPES = [
@@ -8,6 +15,14 @@ const VOUCHER_TYPES = [
   "CONTRA",
   "PAYMENT",
   "RECEIPT",
+] as const;
+
+const ACCOUNT_CLASS_CODES = [
+  "ASSET",
+  "LIABILITY",
+  "EQUITY",
+  "INCOME",
+  "EXPENSE",
 ] as const;
 
 export class ReportQueryDto {
@@ -62,4 +77,19 @@ export class ReportQueryDto {
   @IsString()
   @IsIn(VOUCHER_TYPES)
   voucherType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @Trim()
+  accountGroupId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(ACCOUNT_CLASS_CODES)
+  accountClassCode?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  expenseOnly?: boolean;
 }

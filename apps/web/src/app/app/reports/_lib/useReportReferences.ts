@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ApiError,
   getAccountingPeriods,
+  getAccountGroups,
   getCashBankAccounts,
   getCostCenters,
   getFiscalYears,
@@ -12,6 +13,7 @@ import {
   getProjects,
   toErrorMessage,
   type AccountingPeriod,
+  type AccountGroup,
   type CashBankAccount,
   type CostCenter,
   type FiscalYear,
@@ -32,6 +34,7 @@ export type ReportReferenceData = {
   projects: Project[];
   costCenters: CostCenter[];
   cashBankAccounts: CashBankAccount[];
+  accountGroups: AccountGroup[];
 };
 
 export type ReportReferenceState =
@@ -61,6 +64,7 @@ export function useReportReferences(): ReportReferenceState {
           projects,
           costCenters,
           cashBankAccounts,
+          accountGroups,
         ] = await Promise.all([
           getFiscalYears(controller.signal),
           getAccountingPeriods(controller.signal),
@@ -68,10 +72,12 @@ export function useReportReferences(): ReportReferenceState {
           getProjects(controller.signal),
           getCostCenters(controller.signal),
           getCashBankAccounts(controller.signal),
+          getAccountGroups(controller.signal),
         ]);
 
         setState({
           reference: {
+            accountGroups,
             cashBankAccounts,
             costCenters,
             fiscalYears,

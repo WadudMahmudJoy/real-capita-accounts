@@ -51,4 +51,9 @@ export class ReportController {
   getProjectLedger(@Query() query: ReportQueryDto) {
     return this.reportService.getProjectLedger(query);
   }
+
+  @Get("project-cost")
+  getProjectCost(@Query() query: ReportQueryDto) {
+    return this.reportService.getProjectCost(query);
+  }
 }

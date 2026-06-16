@@ -737,7 +737,8 @@ export type ReportType =
   | "TRIAL_BALANCE"
   | "INCOME_STATEMENT"
   | "BALANCE_SHEET"
-  | "PROJECT_LEDGER";
+  | "PROJECT_LEDGER"
+  | "PROJECT_COST";
 
 /** Company summary embedded on the report fiscal year. */
 export type ReportCompanySummary = {
@@ -1087,6 +1088,68 @@ export type ProjectLedgerReport = {
   lines: ProjectLedgerReportLine[];
 };
 
+// --- Project Cost Report ---
+
+export type ProjectCostReportRow = {
+  accountClass: {
+    code: string;
+    name: string;
+  };
+  accountGroup: {
+    code: string;
+    name: string;
+  };
+  costCenterId: string | null;
+  costCenterCode: string | null;
+  costCenterName: string | null;
+  creditTotal: string;
+  debitTotal: string;
+  lastTransactionDate: string | null;
+  ledgerAccount: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  netAmount: string;
+};
+
+export type ProjectCostReport = {
+  reportType: "PROJECT_COST";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  project: ReportProjectSummary;
+  costCenter: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  filters: {
+    costCenter: {
+      id: string;
+      code: string;
+      name: string;
+    } | null;
+    expenseOnly: boolean;
+    ledgerAccount: string | null;
+    accountClass: string | null;
+    accountGroup: string | null;
+  };
+  totals: {
+    assetProjectCostTotal: string;
+    creditTotal: string;
+    debitTotal: string;
+    equityTotal: string;
+    expenseTotal: string;
+    incomeTotal: string;
+    liabilityTotal: string;
+    netMovement: string;
+  };
+  lineCount: number;
+  groupedRowCount: number;
+  rows: ProjectCostReportRow[];
+};
+
 /**
  * Shared report query parameters. `fiscalYearId` is always required; the rest
  * are optional and report-specific. Empty values are omitted from the request.
@@ -1102,6 +1165,9 @@ export type ReportQueryParams = {
   costCenterId?: string;
   cashBankAccountId?: string;
   voucherType?: string;
+  accountGroupId?: string;
+  accountClassCode?: string;
+  expenseOnly?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -1139,6 +1205,15 @@ function buildReportQuery(params: ReportQueryParams): string {
   }
   if (params.voucherType) {
     search.set("voucherType", params.voucherType);
+  }
+  if (params.accountGroupId) {
+    search.set("accountGroupId", params.accountGroupId);
+  }
+  if (params.accountClassCode) {
+    search.set("accountClassCode", params.accountClassCode);
+  }
+  if (params.expenseOnly) {
+    search.set("expenseOnly", "true");
   }
 
   return `?${search.toString()}`;
@@ -1219,6 +1294,16 @@ export function getProjectLedgerReport(
 ): Promise<ProjectLedgerReport> {
   return apiFetch<ProjectLedgerReport>(
     `/reports/project-ledger${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getProjectCostReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<ProjectCostReport> {
+  return apiFetch<ProjectCostReport>(
+    `/reports/project-cost${buildReportQuery(params)}`,
     { signal },
   );
 }
