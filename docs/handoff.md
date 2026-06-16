@@ -2,13 +2,24 @@
 
 ## Current Phase
 
-Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset (2 posted vouchers, 5 ledger accounts, 3 cash/bank/MFS accounts, 1 project, 1 cost center). Phase 2H-3 Demo Verification and Phase 2H-4 Docs Cleanup remain deferred. The deterministic demo dataset specification is defined in the requirement lock. Phase 2H directly addresses Phase 2F Issue F (demo data). No verification scripts, schema changes, migrations, or runtime code have been added beyond the new audit and reset scripts. The next recommended task is Phase 2H Chunk 2H-3: Demo Verification, with explicit user confirmation. Do not start demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset (2 posted vouchers, 5 ledger accounts, 3 cash/bank/MFS accounts, 1 project, 1 cost center). Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. Phase 2H-4 Docs Cleanup remains deferred. The deterministic demo dataset specification is defined in the requirement lock. Phase 2H directly addresses Phase 2F Issue F (demo data). The next recommended task is Phase 2H Chunk 2H-4: Docs Cleanup, with explicit user confirmation. Do not start docs cleanup, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.
 
-## Phase 2H-2 Safe Demo Reset - this session
+## Phase 2H-3 Demo Verification - this session
+
+Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. It uses only Prisma read operations (count, findFirst, findMany, aggregate, groupBy) and never creates, updates, or deletes data. It exits with code 0 on all-pass and non-zero on any failure.
+
+Created/Changed:
+- `prisma/demo-verify.ts`: new read-only verification script with strict entity, voucher, and accounting/report assertions.
+- `package.json`: added `demo:verify` script entry.
+- Docs updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No Prisma schema changes, migrations, backend API endpoints, frontend pages, roles, or runtime code were added.
+
+## Phase 2H-2 Safe Demo Reset - completed previous session
 
 Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with `CONFIRM_DEMO_RESET=YES` guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset.
 

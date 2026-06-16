@@ -20,7 +20,18 @@ Phase 2E MFS / bKash transaction support is complete and accepted (MFS account s
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
-## Phase 2H-2 Safe Demo Reset - this session
+## Phase 2H-3 Demo Verification - this session
+
+Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. It uses only Prisma read operations (count, findFirst, findMany, aggregate, groupBy) and never creates, updates, or deletes data. It exits with code 0 on all-pass and non-zero on any failure.
+
+Created/Changed:
+- `prisma/demo-verify.ts`: new read-only verification script with strict entity, voucher, and accounting/report assertions.
+- `package.json`: added `demo:verify` script entry.
+- Docs updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No Prisma schema changes, migrations, backend API endpoints, frontend pages, roles, or runtime code were added.
+
+## Phase 2H-2 Safe Demo Reset - completed previous session
 
 Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with `CONFIRM_DEMO_RESET=YES` guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset.
 
@@ -40,7 +51,7 @@ Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented: a read-only CLI c
 3. **Deterministic Demo Dataset** -- Company (Real Capita Group, BDT), FY 2025-2026, June 2026, SK-001 Shanti Kutir, SK-LD cost center, 5 ledger accounts (1010 Cash in Hand, 1020 City Bank, 1030 bKash Merchant Wallet, 5010 Land Development Expense, 3010 Capital Introduced), 3 cash/bank/MFS accounts (Office Cash, City Bank Uttara, bKash Merchant), 2 posted vouchers (capital introduction 100,000 JOURNAL, land development expense 50,000 PAYMENT with project/cost center).
 4. **Demo Verification** (`pnpm demo:verify`) -- read-only assertion checks for seed user, infrastructure entities, voucher counts, report totals, MFS posting block.
 
-Phase 2H directly addresses Phase 2F Issue F (demo data). The audit script (`prisma/demo-audit.ts`) performs entity counts, demo dataset presence checks, duplicate detection, orphan/consistency checks, report readiness, and deterministic demo report checks. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset. Phase 2H-3 Demo Verification and Phase 2H-4 Docs Cleanup remain deferred.
+Phase 2H directly addresses Phase 2F Issue F (demo data). The audit script (`prisma/demo-audit.ts`) performs entity counts, demo dataset presence checks, duplicate detection, orphan/consistency checks, report readiness, and deterministic demo report checks. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset. Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. Phase 2H-4 Docs Cleanup remains deferred.
 
 Created/Changed:
 - `prisma/demo-audit.ts`: new read-only audit script.

@@ -24,7 +24,8 @@
     "seed": "tsx prisma/seed.ts",
     "prisma:seed": "pnpm seed",
     "demo:audit": "tsx prisma/demo-audit.ts",
-    "demo:reset": "tsx prisma/demo-reset.ts"
+    "demo:reset": "tsx prisma/demo-reset.ts",
+    "demo:verify": "tsx prisma/demo-verify.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
