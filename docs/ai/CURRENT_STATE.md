@@ -414,7 +414,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted. The next recommended task is Phase 2F Chunk 2F-2 backend Balance Sheet P/L computation, only if the user explicitly confirms. No Balance Sheet P/L line, report layout widening, voucher line dynamic field visibility, report filter UX, dropdown/table clipping, demo data cleanup, MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
+Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted and Issue A (Balance Sheet current P/L) is implemented. The next recommended task is Phase 2F Chunk 2F-4 report/table layout widening, only if the user explicitly confirms. No Balance Sheet P/L line (now implemented), report layout widening, voucher line dynamic field visibility, report filter UX, dropdown/table clipping, demo data cleanup, MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 

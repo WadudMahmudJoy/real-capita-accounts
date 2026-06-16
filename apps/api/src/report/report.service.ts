@@ -739,6 +739,22 @@ export class ReportService {
     const totalLiabilitiesAndEquity = totalLiabilities.plus(totalEquity);
     const difference = totalAssets.minus(totalLiabilitiesAndEquity);
 
+    // Compute current period profit/loss from INCOME and EXPENSE movements
+    // within the same date range and filter scope as the balance sheet.
+    const currentPeriodPL = await this.computeCurrentPeriodPL(
+      context,
+      baseWhere,
+      this.buildBalanceSheetVoucherFilter(context),
+    );
+
+    const adjustedTotalEquity = totalEquity.plus(currentPeriodPL.netIncome);
+    const adjustedTotalLiabilitiesAndEquity = totalLiabilities.plus(
+      adjustedTotalEquity,
+    );
+    const adjustedDifference = totalAssets.minus(
+      adjustedTotalLiabilitiesAndEquity,
+    );
+
     return {
       reportType: "BALANCE_SHEET" satisfies ReportType,
       fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
@@ -753,6 +769,15 @@ export class ReportService {
       totalLiabilitiesAndEquity: this.toMoney(totalLiabilitiesAndEquity),
       difference: this.toMoney(difference),
       isBalanced: difference.equals(ZERO),
+      currentPeriodProfitLoss: this.toMoney(currentPeriodPL.netIncome),
+      currentPeriodPLLabel: currentPeriodPL.label,
+      currentPeriodPLIsProfit: currentPeriodPL.isProfit,
+      adjustedTotalEquity: this.toMoney(adjustedTotalEquity),
+      adjustedTotalLiabilitiesAndEquity: this.toMoney(
+        adjustedTotalLiabilitiesAndEquity,
+      ),
+      adjustedDifference: this.toMoney(adjustedDifference),
+      isBalancedAdjusted: adjustedDifference.equals(ZERO),
     };
   }
 
@@ -1236,6 +1261,67 @@ export class ReportService {
         lte: context.asOfDate,
       },
     };
+  }
+
+  // Compute current period profit/loss from posted INCOME and EXPENSE voucher
+  // lines, scoped to the same fiscal year, as-of-date, project, and cost
+  // center filters used by the balance sheet. This is a report-side
+  // computation only; no ledger accounts, voucher lines, or closing entries
+  // are created or modified.
+  private async computeCurrentPeriodPL(
+    context: BalanceSheetContext,
+    lineWhere: Prisma.VoucherLineWhereInput,
+    voucherWhere: Prisma.VoucherWhereInput,
+  ) {
+    const incomeExpenseLedgers = await this.prisma.ledgerAccount.findMany({
+      include: {
+        accountGroup: {
+          include: { accountClass: true },
+        },
+      },
+      where: {
+        accountGroup: {
+          accountClass: {
+            code: {
+              in: [AccountClassCode.INCOME, AccountClassCode.EXPENSE],
+            },
+          },
+        },
+      },
+    });
+
+    const movements = await this.sumDebitCreditByLedger(
+      lineWhere,
+      voucherWhere,
+    );
+
+    let totalIncome = ZERO;
+    let totalExpense = ZERO;
+
+    for (const ledger of incomeExpenseLedgers) {
+      const totals = this.getDebitCreditForLedger(movements, ledger.id);
+      const accountClassCode = ledger.accountGroup.accountClass.code;
+
+      // Income: credit increases, debit decreases → amount = credit - debit
+      // Expense: debit increases, credit decreases → amount = debit - credit
+      if (accountClassCode === AccountClassCode.INCOME) {
+        totalIncome = totalIncome.plus(
+          totals.credit.minus(totals.debit),
+        );
+      } else {
+        totalExpense = totalExpense.plus(
+          totals.debit.minus(totals.credit),
+        );
+      }
+    }
+
+    const netIncome = totalIncome.minus(totalExpense);
+    const isProfit = netIncome.greaterThanOrEqualTo(ZERO);
+    const label = isProfit
+      ? "Current Period Net Profit"
+      : "Current Period Net Loss";
+
+    return { netIncome, isProfit, label };
   }
 
   private async sumDebitCredit(

@@ -1018,6 +1018,13 @@ export type BalanceSheetReport = {
   totalLiabilitiesAndEquity: string;
   difference: string;
   isBalanced: boolean;
+  currentPeriodProfitLoss: string;
+  currentPeriodPLLabel: string;
+  currentPeriodPLIsProfit: boolean;
+  adjustedTotalEquity: string;
+  adjustedTotalLiabilitiesAndEquity: string;
+  adjustedDifference: string;
+  isBalancedAdjusted: boolean;
 };
 
 /**

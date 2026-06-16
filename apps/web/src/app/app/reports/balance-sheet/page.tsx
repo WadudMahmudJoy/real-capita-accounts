@@ -148,17 +148,24 @@ function BalanceSheetResult({ report }: { report: BalanceSheetReport }) {
             ]}
           />
 
-          {report.isBalanced ? (
+          {report.isBalancedAdjusted ? (
             <Notice tone="success">
-              The balance sheet is balanced. Total assets equal total liabilities
-              and equity (difference {formatMoney(report.difference)}).
+              The management balance sheet is balanced{' '}
+              {report.isBalanced
+                ? null
+                : '(including current period profit/loss)'}
+              . Total assets equal total liabilities and equity
+              (difference {formatMoney(report.adjustedDifference)}).
             </Notice>
           ) : (
             <Notice tone="error">
               The balance sheet does not balance. Total assets and total
-              liabilities plus equity differ by {formatMoney(report.difference)}.
-              This can happen when income and expense closing entries have not
-              been posted. Review the posted vouchers for the selected range.
+              liabilities plus equity differ by{' '}
+              {formatMoney(report.adjustedDifference)}.
+              {report.isBalanced ? null : (
+                <> The unadjusted difference (ledger only) is{' '}
+                {formatMoney(report.difference)}.</>
+              )}
             </Notice>
           )}
 
@@ -174,21 +181,31 @@ function BalanceSheetResult({ report }: { report: BalanceSheetReport }) {
                 value: formatMoney(report.liabilities.total),
               },
               {
-                label: "Total equity",
+                label: "Total equity (ledger)",
                 value: formatMoney(report.equity.total),
               },
               {
-                emphasis: true,
-                label: "Liabilities + equity",
-                value: formatMoney(report.totalLiabilitiesAndEquity),
+                label: report.currentPeriodPLLabel,
+                value: formatMoney(report.currentPeriodProfitLoss),
               },
               {
-                label: "Difference",
-                value: formatMoney(report.difference),
+                label: "Adjusted total equity",
+                value: formatMoney(report.adjustedTotalEquity),
+              },
+              {
+                emphasis: true,
+                label: "Liabilities + adjusted equity",
+                value: formatMoney(
+                  report.adjustedTotalLiabilitiesAndEquity,
+                ),
+              },
+              {
+                label: "Adjusted difference",
+                value: formatMoney(report.adjustedDifference),
               },
               {
                 label: "Balanced",
-                value: report.isBalanced ? "Yes" : "No",
+                value: report.isBalancedAdjusted ? "Yes" : "No",
               },
             ]}
           />
@@ -223,8 +240,8 @@ function BalanceSheetResult({ report }: { report: BalanceSheetReport }) {
 
       <Card className="print:hidden">
         <CardHeader
-          description="Posted equity balances as of the selected date."
-          title="Equity"
+          description="Posted equity ledger balances as of the selected date. Current period profit/loss adjustment is shown in the report summary."
+          title="Equity (ledger)"
         />
         <BalanceSheetTable
           emptyDescription="No posted equity balances were found as of the selected date."
@@ -346,27 +363,46 @@ function BalanceSheetPrint({
       <div className="h-3" />
       <PrintSection
         section={report.equity}
-        title="Equity"
-        totalLabel="Total equity"
+        title="Equity (ledger)"
+        totalLabel="Total equity (ledger)"
       />
 
+      {/* Current period profit/loss adjustment line */}
       <table className="mt-4 w-full border-collapse border border-black text-xs">
         <tbody>
-          <tr className="font-semibold">
-            <td className="border border-black px-2 py-1.5">
-              Total liabilities and equity
+          <tr>
+            <td className="border border-black px-2 py-1.5 font-semibold">
+              {report.currentPeriodPLLabel}
             </td>
             <td className="border border-black px-2 py-1.5 text-right tabular-nums">
-              {formatMoney(report.totalLiabilitiesAndEquity)}
+              {formatMoney(report.currentPeriodProfitLoss)}
+            </td>
+          </tr>
+          <tr className="font-semibold">
+            <td className="border border-black px-2 py-1.5">
+              Adjusted total equity
+            </td>
+            <td className="border border-black px-2 py-1.5 text-right tabular-nums">
+              {formatMoney(report.adjustedTotalEquity)}
             </td>
           </tr>
           <tr className="font-bold">
             <td className="border border-black px-2 py-1.5">
-              Difference (assets - liabilities - equity)
-              {report.isBalanced ? " — balanced" : " — not balanced"}
+              Total liabilities and adjusted equity
             </td>
             <td className="border border-black px-2 py-1.5 text-right tabular-nums">
-              {formatMoney(report.difference)}
+              {formatMoney(report.adjustedTotalLiabilitiesAndEquity)}
+            </td>
+          </tr>
+          <tr className="font-bold">
+            <td className="border border-black px-2 py-1.5">
+              Adjusted difference (assets - liabilities - adjusted equity)
+              {report.isBalancedAdjusted
+                ? ' — balanced'
+                : ' — not balanced'}
+            </td>
+            <td className="border border-black px-2 py-1.5 text-right tabular-nums">
+              {formatMoney(report.adjustedDifference)}
             </td>
           </tr>
         </tbody>

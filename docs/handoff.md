@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2F Accounting Report + Accountant UX Refinement requirement lock is complete and accepted. Phase 2F locks six issues for future implementation: (A) Balance Sheet current-period profit/loss inclusion in equity, (B) report/table layout readability and textbook-style accounting tables, (C) voucher line dynamic field visibility, (D) Cash/Bank/MFS report filter UX clarity, (E) dropdown/table text clipping fixes, (F) demo/test data cleanliness planning. No runtime code, schema, migration, or seed data changes were made in Phase 2F documentation lock. Stop before starting the next implementation chunk without explicit user confirmation.
+Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted. Phase 2F Chunk 2F-2 Balance Sheet current P/L inclusion is implemented: the Balance Sheet now includes a report-only Current Period Net Profit/Loss line under Equity, computed from posted INCOME/EXPENSE movements within the same date range and filter scope (additive API fields, no schema/migration/report-table changes). Unadjusted ledger-only totals are preserved alongside the adjusted management view. Remaining Phase 2F issues B-F are locked for future chunks. Stop before starting the next implementation chunk without explicit user confirmation.
 
 Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at commit `be2392a`. Phase 2E Chunk 2E-5 MFS Book report API is accepted at commit `d90ffd4`. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted. Phase 2E MFS account setup and MFS Book foundation are now accepted. MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
 
@@ -80,7 +80,7 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 
 ## Next Stop Point
 
-Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted. The next recommended task is Phase 2F Chunk 2F-2 backend Balance Sheet P/L computation, only if the user explicitly confirms. Do not start MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
+Phase 2F Chunk 2F-2 Balance Sheet current P/L inclusion is implemented. The next recommended task is Phase 2F Chunk 2F-4 report/table layout widening, only if the user explicitly confirms. Do not start MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
 
 ## Phase 2E MFS / bKash Requirement Lock - completed this session
 
