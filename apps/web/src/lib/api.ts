@@ -738,7 +738,9 @@ export type ReportType =
   | "INCOME_STATEMENT"
   | "BALANCE_SHEET"
   | "PROJECT_LEDGER"
-  | "PROJECT_COST";
+  | "PROJECT_COST"
+  | "PROJECT_FINANCIAL_SUMMARY"
+  | "COST_CENTER_SUMMARY";
 
 /** Company summary embedded on the report fiscal year. */
 export type ReportCompanySummary = {
@@ -1205,6 +1207,86 @@ export type CostCenterSummaryReport = {
   rows: CostCenterSummaryRow[];
 };
 
+// --- Project Financial Summary ---
+
+export type ProjectFinancialSummaryClassBreakdown = {
+  accountClass: {
+    code: string;
+    name: string;
+  };
+  creditTotal: string;
+  debitTotal: string;
+  lineCount: number;
+  netMovement: string;
+  percentageOfTotalCredit: string;
+  percentageOfTotalDebit: string;
+};
+
+export type ProjectFinancialSummaryManagementTotals = {
+  projectAssetCostTotal: string;
+  projectCostTotal: string;
+  projectEquityTotal: string;
+  projectExpenseTotal: string;
+  projectIncomeTotal: string;
+  projectLiabilityTotal: string;
+};
+
+export type ProjectFinancialSummaryCostCenterRow = {
+  assetProjectCostTotal: string;
+  costCenterCode: string | null;
+  costCenterId: string | null;
+  costCenterName: string | null;
+  creditTotal: string;
+  debitTotal: string;
+  expenseTotal: string;
+  lastTransactionDate: string | null;
+  lineCount: number;
+  netMovement: string;
+};
+
+export type ProjectFinancialSummaryTopLedgerRow = {
+  accountClassCode: string | null;
+  accountClassName: string | null;
+  creditTotal: string;
+  debitTotal: string;
+  ledgerAccountId: string;
+  ledgerCode: string | null;
+  ledgerName: string | null;
+  lineCount: number;
+  netMovement: string;
+};
+
+export type ProjectFinancialSummaryReport = {
+  reportType: "PROJECT_FINANCIAL_SUMMARY";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  project: ReportProjectSummary;
+  filters: {
+    costCenter: {
+      id: string;
+      code: string;
+      name: string;
+    } | null;
+    ledgerAccount: string | null;
+    accountClass: string | null;
+    accountGroup: string | null;
+  };
+  totals: {
+    creditTotal: string;
+    debitTotal: string;
+    firstTransactionDate: string | null;
+    lastTransactionDate: string | null;
+    lineCount: number;
+    netMovement: string;
+    voucherCount: number;
+  };
+  classBreakdown: ProjectFinancialSummaryClassBreakdown[];
+  managementTotals: ProjectFinancialSummaryManagementTotals;
+  costCenterBreakdown: ProjectFinancialSummaryCostCenterRow[];
+  topLedgerBreakdown: ProjectFinancialSummaryTopLedgerRow[];
+};
+
 /**
  * Shared report query parameters. `fiscalYearId` is always required; the rest
  * are optional and report-specific. Empty values are omitted from the request.
@@ -1369,6 +1451,16 @@ export function getCostCenterSummaryReport(
 ): Promise<CostCenterSummaryReport> {
   return apiFetch<CostCenterSummaryReport>(
     `/reports/cost-center-summary${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getProjectFinancialSummaryReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<ProjectFinancialSummaryReport> {
+  return apiFetch<ProjectFinancialSummaryReport>(
+    `/reports/project-financial-summary${buildReportQuery(params)}`,
     { signal },
   );
 }

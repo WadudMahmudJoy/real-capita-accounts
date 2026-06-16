@@ -73,6 +73,61 @@ Phase 2G Chunk 2G-2 Project Cost Report API + Frontend Project Cost Report Page 
 
 All passes: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`.
 
+## Phase 2G Chunk 2G-4 Project Financial Summary - completed this session
+
+Phase 2G Chunk 2G-4 Project Financial Summary API + Frontend Project Financial Summary Page is implemented.
+
+### Backend
+
+- Added `GET /reports/project-financial-summary` endpoint guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.
+- `projectId` is required; returns 400 when missing.
+- Report derives from posted voucher lines only (`Voucher.status = POSTED`, `Voucher.isDeleted = false`).
+- Summarizes project-tagged VoucherLine records by account class (ASSET, LIABILITY, EQUITY, INCOME, EXPENSE) and cost center.
+- Returns project metadata, top-level totals (debit, credit, net, lineCount, voucherCount, first/last dates).
+- Account-class breakdown: debitTotal, creditTotal, netMovement, lineCount, percentageOfTotalDebit/Credit.
+- Management totals: projectExpenseTotal, projectAssetCostTotal, projectIncomeTotal, projectLiabilityTotal, projectEquityTotal, projectCostTotal (expense + asset).
+- Cost center breakdown: compact per-cost-center rows with debit, credit, net, expense, asset, income, liability, equity, lineCount, lastTransactionDate.
+- Lines without cost center appear as "Unassigned" only when they exist (no double counting).
+- Top ledger breakdown: top 10 ledger accounts by absolute net movement.
+- Uses `buildProjectCostLineFilter` for consistent filtering.
+- Optional filters: `costCenterId`, `ledgerAccountId`, `accountGroupId`, `accountClassCode`.
+
+### Frontend
+
+- Added `ProjectFinancialSummaryReport`, `ProjectFinancialSummaryClassBreakdown`, `ProjectFinancialSummaryManagementTotals`, `ProjectFinancialSummaryCostCenterRow`, `ProjectFinancialSummaryTopLedgerRow` types in `apps/web/src/lib/api.ts`.
+- Added `getProjectFinancialSummaryReport` helper.
+- Added `PROJECT_FINANCIAL_SUMMARY` and `COST_CENTER_SUMMARY` to `ReportType` union.
+- Created `/app/reports/project-financial-summary/page.tsx` with required project + fiscal year filters, optional cost center/ledger/account class/account group.
+- Page renders summary cards (Total Debit, Total Credit, Net Movement, Project Cost Total, Project Expense, Project Asset/Cap. Cost, Project Income, Voucher Lines).
+- Sections:
+  - A. Account Class Breakdown table (class, debit, credit, net, lines)
+  - B. Cost Center Breakdown table (cost center, debit, credit, net, expense, asset/cap., lines, last date, drill-down)
+  - C. Top Ledger Movement table (ledger, class, debit, credit, net, lines)
+  - D. Help text explaining report scope
+- Drill-down links: cost center row → Project Ledger with costCenterId; ledger row → Project Ledger with ledgerAccountId; "View detailed line entries" link; "View Project Cost Report" link.
+- Browser print foundation via `ReportPrintFrame` with class breakdown and cost center breakdown tables.
+- Added Project Financial Summary navigation link under Reports in sidebar with `BarChart3` icon.
+
+### Files changed
+
+- `apps/api/src/report/report.service.ts` -- added `getProjectFinancialSummary` method, `classLabel` helper.
+- `apps/api/src/report/report.controller.ts` -- added `GET /reports/project-financial-summary` endpoint.
+- `apps/web/src/lib/api.ts` -- added `ProjectFinancialSummaryReport` and related types, `getProjectFinancialSummaryReport` helper, extended `ReportType` union.
+- `apps/web/src/app/app/reports/project-financial-summary/page.tsx` -- new file.
+- `apps/web/src/app/app/layout.tsx` -- added Project Financial Summary navigation link.
+
+### Not added
+
+- No Prisma schema change, no migration, no report table, no new role.
+- No MFS voucher posting support.
+- No PDF/Excel export, no dashboard analytics.
+- No Project Cash/Bank Movement View (Report E).
+- No Phase 2G-5 review.
+
+### Verification
+
+All passes: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`, `pnpm doctor` (port-occupied warning only).
+
 ## Phase 2G Chunk 2G-3 Cost Center Summary - completed this session
 
 Phase 2G Chunk 2G-3 Cost Center Summary API + Frontend Cost Center Summary Page is implemented.

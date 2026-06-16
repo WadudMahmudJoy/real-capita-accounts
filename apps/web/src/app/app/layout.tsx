@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Banknote,
+  BarChart3,
   BookText,
   Building2,
   CalendarClock,
@@ -148,6 +149,13 @@ const reportLinks: NavLink[] = [
     label: "Cost Center Summary",
     match: (pathname) =>
       pathname.startsWith("/app/reports/cost-center-summary"),
+  },
+  {
+    href: "/app/reports/project-financial-summary",
+    icon: BarChart3,
+    label: "Project Financial Summary",
+    match: (pathname) =>
+      pathname.startsWith("/app/reports/project-financial-summary"),
   },
   {
     href: "/app/reports/trial-balance",

@@ -1050,6 +1050,397 @@ export class ReportService {
     };
   }
 
+  async getProjectFinancialSummary(query: ReportQueryDto) {
+    if (!query.projectId) {
+      throw new BadRequestException(
+        "projectId is required for the project financial summary report.",
+      );
+    }
+
+    const context = await this.resolveReportContext(query);
+    const project = context.project!;
+
+    const lineWhere = this.buildProjectCostLineFilter(query);
+    const voucherWhere = this.buildVoucherDateFilter(context, "period");
+
+    const lines = await this.prisma.voucherLine.findMany({
+      select: {
+        amount: true,
+        costCenterId: true,
+        ledgerAccountId: true,
+        side: true,
+        voucher: {
+          select: {
+            id: true,
+            voucherDate: true,
+          },
+        },
+        ledgerAccount: {
+          select: {
+            code: true,
+            id: true,
+            name: true,
+            accountGroup: {
+              select: {
+                code: true,
+                id: true,
+                name: true,
+                accountClass: {
+                  select: {
+                    code: true,
+                    id: true,
+                    name: true,
+                    normalBalance: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      where: {
+        ...lineWhere,
+        voucher: voucherWhere,
+      },
+    });
+
+    // --- B. Top-level totals ---
+    let totalDebit = ZERO;
+    let totalCredit = ZERO;
+    let firstDate: Date | null = null;
+    let lastDate: Date | null = null;
+    const voucherIds = new Set<string>();
+
+    for (const line of lines) {
+      if (line.side === VoucherLineSide.DEBIT) {
+        totalDebit = totalDebit.plus(line.amount);
+      } else {
+        totalCredit = totalCredit.plus(line.amount);
+      }
+
+      voucherIds.add(line.voucher.id);
+
+      const vDate = line.voucher.voucherDate;
+
+      if (!firstDate || vDate < firstDate) {
+        firstDate = vDate;
+      }
+      if (!lastDate || vDate > lastDate) {
+        lastDate = vDate;
+      }
+    }
+
+    const netMovement = totalDebit.minus(totalCredit);
+    const lineCount = lines.length;
+    const voucherCount = voucherIds.size;
+
+    // --- C. Account-class breakdown ---
+    type ClassBreakdown = {
+      debitTotal: Prisma.Decimal;
+      creditTotal: Prisma.Decimal;
+      lineCount: number;
+    };
+
+    const classMap = new Map<string, ClassBreakdown>();
+
+    for (const line of lines) {
+      const classCode = line.ledgerAccount.accountGroup.accountClass.code;
+      let cur = classMap.get(classCode);
+
+      if (!cur) {
+        cur = { creditTotal: ZERO, debitTotal: ZERO, lineCount: 0 };
+        classMap.set(classCode, cur);
+      }
+
+      cur.lineCount += 1;
+
+      if (line.side === VoucherLineSide.DEBIT) {
+        cur.debitTotal = cur.debitTotal.plus(line.amount);
+      } else {
+        cur.creditTotal = cur.creditTotal.plus(line.amount);
+      }
+    }
+
+    const classOrder = ["ASSET", "LIABILITY", "EQUITY", "INCOME", "EXPENSE"];
+
+    const classBreakdown = classOrder
+      .filter((code) => classMap.has(code))
+      .map((code) => {
+        const totals = classMap.get(code)!;
+        const net = totals.debitTotal.minus(totals.creditTotal);
+
+        return {
+          accountClass: {
+            code,
+            name: this.classLabel(code),
+          },
+          creditTotal: this.toMoney(totals.creditTotal),
+          debitTotal: this.toMoney(totals.debitTotal),
+          lineCount: totals.lineCount,
+          netMovement: this.toMoney(net),
+          percentageOfTotalDebit: totalDebit.greaterThan(ZERO)
+            ? this.toMoney(
+                totals.debitTotal.times(100).dividedBy(totalDebit),
+              )
+            : "0.00",
+          percentageOfTotalCredit: totalCredit.greaterThan(ZERO)
+            ? this.toMoney(
+                totals.creditTotal.times(100).dividedBy(totalCredit),
+              )
+            : "0.00",
+        };
+      });
+
+    // --- D. Key management totals ---
+    const classTotals = new Map<string, Prisma.Decimal>();
+
+    for (const [code, totals] of classMap) {
+      const net = totals.debitTotal.minus(totals.creditTotal);
+      classTotals.set(code, net);
+    }
+
+    const projectExpenseTotal = classTotals.get("EXPENSE") ?? ZERO;
+    const projectAssetCostTotal = classTotals.get("ASSET") ?? ZERO;
+    const projectIncomeTotal = classTotals.get("INCOME") ?? ZERO;
+    const projectLiabilityTotal = classTotals.get("LIABILITY") ?? ZERO;
+    const projectEquityTotal = classTotals.get("EQUITY") ?? ZERO;
+    const projectCostTotal = projectExpenseTotal.plus(projectAssetCostTotal);
+
+    // --- E. Cost center breakdown ---
+    type CcBreakdown = {
+      debitTotal: Prisma.Decimal;
+      creditTotal: Prisma.Decimal;
+      expenseTotal: Prisma.Decimal;
+      assetTotal: Prisma.Decimal;
+      incomeTotal: Prisma.Decimal;
+      liabilityTotal: Prisma.Decimal;
+      equityTotal: Prisma.Decimal;
+      lineCount: number;
+      lastTransactionDate: Date | null;
+    };
+
+    const ccMap = new Map<string, CcBreakdown>();
+
+    for (const line of lines) {
+      const ccId = line.costCenterId ?? "__UNASSIGNED__";
+      let cur = ccMap.get(ccId);
+
+      if (!cur) {
+        cur = {
+          assetTotal: ZERO,
+          creditTotal: ZERO,
+          debitTotal: ZERO,
+          equityTotal: ZERO,
+          expenseTotal: ZERO,
+          incomeTotal: ZERO,
+          lastTransactionDate: null,
+          liabilityTotal: ZERO,
+          lineCount: 0,
+        };
+        ccMap.set(ccId, cur);
+      }
+
+      cur.lineCount += 1;
+
+      if (line.side === VoucherLineSide.DEBIT) {
+        cur.debitTotal = cur.debitTotal.plus(line.amount);
+      } else {
+        cur.creditTotal = cur.creditTotal.plus(line.amount);
+      }
+
+      const net = line.side === VoucherLineSide.DEBIT
+        ? line.amount
+        : line.amount.negated();
+
+      const classCode = line.ledgerAccount.accountGroup.accountClass.code;
+
+      if (classCode === AccountClassCode.EXPENSE) {
+        cur.expenseTotal = cur.expenseTotal.plus(net);
+      } else if (classCode === AccountClassCode.ASSET) {
+        cur.assetTotal = cur.assetTotal.plus(net);
+      } else if (classCode === AccountClassCode.INCOME) {
+        cur.incomeTotal = cur.incomeTotal.plus(net);
+      } else if (classCode === AccountClassCode.LIABILITY) {
+        cur.liabilityTotal = cur.liabilityTotal.plus(net);
+      } else if (classCode === AccountClassCode.EQUITY) {
+        cur.equityTotal = cur.equityTotal.plus(net);
+      }
+
+      const vDate = line.voucher.voucherDate;
+
+      if (!cur.lastTransactionDate || vDate > cur.lastTransactionDate) {
+        cur.lastTransactionDate = vDate;
+      }
+    }
+
+    const ccIds = [...ccMap.keys()].filter((id) => id !== "__UNASSIGNED__");
+    const ccDetails = ccIds.length > 0
+      ? await this.prisma.costCenter.findMany({
+          where: { id: { in: ccIds } },
+          select: { code: true, id: true, name: true },
+        })
+      : [];
+
+    const ccDetailMap = new Map(ccDetails.map((cc) => [cc.id, cc]));
+
+    const costCenterBreakdown = [...ccMap.entries()]
+      .sort(([a], [b]) => {
+        const aIsUnassigned = a === "__UNASSIGNED__";
+        const bIsUnassigned = b === "__UNASSIGNED__";
+
+        if (aIsUnassigned && !bIsUnassigned) return 1;
+        if (!aIsUnassigned && bIsUnassigned) return -1;
+        if (aIsUnassigned && bIsUnassigned) return 0;
+
+        const aDetail = ccDetailMap.get(a);
+        const bDetail = ccDetailMap.get(b);
+        return (aDetail?.code ?? "").localeCompare(bDetail?.code ?? "");
+      })
+      .map(([ccId, totals]) => {
+        const detail = ccId !== "__UNASSIGNED__"
+          ? ccDetailMap.get(ccId)
+          : null;
+
+        const net = totals.debitTotal.minus(totals.creditTotal);
+
+        return {
+          assetProjectCostTotal: this.toMoney(totals.assetTotal),
+          costCenterCode: detail?.code ?? null,
+          costCenterId: ccId === "__UNASSIGNED__" ? null : ccId,
+          costCenterName: detail?.name ?? null,
+          creditTotal: this.toMoney(totals.creditTotal),
+          debitTotal: this.toMoney(totals.debitTotal),
+          expenseTotal: this.toMoney(totals.expenseTotal),
+          lastTransactionDate: totals.lastTransactionDate
+            ? this.formatDate(totals.lastTransactionDate)
+            : null,
+          lineCount: totals.lineCount,
+          netMovement: this.toMoney(net),
+        };
+      });
+
+    // --- F. Top ledger breakdown ---
+    type LedgerBreakdown = {
+      debitTotal: Prisma.Decimal;
+      creditTotal: Prisma.Decimal;
+      lineCount: number;
+    };
+
+    const ledgerMap = new Map<string, LedgerBreakdown>();
+
+    for (const line of lines) {
+      const laId = line.ledgerAccountId;
+      let cur = ledgerMap.get(laId);
+
+      if (!cur) {
+        cur = { creditTotal: ZERO, debitTotal: ZERO, lineCount: 0 };
+        ledgerMap.set(laId, cur);
+      }
+
+      cur.lineCount += 1;
+
+      if (line.side === VoucherLineSide.DEBIT) {
+        cur.debitTotal = cur.debitTotal.plus(line.amount);
+      } else {
+        cur.creditTotal = cur.creditTotal.plus(line.amount);
+      }
+    }
+
+    const ledgerEntries = [...ledgerMap.entries()]
+      .map(([laId, totals]) => {
+        const net = totals.debitTotal.minus(totals.creditTotal);
+        return { laId, totals, netAbs: net.abs() };
+      })
+      .sort((a, b) => b.netAbs.comparedTo(a.netAbs))
+      .slice(0, 10);
+
+    const topLedgerIds = ledgerEntries.map((e) => e.laId);
+    const topLedgerDetails = topLedgerIds.length > 0
+      ? await this.prisma.ledgerAccount.findMany({
+          where: { id: { in: topLedgerIds } },
+          select: {
+            code: true,
+            id: true,
+            name: true,
+            accountGroup: {
+              select: {
+                accountClass: {
+                  select: { code: true, name: true },
+                },
+              },
+            },
+          },
+        })
+      : [];
+
+    const topLedgerDetailMap = new Map(
+      topLedgerDetails.map((la) => [la.id, la]),
+    );
+
+    const topLedgerBreakdown = ledgerEntries.map((entry) => {
+      const detail = topLedgerDetailMap.get(entry.laId);
+      const net = entry.totals.debitTotal.minus(entry.totals.creditTotal);
+
+      return {
+        accountClassCode: detail?.accountGroup.accountClass.code ?? null,
+        accountClassName: detail?.accountGroup.accountClass.name ?? null,
+        creditTotal: this.toMoney(entry.totals.creditTotal),
+        debitTotal: this.toMoney(entry.totals.debitTotal),
+        ledgerAccountId: entry.laId,
+        ledgerCode: detail?.code ?? null,
+        ledgerName: detail?.name ?? null,
+        lineCount: entry.totals.lineCount,
+        netMovement: this.toMoney(net),
+      };
+    });
+
+    return {
+      reportType: "PROJECT_FINANCIAL_SUMMARY" satisfies string,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      project: {
+        id: project.id,
+        code: project.code,
+        name: project.name,
+      },
+      filters: {
+        costCenter: context.costCenter
+          ? {
+              code: context.costCenter.code,
+              id: context.costCenter.id,
+              name: context.costCenter.name,
+            }
+          : null,
+        ledgerAccount: query.ledgerAccountId ?? null,
+        accountClass: query.accountClassCode ?? null,
+        accountGroup: query.accountGroupId ?? null,
+      },
+      totals: {
+        debitTotal: this.toMoney(totalDebit),
+        creditTotal: this.toMoney(totalCredit),
+        netMovement: this.toMoney(netMovement),
+        lineCount,
+        voucherCount,
+        firstTransactionDate: firstDate ? this.formatDate(firstDate) : null,
+        lastTransactionDate: lastDate ? this.formatDate(lastDate) : null,
+      },
+      classBreakdown,
+      managementTotals: {
+        projectAssetCostTotal: this.toMoney(projectAssetCostTotal),
+        projectCostTotal: this.toMoney(projectCostTotal),
+        projectEquityTotal: this.toMoney(projectEquityTotal),
+        projectExpenseTotal: this.toMoney(projectExpenseTotal),
+        projectIncomeTotal: this.toMoney(projectIncomeTotal),
+        projectLiabilityTotal: this.toMoney(projectLiabilityTotal),
+      },
+      costCenterBreakdown,
+      topLedgerBreakdown,
+    };
+  }
+
   async getTrialBalance(query: ReportQueryDto) {
     if (query.ledgerAccountId || query.cashBankAccountId) {
       throw new BadRequestException(
@@ -2485,6 +2876,18 @@ export class ReportService {
     }
 
     return left.name.localeCompare(right.name);
+  }
+
+  private classLabel(code: string) {
+    const labels: Record<string, string> = {
+      ASSET: "Project Asset / Capitalized Project Cost",
+      EQUITY: "Project Equity",
+      EXPENSE: "Project Expense",
+      INCOME: "Project Income",
+      LIABILITY: "Project Liability",
+    };
+
+    return labels[code] ?? code;
   }
 
   private accountClassSortKey(code: string) {
