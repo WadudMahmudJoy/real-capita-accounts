@@ -418,34 +418,86 @@ export class ReportService {
     const lineWhere = this.buildProjectCostLineFilter(query);
     const voucherWhere = this.buildVoucherDateFilter(context, "period");
 
-    const byLedger = await this.sumDebitCreditByLedger(lineWhere, voucherWhere);
+    type LedgerWithGroup = Prisma.LedgerAccountGetPayload<{
+      include: {
+        accountGroup: {
+          include: { accountClass: true };
+        };
+      };
+    }>;
 
-    const ledgerIds = [...byLedger.keys()];
-    const ledgerAccounts = ledgerIds.length
-      ? await this.prisma.ledgerAccount.findMany({
-          include: {
-            accountGroup: { include: { accountClass: true } },
-          },
-          where: { id: { in: ledgerIds } },
-        })
-      : [];
+    // Aggregate only lines where costCenterId IS NULL, grouped by ledgerAccountId.
+    // Lines with a costCenterId are handled separately below so each VoucherLine
+    // contributes to exactly one grouped row.
+    const nullCcGroupRows = await this.prisma.voucherLine.groupBy({
+      _sum: { amount: true },
+      by: ["ledgerAccountId", "side"],
+      where: {
+        ...lineWhere,
+        costCenterId: null,
+        voucher: voucherWhere,
+      },
+    });
 
-    const costCenterIds = new Set<string>();
+    const nullCcLedgerIds = new Set(
+      nullCcGroupRows.map((r) => r.ledgerAccountId),
+    );
+    const nullCcLedgerMap = new Map<string, LedgerWithGroup>();
+
+    if (nullCcLedgerIds.size > 0) {
+      const ledgers = await this.prisma.ledgerAccount.findMany({
+        include: {
+          accountGroup: { include: { accountClass: true } },
+        },
+        where: { id: { in: [...nullCcLedgerIds] } },
+      });
+
+      for (const la of ledgers) {
+        nullCcLedgerMap.set(la.id, la);
+      }
+    }
+
+    const nullCcAgg = new Map<
+      string,
+      { debit: Prisma.Decimal; credit: Prisma.Decimal }
+    >();
+
+    for (const row of nullCcGroupRows) {
+      const cur = nullCcAgg.get(row.ledgerAccountId) ?? {
+        credit: ZERO,
+        debit: ZERO,
+      };
+      const amount = row._sum.amount ?? ZERO;
+
+      nullCcAgg.set(row.ledgerAccountId, {
+        credit:
+          row.side === VoucherLineSide.CREDIT
+            ? cur.credit.plus(amount)
+            : cur.credit,
+        debit:
+          row.side === VoucherLineSide.DEBIT
+            ? cur.debit.plus(amount)
+            : cur.debit,
+      });
+    }
+
     const rows: ProjectCostRow[] = [];
 
-    for (const ledger of ledgerAccounts) {
-      const totals = this.getDebitCreditForLedger(byLedger, ledger.id);
+    for (const [ledgerId, totals] of nullCcAgg) {
+      const ledger = nullCcLedgerMap.get(ledgerId);
 
-      if (totals.debit.equals(ZERO) && totals.credit.equals(ZERO)) {
+      if (
+        !ledger ||
+        (totals.debit.equals(ZERO) && totals.credit.equals(ZERO))
+      ) {
         continue;
       }
 
       const accountClass = ledger.accountGroup.accountClass;
-      const classCode = accountClass.code;
 
       rows.push({
         accountClass: {
-          code: classCode,
+          code: accountClass.code,
           id: accountClass.id,
           name: accountClass.name,
           normalBalance: accountClass.normalBalance,
@@ -466,8 +518,6 @@ export class ReportService {
           name: ledger.name,
         },
       });
-
-      costCenterIds.add("__NONE__");
     }
 
     // Fetch cost-center-grouped rows for lines that have a costCenterId
@@ -484,7 +534,7 @@ export class ReportService {
     const ccLedgerIds = new Set(
       costCenterRows.map((r) => r.ledgerAccountId),
     );
-    const ccLedgerMap = new Map<string, typeof ledgerAccounts[number]>();
+    const ccLedgerMap = new Map<string, LedgerWithGroup>();
 
     if (ccLedgerIds.size > 0) {
       const ccs = await this.prisma.ledgerAccount.findMany({
