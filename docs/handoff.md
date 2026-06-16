@@ -2,11 +2,28 @@
 
 ## Current Phase
 
-Phase 2G Chunks 2G-1 (Project Ledger), 2G-2 (Project Cost Report), 2G-3 (Cost Center Summary), and 2G-4 (Project Financial Summary) are implemented, and Phase 2G Chunk 2G-5 (final integration verification + docs cleanup) has been performed and passed. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View). All reports derive from posted project-tagged `VoucherLine` records only. The optional Report E (Project Cash/Bank Movement View) remains deferred and not implemented. No report table, schema change, migration, or new role was added across Phase 2G. The recommended next step after Phase 2G is either Phase 2H MFS voucher posting continuation or demo/test data cleanup, to be selected by the user. Do not start Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. Phase 2H defines four future tooling capabilities: (A) Demo Data Audit (`pnpm demo:audit`, read-only), (B) Safe Demo Reset (`pnpm demo:reset`, confirmation-guarded destructive reset producing a deterministic dataset), (C) Deterministic Demo Dataset (Company, FY 2025-2026, June 2026, SK-001 Shanti Kutir, SK-LD, 5 ledger accounts, 3 cash/bank/MFS accounts, 2 posted vouchers producing predictable report totals), (D) Demo Verification (`pnpm demo:verify`, read-only assertion checks). Phase 2H directly addresses Phase 2F Issue F (demo data). No seed scripts, audit scripts, reset scripts, verification scripts, schema changes, migrations, or runtime code have been added. The next recommended task is Phase 2H Chunk 2H-1: Demo Data Audit, with explicit user confirmation. Do not start demo reset, demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
-Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at commit `be2392a`. Phase 2E Chunk 2E-5 MFS Book report API is accepted at commit `d90ffd4`. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted. Phase 2E MFS account setup and MFS Book foundation are now accepted. MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
+Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.
+
+## Phase 2H Demo/Test Data Cleanup Requirement Lock - this session
+
+Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. No runtime code, scripts, or seed data changes have been made.
+
+Created:
+- `docs/requirements/phase-2h-demo-data-cleanup-requirement-lock.md`: defines four tooling capabilities (A: Demo Data Audit, B: Safe Demo Reset, C: Deterministic Demo Dataset, D: Demo Verification), safety-first design, confirmation guards, local DB guards, deterministic dataset specification with expected report results, open questions with recommended answers, and explicit out-of-scope list.
+- `docs/acceptance/phase-2h-acceptance-criteria.md`: acceptance for documentation lock, future Demo Data Audit, future Safe Demo Reset, future Demo Verification, docs cleanup, regression criteria, and explicit non-acceptance conditions.
+- `docs/plans/phase-2h-demo-data-cleanup-plan.md`: four implementation chunks (2H-1 through 2H-4), each with objective, scope, files, safety checks, acceptance checks, verification commands, recommended model, and stop condition.
+
+Updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No Prisma schema changes, migrations, backend API endpoints, frontend pages, seed scripts, audit scripts, reset scripts, verification scripts, roles, or runtime code were added.
+
+## Next Stop Point
+
+Phase 2H requirement lock is prepared. The next recommended task is Phase 2H Chunk 2H-1: Demo Data Audit (`pnpm demo:audit`) with explicit user confirmation. Do not start demo reset, demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 ## Phase 2G Chunk 2G-5 Final Integration Verification + Docs Cleanup - completed this session
 

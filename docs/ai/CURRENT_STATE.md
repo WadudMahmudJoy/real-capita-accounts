@@ -18,9 +18,27 @@ Phase 2D accounting reports are complete and accepted.
 
 Phase 2E MFS / bKash transaction support is complete and accepted (MFS account setup + MFS Book foundation).
 
-Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred.
+Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
-## Phase 2G Chunk 2G-2 Project Cost Report - completed this session
+## Phase 2H Demo/Test Data Cleanup Requirement Lock - this session
+
+Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. Phase 2H defines four future tooling capabilities:
+
+1. **Demo Data Audit** (`pnpm demo:audit`) -- read-only report of current demo/test data state, entity counts, duplicate detection, orphan checks, consistency checks, report readiness.
+2. **Safe Demo Reset** (`pnpm demo:reset`) -- destructive reset with `CONFIRM_DEMO_RESET=YES` guard, local DB guard, production refusal, dry-run mode, mandatory backup instruction, deterministic dataset recreation.
+3. **Deterministic Demo Dataset** -- Company (Real Capita Group, BDT), FY 2025-2026, June 2026, SK-001 Shanti Kutir, SK-LD cost center, 5 ledger accounts (1010 Cash in Hand, 1020 City Bank, 1030 bKash Merchant Wallet, 5010 Land Development Expense, 3010 Capital Introduced), 3 cash/bank/MFS accounts (Office Cash, City Bank Uttara, bKash Merchant), 2 posted vouchers (capital introduction 100,000 JOURNAL, land development expense 50,000 PAYMENT with project/cost center).
+4. **Demo Verification** (`pnpm demo:verify`) -- read-only assertion checks for seed user, infrastructure entities, voucher counts, report totals, MFS posting block.
+
+Phase 2H directly addresses Phase 2F Issue F (demo data). No seed scripts, audit scripts, reset scripts, verification scripts, schema changes, migrations, or runtime code have been added in this requirement-lock chunk.
+
+Created:
+- `docs/requirements/phase-2h-demo-data-cleanup-requirement-lock.md`: defines four tooling capabilities (A: Demo Data Audit, B: Safe Demo Reset, C: Deterministic Demo Dataset, D: Demo Verification), safety-first design, confirmation guards, local DB guards, deterministic dataset specification, expected report results, open questions with recommended answers, and explicit out-of-scope list.
+- `docs/acceptance/phase-2h-acceptance-criteria.md`: acceptance for documentation lock, future Demo Data Audit, future Safe Demo Reset, future Demo Verification, docs cleanup, regression criteria, and explicit non-acceptance conditions.
+- `docs/plans/phase-2h-demo-data-cleanup-plan.md`: four implementation chunks (2H-1 Demo Audit, 2H-2 Safe Demo Reset, 2H-3 Demo Verify, 2H-4 Docs Cleanup), each with objective, scope, files, safety checks, acceptance checks, verification commands, recommended model, and stop condition.
+
+Updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No Prisma schema changes, migrations, backend API endpoints, frontend pages, seed scripts, audit scripts, reset scripts, verification scripts, roles, or runtime code were added.
 
 Phase 2G Chunk 2G-2 Project Cost Report API + Frontend Project Cost Report Page is implemented.
 

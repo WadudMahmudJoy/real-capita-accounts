@@ -6,9 +6,11 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2G: Project/Cost-Center Financial Reporting is in progress. Phase 2G Chunk 2G-1 (Project Ledger) and Chunk 2G-2 (Project Cost Report) are implemented. The Project Cost Report summarizes project-tagged posted voucher lines by cost center, account class, account group, and ledger. Expense and Asset/project-cost totals are labeled separately. No report table/schema/migration/new role was added. Phase 2G Chunk 2G-3 (Cost Center Summary) is implemented. Phase 2G Chunk 2G-4 (Project Financial Summary) is implemented. The Project Financial Summary summarizes posted project-tagged VoucherLine records by account class and cost center. It separates Asset, Expense, Income, Liability, and Equity classes. It includes a compact cost-center breakdown and top ledger movement. No report table/schema/migration/new role was added. The optional Report E (Project Cash/Bank Movement View) remains locked for future implementation. Phase 2F is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D are implemented. Issue E (dropdown/text clipping) is mostly addressed. Issue F (demo data) remains deferred/planning-only. Phase 2E MFS account setup and MFS Book foundation are accepted. Phase 2D accounting reports are accepted. Phase 2C voucher engine is accepted. Phase 2A accounting foundation is accepted.
+Phase 2H: Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. Phase 2H defines four future tooling capabilities: (A) Demo Data Audit (`pnpm demo:audit`, read-only), (B) Safe Demo Reset (`pnpm demo:reset`, confirmation-guarded destructive reset producing a deterministic dataset), (C) Deterministic Demo Dataset (Company, FY 2025-2026, June 2026, SK-001 Shanti Kutir, SK-LD cost center, 5 ledger accounts, 3 cash/bank/MFS accounts, 2 posted vouchers producing predictable report totals), (D) Demo Verification (`pnpm demo:verify`, read-only assertion checks). Phase 2H directly addresses Phase 2F Issue F (demo data). No seed scripts, audit scripts, reset scripts, verification scripts, schema changes, migrations, or runtime code have been added in this requirement-lock chunk.
 
-If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`, then read the Phase 2F requirement lock and Phase 2E docs before any implementation.
+Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`). Phase 2F is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H. Phase 2E MFS account setup and MFS Book foundation are accepted. Phase 2D accounting reports are accepted. Phase 2C voucher engine is accepted. Phase 2A accounting foundation is accepted.
+
+If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`, then read the Phase 2H requirement lock docs before any implementation.
 
 ## Stack
 
@@ -26,7 +28,7 @@ Phase 2D accounting reports implementation is complete and accepted. Phase 2E MF
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred. Phase 2G Project/Cost-Center Financial Reporting is in progress. Phase 2G Chunk 2G-1 Project Ledger is implemented: `GET /reports/project-ledger` and `/app/reports/project-ledger`. Phase 2G Chunk 2G-2 Project Cost Report is implemented: `GET /reports/project-cost` and `/app/reports/project-cost`. Both reports derive from posted VoucherLine records only (`Voucher.status = POSTED`, `Voucher.isDeleted = false`). Expense and Asset/project-cost totals are labeled separately in the Project Cost Report. No schema change, migration, report table, or new role was added. Phase 2G Chunk 2G-3 (Cost Center Summary) is implemented. Phase 2G Chunk 2G-4 (Project Financial Summary) is implemented: `GET /reports/project-financial-summary` and `/app/reports/project-financial-summary`. The report summarizes posted project-tagged VoucherLine records by account class and cost center. It separates Asset, Expense, Income, Liability, and Equity classes. It includes a compact cost-center breakdown and top ledger movement. No report table/schema/migration/new role was added. See `docs/requirements/phase-2g-project-cost-center-reporting-requirement-lock.md`, `docs/acceptance/phase-2g-acceptance-criteria.md`, and `docs/plans/phase-2g-project-cost-center-reporting-plan.md`.
 
-Do not implement Project Cash/Bank Movement View API/pages, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties, customers, vendors, additional roles, file uploads, business seed data, or MFS voucher posting behavior until the user confirms the next implementation chunk.
+Do not implement demo audit, demo reset, demo verification scripts, Project Cash/Bank Movement View API/pages, report tables in the Prisma schema, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties, customers, vendors, additional roles, file uploads, business seed data, or MFS voucher posting behavior until the user confirms the next implementation chunk. Phase 2H requirement lock is documentation only; no runtime code, scripts, or seed data changes have been made.
 
 ## Confirmed Role Model
 
@@ -152,6 +154,12 @@ Before any Phase 2G implementation, read:
 - `docs/acceptance/phase-2g-acceptance-criteria.md`
 - `docs/plans/phase-2g-project-cost-center-reporting-plan.md`
 
+Before any Phase 2H implementation, read:
+
+- `docs/requirements/phase-2h-demo-data-cleanup-requirement-lock.md`
+- `docs/acceptance/phase-2h-acceptance-criteria.md`
+- `docs/plans/phase-2h-demo-data-cleanup-plan.md`
+
 ## Agent Switching
 
 When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI, or a human developer:
@@ -165,4 +173,4 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 ## Next Phase Guidance
 
-Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted. Phase 2G Project/Cost-Center Financial Reporting is implemented: all four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) are built and verified end-to-end. Each report derives from posted project-tagged `VoucherLine` records only; no report table, schema change, migration, or new role was added. The optional Report E (Project Cash/Bank Movement View) remains deferred and not implemented. Next recommended step: either Phase 2H MFS voucher posting continuation or demo/test data cleanup, to be selected by the user. Do not start Project Cash/Bank Movement View implementation, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS voucher posting support, a full app-wide selection-aware refactor, demo seed cleanup, or any new module without explicit user confirmation.
+Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted. Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`). Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. Phase 2H defines four future tooling capabilities: Demo Data Audit, Safe Demo Reset, Deterministic Demo Dataset, and Demo Verification. Next recommended step: confirm Phase 2H implementation with explicit user approval for Chunk 2H-1, then proceed through 2H-1 to 2H-4. Do not start demo audit, demo reset, demo verification scripts, Project Cash/Bank Movement View implementation, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS voucher posting support, a full app-wide selection-aware refactor, or any new module without explicit user confirmation.
