@@ -24,7 +24,7 @@ Phase 2F Accounting Report + Accountant UX Refinement requirement lock is comple
 
 Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`). All four primary reports are implemented and verified. The optional Report E (Project Cash/Bank Movement View) remains deferred.
 
-Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. Phase 2H defines four future tooling capabilities: (A) Demo Data Audit (`pnpm demo:audit`, read-only), (B) Safe Demo Reset (`pnpm demo:reset`, confirmation-guarded), (C) Deterministic Demo Dataset (predictable report totals), (D) Demo Verification (`pnpm demo:verify`, read-only assertions). Phase 2H directly addresses Phase 2F Issue F (demo data). No runtime code, scripts, or seed data changes have been made in this requirement-lock chunk. The recommended next step is Phase 2H Chunk 2H-1 (Demo Audit) with explicit user approval.
+Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented: a read-only CLI command that inspects the current local/dev database and prints a structured audit report (entity counts, demo dataset presence, duplicate detection, orphan/consistency checks, report readiness, deterministic report checks). Phase 2H-2 Safe Demo Reset, Phase 2H-3 Demo Verification, and Phase 2H-4 Docs Cleanup remain deferred. Phase 2H directly addresses Phase 2F Issue F (demo data). The recommended next step is Phase 2H Chunk 2H-2 (Safe Demo Reset) with explicit user approval.
 
 Phase 2F is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 

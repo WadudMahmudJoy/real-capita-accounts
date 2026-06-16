@@ -13,8 +13,8 @@ This repository is intentionally not a continuation of the previous Real Capita 
 - Phase 2E MFS / bKash transaction support is accepted (MFS account setup + MFS Book foundation).
 - Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented (Balance Sheet current P/L, report/table readability, voucher line dynamic field visibility, report filter UX clarity). Issue E mostly addressed. Issue F deferred.
 - Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`). All four primary reports are implemented and verified. The optional Report E (Project Cash/Bank Movement View) remains deferred.
-- Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. Phase 2H defines four future tooling capabilities: Demo Data Audit, Safe Demo Reset, Deterministic Demo Dataset, and Demo Verification. No runtime code, scripts, or seed data changes have been made in the requirement-lock phase.
-- Still not implemented: Demo audit/reset/verify scripts, Project Cash/Bank Movement View, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
+- Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization is in progress. Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented: a read-only CLI command that inspects the current local/dev database and prints a structured audit report (entity counts, demo dataset presence, duplicate detection, orphan/consistency checks, report readiness, deterministic report checks). It does not modify data. Phase 2H-2 Safe Demo Reset, Phase 2H-3 Demo Verification, and Phase 2H-4 Docs Cleanup remain deferred.
+- Still not implemented: Demo reset/verify scripts, Project Cash/Bank Movement View, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
 
 ## Stack
 

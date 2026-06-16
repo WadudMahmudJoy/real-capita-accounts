@@ -2,28 +2,30 @@
 
 ## Current Phase
 
-Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. Phase 2H defines four future tooling capabilities: (A) Demo Data Audit (`pnpm demo:audit`, read-only), (B) Safe Demo Reset (`pnpm demo:reset`, confirmation-guarded destructive reset producing a deterministic dataset), (C) Deterministic Demo Dataset (Company, FY 2025-2026, June 2026, SK-001 Shanti Kutir, SK-LD, 5 ledger accounts, 3 cash/bank/MFS accounts, 2 posted vouchers producing predictable report totals), (D) Demo Verification (`pnpm demo:verify`, read-only assertion checks). Phase 2H directly addresses Phase 2F Issue F (demo data). No seed scripts, audit scripts, reset scripts, verification scripts, schema changes, migrations, or runtime code have been added. The next recommended task is Phase 2H Chunk 2H-1: Demo Data Audit, with explicit user confirmation. Do not start demo reset, demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented: a read-only CLI command that prints a structured audit report of the current database state. Phase 2H-2 Safe Demo Reset, Phase 2H-3 Demo Verification, and Phase 2H-4 Docs Cleanup remain deferred. The deterministic demo dataset specification (Company, FY 2025-2026, June 2026, SK-001 Shanti Kutir, SK-LD, 5 ledger accounts, 3 cash/bank/MFS accounts, 2 posted vouchers producing predictable report totals) is defined in the requirement lock. Phase 2H directly addresses Phase 2F Issue F (demo data). No reset scripts, verification scripts, schema changes, migrations, or runtime code have been added beyond the new audit script. The next recommended task is Phase 2H Chunk 2H-2: Safe Demo Reset, with explicit user confirmation. Do not start demo reset, demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.
 
-## Phase 2H Demo/Test Data Cleanup Requirement Lock - this session
+## Phase 2H-1 Demo Data Audit - this session
 
-Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization requirement lock is prepared. No runtime code, scripts, or seed data changes have been made.
+Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented: a read-only CLI command that prints a structured audit report. The audit script (`prisma/demo-audit.ts`) performs entity counts, demo dataset presence checks, duplicate detection, orphan/consistency checks, report readiness, and deterministic demo report checks. It does not modify data.
 
-Created:
+Created/Changed:
+- `prisma/demo-audit.ts`: new read-only audit script.
+- `package.json`: added `demo:audit` script entry.
 - `docs/requirements/phase-2h-demo-data-cleanup-requirement-lock.md`: defines four tooling capabilities (A: Demo Data Audit, B: Safe Demo Reset, C: Deterministic Demo Dataset, D: Demo Verification), safety-first design, confirmation guards, local DB guards, deterministic dataset specification with expected report results, open questions with recommended answers, and explicit out-of-scope list.
 - `docs/acceptance/phase-2h-acceptance-criteria.md`: acceptance for documentation lock, future Demo Data Audit, future Safe Demo Reset, future Demo Verification, docs cleanup, regression criteria, and explicit non-acceptance conditions.
 - `docs/plans/phase-2h-demo-data-cleanup-plan.md`: four implementation chunks (2H-1 through 2H-4), each with objective, scope, files, safety checks, acceptance checks, verification commands, recommended model, and stop condition.
 
 Updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
 
-No Prisma schema changes, migrations, backend API endpoints, frontend pages, seed scripts, audit scripts, reset scripts, verification scripts, roles, or runtime code were added.
+No Prisma schema changes, migrations, backend API endpoints, frontend pages, reset scripts, verification scripts, roles, or runtime code were added beyond the new audit script.
 
 ## Next Stop Point
 
-Phase 2H requirement lock is prepared. The next recommended task is Phase 2H Chunk 2H-1: Demo Data Audit (`pnpm demo:audit`) with explicit user confirmation. Do not start demo reset, demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. The next recommended task is Phase 2H Chunk 2H-2: Safe Demo Reset (`pnpm demo:reset`) with explicit user confirmation. Do not start demo reset, demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 ## Phase 2G Chunk 2G-5 Final Integration Verification + Docs Cleanup - completed this session
 

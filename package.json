@@ -22,7 +22,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "prisma:seed": "pnpm seed"
+    "prisma:seed": "pnpm seed",
+    "demo:audit": "tsx prisma/demo-audit.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
