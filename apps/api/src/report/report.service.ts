@@ -800,6 +800,256 @@ export class ReportService {
     };
   }
 
+  async getCostCenterSummary(query: ReportQueryDto) {
+    if (!query.projectId) {
+      throw new BadRequestException(
+        "projectId is required for the cost center summary report.",
+      );
+    }
+
+    const context = await this.resolveReportContext(query);
+    const project = context.project!;
+
+    const lineWhere = this.buildProjectCostLineFilter(query);
+    const voucherWhere = this.buildVoucherDateFilter(context, "period");
+
+    const lines = await this.prisma.voucherLine.findMany({
+      select: {
+        amount: true,
+        costCenterId: true,
+        ledgerAccountId: true,
+        side: true,
+        voucher: {
+          select: {
+            voucherDate: true,
+          },
+        },
+        ledgerAccount: {
+          select: {
+            accountGroup: {
+              select: {
+                accountClass: {
+                  select: { code: true },
+                },
+              },
+            },
+          },
+        },
+      },
+      where: {
+        ...lineWhere,
+        voucher: voucherWhere,
+      },
+    });
+
+    type CostCenterTotals = {
+      costCenterId: string | null;
+      debitTotal: Prisma.Decimal;
+      creditTotal: Prisma.Decimal;
+      expenseTotal: Prisma.Decimal;
+      assetTotal: Prisma.Decimal;
+      incomeTotal: Prisma.Decimal;
+      liabilityTotal: Prisma.Decimal;
+      equityTotal: Prisma.Decimal;
+      lineCount: number;
+      lastTransactionDate: Date | null;
+    };
+
+    const ccMap = new Map<string, CostCenterTotals>();
+
+    for (const line of lines) {
+      const ccId = line.costCenterId ?? "__UNASSIGNED__";
+      let cur = ccMap.get(ccId);
+
+      if (!cur) {
+        cur = {
+          assetTotal: ZERO,
+          costCenterId: line.costCenterId,
+          creditTotal: ZERO,
+          debitTotal: ZERO,
+          equityTotal: ZERO,
+          expenseTotal: ZERO,
+          incomeTotal: ZERO,
+          lastTransactionDate: null,
+          liabilityTotal: ZERO,
+          lineCount: 0,
+        };
+        ccMap.set(ccId, cur);
+      }
+
+      cur.lineCount += 1;
+
+      if (line.side === VoucherLineSide.DEBIT) {
+        cur.debitTotal = cur.debitTotal.plus(line.amount);
+      } else {
+        cur.creditTotal = cur.creditTotal.plus(line.amount);
+      }
+
+      const net = line.side === VoucherLineSide.DEBIT
+        ? line.amount
+        : line.amount.negated();
+
+      const classCode = line.ledgerAccount.accountGroup.accountClass.code;
+
+      if (classCode === AccountClassCode.EXPENSE) {
+        cur.expenseTotal = cur.expenseTotal.plus(net);
+      } else if (classCode === AccountClassCode.ASSET) {
+        cur.assetTotal = cur.assetTotal.plus(net);
+      } else if (classCode === AccountClassCode.INCOME) {
+        cur.incomeTotal = cur.incomeTotal.plus(net);
+      } else if (classCode === AccountClassCode.LIABILITY) {
+        cur.liabilityTotal = cur.liabilityTotal.plus(net);
+      } else if (classCode === AccountClassCode.EQUITY) {
+        cur.equityTotal = cur.equityTotal.plus(net);
+      }
+
+      const voucherDate = line.voucher.voucherDate;
+
+      if (!cur.lastTransactionDate || voucherDate > cur.lastTransactionDate) {
+        cur.lastTransactionDate = voucherDate;
+      }
+    }
+
+    const ccIds = [...ccMap.keys()]
+      .filter((id) => id !== "__UNASSIGNED__");
+
+    const ccDetails = ccIds.length > 0
+      ? await this.prisma.costCenter.findMany({
+          where: { id: { in: ccIds } },
+          select: { code: true, id: true, name: true },
+        })
+      : [];
+
+    const ccDetailMap = new Map(
+      ccDetails.map((cc) => [cc.id, cc]),
+    );
+
+    const rows = [...ccMap.entries()]
+      .sort(([a], [b]) => {
+        const aIsUnassigned = a === "__UNASSIGNED__";
+        const bIsUnassigned = b === "__UNASSIGNED__";
+
+        if (aIsUnassigned && !bIsUnassigned) {
+          return 1;
+        }
+        if (!aIsUnassigned && bIsUnassigned) {
+          return -1;
+        }
+        if (aIsUnassigned && bIsUnassigned) {
+          return 0;
+        }
+
+        const aDetail = ccDetailMap.get(a);
+        const bDetail = ccDetailMap.get(b);
+
+        const aCode = aDetail?.code ?? "";
+        const bCode = bDetail?.code ?? "";
+
+        return aCode.localeCompare(bCode);
+      })
+      .map(([ccId, totals]) => {
+        const detail = ccId !== "__UNASSIGNED__"
+          ? ccDetailMap.get(ccId)
+          : null;
+
+        return {
+          assetProjectCostTotal: this.toMoney(totals.assetTotal),
+          costCenterCode: detail?.code ?? null,
+          costCenterId: totals.costCenterId,
+          costCenterName: detail?.name ?? null,
+          creditTotal: this.toMoney(totals.creditTotal),
+          debitTotal: this.toMoney(totals.debitTotal),
+          equityTotal: this.toMoney(totals.equityTotal),
+          expenseTotal: this.toMoney(totals.expenseTotal),
+          incomeTotal: this.toMoney(totals.incomeTotal),
+          lastTransactionDate: totals.lastTransactionDate
+            ? this.formatDate(totals.lastTransactionDate)
+            : null,
+          liabilityTotal: this.toMoney(totals.liabilityTotal),
+          lineCount: totals.lineCount,
+          netMovement: this.toMoney(
+            totals.debitTotal.minus(totals.creditTotal),
+          ),
+        };
+      });
+
+    let debitTotal = ZERO;
+    let creditTotal = ZERO;
+    let expenseTotal = ZERO;
+    let assetTotal = ZERO;
+    let incomeTotal = ZERO;
+    let liabilityTotal = ZERO;
+    let equityTotal = ZERO;
+    let lineCount = 0;
+    let unassignedLineCount = 0;
+
+    for (const [ccId, totals] of ccMap) {
+      debitTotal = debitTotal.plus(totals.debitTotal);
+      creditTotal = creditTotal.plus(totals.creditTotal);
+      expenseTotal = expenseTotal.plus(totals.expenseTotal);
+      assetTotal = assetTotal.plus(totals.assetTotal);
+      incomeTotal = incomeTotal.plus(totals.incomeTotal);
+      liabilityTotal = liabilityTotal.plus(totals.liabilityTotal);
+      equityTotal = equityTotal.plus(totals.equityTotal);
+      lineCount += totals.lineCount;
+
+      if (ccId === "__UNASSIGNED__") {
+        unassignedLineCount = totals.lineCount;
+      }
+    }
+
+    const netMovement = debitTotal.minus(creditTotal);
+
+    return {
+      reportType: "COST_CENTER_SUMMARY" satisfies string,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      project: {
+        id: project.id,
+        code: project.code,
+        name: project.name,
+      },
+      costCenter: context.costCenter
+        ? {
+            code: context.costCenter.code,
+            id: context.costCenter.id,
+            name: context.costCenter.name,
+          }
+        : null,
+      filters: {
+        costCenter: context.costCenter
+          ? {
+              code: context.costCenter.code,
+              id: context.costCenter.id,
+              name: context.costCenter.name,
+            }
+          : null,
+        ledgerAccount: query.ledgerAccountId ?? null,
+        accountClass: query.accountClassCode ?? null,
+        accountGroup: query.accountGroupId ?? null,
+      },
+      totals: {
+        assetProjectCostTotal: this.toMoney(assetTotal),
+        costCenterCount: [...ccMap.keys()].filter(
+          (id) => id !== "__UNASSIGNED__",
+        ).length,
+        creditTotal: this.toMoney(creditTotal),
+        debitTotal: this.toMoney(debitTotal),
+        equityTotal: this.toMoney(equityTotal),
+        expenseTotal: this.toMoney(expenseTotal),
+        incomeTotal: this.toMoney(incomeTotal),
+        liabilityTotal: this.toMoney(liabilityTotal),
+        lineCount,
+        netMovement: this.toMoney(netMovement),
+        unassignedLineCount,
+      },
+      rows,
+    };
+  }
+
   async getTrialBalance(query: ReportQueryDto) {
     if (query.ledgerAccountId || query.cashBankAccountId) {
       throw new BadRequestException(

@@ -56,4 +56,9 @@ export class ReportController {
   getProjectCost(@Query() query: ReportQueryDto) {
     return this.reportService.getProjectCost(query);
   }
+
+  @Get("cost-center-summary")
+  getCostCenterSummary(@Query() query: ReportQueryDto) {
+    return this.reportService.getCostCenterSummary(query);
+  }
 }

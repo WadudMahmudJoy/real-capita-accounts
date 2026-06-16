@@ -143,6 +143,13 @@ const reportLinks: NavLink[] = [
     match: (pathname) => pathname.startsWith("/app/reports/project-cost"),
   },
   {
+    href: "/app/reports/cost-center-summary",
+    icon: Network,
+    label: "Cost Center Summary",
+    match: (pathname) =>
+      pathname.startsWith("/app/reports/cost-center-summary"),
+  },
+  {
     href: "/app/reports/trial-balance",
     icon: Scale,
     label: "Trial Balance",

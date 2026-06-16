@@ -1150,6 +1150,61 @@ export type ProjectCostReport = {
   rows: ProjectCostReportRow[];
 };
 
+// --- Cost Center Summary ---
+
+export type CostCenterSummaryRow = {
+  assetProjectCostTotal: string;
+  costCenterCode: string | null;
+  costCenterId: string | null;
+  costCenterName: string | null;
+  creditTotal: string;
+  debitTotal: string;
+  equityTotal: string;
+  expenseTotal: string;
+  incomeTotal: string;
+  lastTransactionDate: string | null;
+  liabilityTotal: string;
+  lineCount: number;
+  netMovement: string;
+};
+
+export type CostCenterSummaryReport = {
+  reportType: "COST_CENTER_SUMMARY";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  project: ReportProjectSummary;
+  costCenter: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  filters: {
+    costCenter: {
+      id: string;
+      code: string;
+      name: string;
+    } | null;
+    ledgerAccount: string | null;
+    accountClass: string | null;
+    accountGroup: string | null;
+  };
+  totals: {
+    assetProjectCostTotal: string;
+    costCenterCount: number;
+    creditTotal: string;
+    debitTotal: string;
+    equityTotal: string;
+    expenseTotal: string;
+    incomeTotal: string;
+    liabilityTotal: string;
+    lineCount: number;
+    netMovement: string;
+    unassignedLineCount: number;
+  };
+  rows: CostCenterSummaryRow[];
+};
+
 /**
  * Shared report query parameters. `fiscalYearId` is always required; the rest
  * are optional and report-specific. Empty values are omitted from the request.
@@ -1304,6 +1359,16 @@ export function getProjectCostReport(
 ): Promise<ProjectCostReport> {
   return apiFetch<ProjectCostReport>(
     `/reports/project-cost${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getCostCenterSummaryReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<CostCenterSummaryReport> {
+  return apiFetch<CostCenterSummaryReport>(
+    `/reports/cost-center-summary${buildReportQuery(params)}`,
     { signal },
   );
 }

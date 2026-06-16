@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2G Chunks 2G-1 (Project Ledger) and 2G-2 (Project Cost Report) are implemented. Phase 2G Project/Cost-Center Financial Reporting is in progress. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View). All reports derive from posted VoucherLine records only. Stop before starting the next implementation chunk (2G-3 Cost Center Summary) without explicit user confirmation.
+Phase 2G Chunks 2G-1 (Project Ledger), 2G-2 (Project Cost Report), and 2G-3 (Cost Center Summary) are implemented. Phase 2G Project/Cost-Center Financial Reporting is in progress. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View). All reports derive from posted VoucherLine records only. Stop before starting the next implementation chunk (2G-4 Project Financial Summary) without explicit user confirmation.
 
 Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at commit `be2392a`. Phase 2E Chunk 2E-5 MFS Book report API is accepted at commit `d90ffd4`. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted. Phase 2E MFS account setup and MFS Book foundation are now accepted. MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
 
@@ -110,7 +110,7 @@ Phase 2G Chunk 2G-1 Project Ledger API + Frontend Project Ledger Report Page is 
 
 ## Next Stop Point
 
-Phase 2G Chunks 2G-1 (Project Ledger) and 2G-2 (Project Cost Report) are implemented. The next recommended task is Phase 2G Chunk 2G-3: Backend Cost Center Summary API + Frontend Cost Center Summary Page. Do not start 2G-3, Cost Center Summary, Project Financial Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2G Chunks 2G-1 (Project Ledger), 2G-2 (Project Cost Report), and 2G-3 (Cost Center Summary) are implemented. The next recommended task is Phase 2G Chunk 2G-4: Project Financial Summary. Do not start 2G-4, Project Financial Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 ## Phase 2G Chunk 2G-2 Project Cost Report - completed this session
 
@@ -122,6 +122,16 @@ Phase 2G Chunks 2G-1 (Project Ledger) and 2G-2 (Project Cost Report) are impleme
 - No Prisma schema change, migration, report table, new role, or MFS voucher posting support. All existing reports unchanged.
 - Files changed: `apps/api/src/report/dto/report-query.dto.ts`, `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.controller.ts`, `apps/web/src/lib/api.ts`, `apps/web/src/app/app/reports/_lib/report-ui.tsx`, `apps/web/src/app/app/reports/_lib/useReportReferences.ts`, `apps/web/src/app/app/reports/project-cost/page.tsx` (new), `apps/web/src/app/app/layout.tsx`, plus docs.
 - Verification passed: all checks pass, routes `/app/reports/project-cost` and `/app/reports/project-ledger` confirmed in build output.
+
+## Phase 2G Chunk 2G-3 Cost Center Summary - completed this session
+
+- Added guarded backend endpoint `GET /reports/cost-center-summary` requiring `projectId`. Summarizes project-tagged posted voucher lines grouped by cost center. Each VoucherLine contributes to exactly one cost-center summary row (no double counting). Lines without a cost center appear as "Unassigned" only when such lines exist. Optional filters: cost center, ledger, account group, account class. Returns per-cost-center totals: debitTotal, creditTotal, netMovement, lineCount.
+- Created frontend route/page `/app/reports/cost-center-summary` with required project + fiscal year, optional cost center/ledger/account class/account group. Summary cards (Total Debit, Total Credit, Net Movement, Line Count, Cost Center Count). Table with drill-down links to Project Ledger. Print foundation.
+- Added `CostCenterSummaryReport` and `CostCenterSummaryRow` types, `getCostCenterSummaryReport` helper.
+- Added Cost Center Summary navigation link under Reports.
+- No Prisma schema change, migration, report table, new role, or MFS voucher posting support. All existing reports unchanged.
+- Files changed: `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.controller.ts`, `apps/web/src/lib/api.ts`, `apps/web/src/app/app/reports/cost-center-summary/page.tsx` (new), `apps/web/src/app/app/layout.tsx`, plus docs.
+- Verification passed: all checks pass.
 
 ## Phase 2G Chunk 2G-1 Project Ledger - completed previous session
 

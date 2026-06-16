@@ -73,6 +73,50 @@ Phase 2G Chunk 2G-2 Project Cost Report API + Frontend Project Cost Report Page 
 
 All passes: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`.
 
+## Phase 2G Chunk 2G-3 Cost Center Summary - completed this session
+
+Phase 2G Chunk 2G-3 Cost Center Summary API + Frontend Cost Center Summary Page is implemented.
+
+### Backend
+
+- Added `GET /reports/cost-center-summary` endpoint guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.
+- `projectId` is required; returns 400 when missing.
+- Report derives from posted voucher lines only (`Voucher.status = POSTED`, `Voucher.isDeleted = false`).
+- Summarizes project-tagged VoucherLine records grouped by cost center.
+- Each VoucherLine contributes to exactly one cost-center summary row (no double counting).
+- Lines without a cost center appear as "Unassigned" only when such lines actually exist in the data.
+- Optional filters: `costCenterId`, `ledgerAccountId`, `accountGroupId`, `accountClassCode`.
+- Returns per-cost-center totals: debitTotal, creditTotal, netMovement, lineCount, and drill-down links to Project Ledger.
+
+### Frontend
+
+- Added `CostCenterSummaryReport` and `CostCenterSummaryRow` types in `apps/web/src/lib/api.ts`.
+- Added `getCostCenterSummaryReport` helper.
+- Created `/app/reports/cost-center-summary/page.tsx` with required project + fiscal year filters, optional cost center/ledger/account class/account group.
+- Page renders summary cards (Total Debit, Total Credit, Net Movement, Line Count, Cost Center Count).
+- Table columns: Cost Center (with "Unassigned" label for null cost center), Debit, Credit, Net Amount, Line Count, Actions (drill-down link to Project Ledger).
+- Browser print foundation via `ReportPrintFrame`.
+- Added Cost Center Summary navigation link under Reports in sidebar.
+
+### Files changed
+
+- `apps/api/src/report/report.service.ts` -- added `getCostCenterSummary` method, `CostCenterSummaryRow` type.
+- `apps/api/src/report/report.controller.ts` -- added `GET /reports/cost-center-summary` endpoint.
+- `apps/web/src/lib/api.ts` -- added `CostCenterSummaryReport`, `CostCenterSummaryRow` types, `getCostCenterSummaryReport` helper.
+- `apps/web/src/app/app/reports/cost-center-summary/page.tsx` -- new file.
+- `apps/web/src/app/app/layout.tsx` -- added Cost Center Summary navigation link.
+
+### Not added
+
+- No Prisma schema change, no migration, no report table, no new role.
+- No MFS voucher posting support.
+- No PDF/Excel export, no dashboard analytics.
+- No Project Financial Summary (Chunk 2G-4).
+
+### Verification
+
+All passes: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`.
+
 ## Phase 2G Chunk 2G-1 Project Ledger - completed previous session
 
 Phase 2G Chunk 2G-1 Project Ledger API + Frontend Project Ledger Report Page is implemented.
