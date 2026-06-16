@@ -20,6 +20,60 @@ Phase 2E MFS / bKash transaction support is complete and accepted (MFS account s
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred.
 
+## Phase 2G Chunk 2G-1 Project Ledger - completed this session
+
+Phase 2G Chunk 2G-1 Project Ledger API + Frontend Project Ledger Report Page is implemented.
+
+### Backend
+
+- Added `GET /reports/project-ledger` endpoint guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.
+- `projectId` is required; returns 400 when missing.
+- Report derives from posted voucher lines only (`Voucher.status = POSTED`, `Voucher.isDeleted = false`) where `VoucherLine.projectId` matches the selected project.
+- Draft and soft-deleted vouchers are excluded by the shared `buildVoucherDateFilter`.
+- Optional filters: `costCenterId` (scoped to selected project via `resolveReportContext`), `ledgerAccountId`, and `voucherType`.
+- Lines sorted by voucher date, system voucher number, line number.
+- Opening balance = sum of project-tagged debit minus credit before the selected start date.
+- Running balance = cumulative debit minus credit across project-tagged lines.
+- Money values use `Prisma.Decimal.toFixed(2)` string serialization.
+- Added `voucherType` optional field to `ReportQueryDto` with `@IsIn` validation.
+- Added `buildProjectLedgerLineFilter`, `findProjectLedgerLines`, and `summarizeProjectLedgerFilters` private helpers.
+
+### Frontend
+
+- Added `ProjectLedgerReport` and `ProjectLedgerReportLine` types in `apps/web/src/lib/api.ts`.
+- Added `getProjectLedgerReport` cookie-authenticated helper.
+- Added `voucherType` to `ReportQueryParams` and `buildReportQuery`.
+- Added `requireProject` and `showVoucherType` config options to `ReportFiltersConfig`.
+- Added voucher type dropdown to the shared `ReportFilters` panel.
+- Created `/app/reports/project-ledger/page.tsx` with project filter (required), fiscal year filter (required), period/date range, optional cost center, optional ledger account, and optional voucher type.
+- Page renders summary cards (Total Debit, Total Credit, Net Movement, Line Count, Opening Balance).
+- Line table shows Date, Voucher No (with drill-down link to `/app/vouchers/[id]`), Voucher Type, Ledger, Account Class, Cost Center, Narration/Description, Debit, Credit, Running Net.
+- Empty states: "Select a project to view project-tagged posted voucher lines." when no project; "No posted voucher lines are tagged to the selected project" when no data.
+- Browser print foundation included via `ReportPrintFrame`.
+- Added Project Ledger navigation link under Reports in the app sidebar with `FolderKanban` icon.
+
+### Files changed
+
+- `apps/api/src/report/dto/report-query.dto.ts` -- added `voucherType` optional field with `@IsIn` validation.
+- `apps/api/src/report/report.service.ts` -- added `getProjectLedger` method, `buildProjectLedgerLineFilter`, `findProjectLedgerLines`, `summarizeProjectLedgerFilters` helpers.
+- `apps/api/src/report/report.controller.ts` -- added `GET /reports/project-ledger` endpoint.
+- `apps/web/src/lib/api.ts` -- added `ProjectLedgerReport`, `ProjectLedgerReportLine` types, `getProjectLedgerReport` helper, `voucherType` to `ReportQueryParams` and `buildReportQuery`.
+- `apps/web/src/app/app/reports/_lib/report-ui.tsx` -- added `requireProject`, `showVoucherType` to `ReportFiltersConfig`, voucher type dropdown, project required validation.
+- `apps/web/src/app/app/reports/project-ledger/page.tsx` -- new file.
+- `apps/web/src/app/app/layout.tsx` -- added Project Ledger navigation link.
+
+### Not added
+
+- No Prisma schema change, no migration, no report table, no new role.
+- No MFS voucher posting support.
+- No PDF/Excel export, no dashboard analytics.
+- No Project Cost Report, Cost Center Summary, Project Financial Summary (Chunks 2G-2 through 2G-4).
+- No schema changes to voucher posting logic.
+
+### Verification
+
+All verification passes: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`, `pnpm doctor` (port-occupied warnings only).
+
 ## Phase 2G Documentation Lock - this session
 
 Phase 2G Project/Cost-Center Financial Reporting requirement lock is complete and accepted. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View). All reports derive from posted VoucherLine records only; `projectId` is required for all four primary reports; cost center dropdowns scope to the selected project; asset-class totals labeled separately from expense-class totals. No schema change expected; no new roles; no editable report tables; no dashboard analytics; no PDF/Excel export; no MFS voucher posting support.
@@ -445,7 +499,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2G Project/Cost-Center Financial Reporting requirement lock is complete and accepted. The next recommended step is user confirmation of Phase 2G implementation (Chunk 2G-1: Backend Project Ledger API + minimal frontend Project Ledger page). Do not start Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary, or Project Cash/Bank Movement View implementation, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2G Chunk 2G-1 Project Ledger is implemented. The next recommended step is Phase 2G Chunk 2G-2: Backend Project Cost Report API + Frontend Project Cost Report Page. Do not start Project Cost Report, Cost Center Summary, Project Financial Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 Reference docs before continuing:
 

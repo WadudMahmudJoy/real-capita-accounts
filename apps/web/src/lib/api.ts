@@ -736,7 +736,8 @@ export type ReportType =
   | "BANK_BOOK"
   | "TRIAL_BALANCE"
   | "INCOME_STATEMENT"
-  | "BALANCE_SHEET";
+  | "BALANCE_SHEET"
+  | "PROJECT_LEDGER";
 
 /** Company summary embedded on the report fiscal year. */
 export type ReportCompanySummary = {
@@ -1027,6 +1028,65 @@ export type BalanceSheetReport = {
   isBalancedAdjusted: boolean;
 };
 
+// --- Project Ledger ---
+
+export type ProjectLedgerReportLine = {
+  id: string;
+  voucherId: string;
+  date: string;
+  systemVoucherNo: string;
+  voucherType: VoucherType;
+  ledgerAccountId: string;
+  ledgerCode: string;
+  ledgerName: string;
+  accountClass: {
+    code: string;
+    name: string;
+  };
+  accountGroup: {
+    code: string;
+    name: string;
+  };
+  costCenterId: string | null;
+  costCenterCode: string | null;
+  costCenterName: string | null;
+  narration: string | null;
+  lineDescription: string | null;
+  debit: string;
+  credit: string;
+  runningBalance: string;
+};
+
+export type ProjectLedgerReport = {
+  reportType: "PROJECT_LEDGER";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  project: ReportProjectSummary;
+  costCenter: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  filters: {
+    costCenter: {
+      id: string;
+      code: string;
+      name: string;
+    } | null;
+    ledgerAccount: string | null;
+    voucherType: string | null;
+  };
+  totals: {
+    debitTotal: string;
+    creditTotal: string;
+    netMovement: string;
+  };
+  openingBalance: string;
+  lineCount: number;
+  lines: ProjectLedgerReportLine[];
+};
+
 /**
  * Shared report query parameters. `fiscalYearId` is always required; the rest
  * are optional and report-specific. Empty values are omitted from the request.
@@ -1041,6 +1101,7 @@ export type ReportQueryParams = {
   projectId?: string;
   costCenterId?: string;
   cashBankAccountId?: string;
+  voucherType?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -1075,6 +1136,9 @@ function buildReportQuery(params: ReportQueryParams): string {
   }
   if (params.cashBankAccountId) {
     search.set("cashBankAccountId", params.cashBankAccountId);
+  }
+  if (params.voucherType) {
+    search.set("voucherType", params.voucherType);
   }
 
   return `?${search.toString()}`;
@@ -1145,6 +1209,16 @@ export function getBalanceSheetReport(
 ): Promise<BalanceSheetReport> {
   return apiFetch<BalanceSheetReport>(
     `/reports/balance-sheet${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getProjectLedgerReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<ProjectLedgerReport> {
+  return apiFetch<ProjectLedgerReport>(
+    `/reports/project-ledger${buildReportQuery(params)}`,
     { signal },
   );
 }

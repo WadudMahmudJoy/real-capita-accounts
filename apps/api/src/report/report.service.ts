@@ -10,6 +10,7 @@ import {
   Prisma,
   VoucherLineSide,
   VoucherStatus,
+  VoucherType,
 } from "../generated/prisma/client";
 import { parseIsoDate } from "../common/date-rules";
 import { PrismaService } from "../prisma/prisma.service";
@@ -138,7 +139,8 @@ type ReportType =
   | "MFS_BOOK"
   | "TRIAL_BALANCE"
   | "INCOME_STATEMENT"
-  | "BALANCE_SHEET";
+  | "BALANCE_SHEET"
+  | "PROJECT_LEDGER";
 
 const ZERO = new Prisma.Decimal(0);
 
@@ -253,6 +255,102 @@ export class ReportService {
           cashBankAccount: line.cashBankAccount
             ? this.summarizeCashBankAccount(line.cashBankAccount)
             : null,
+        };
+      }),
+    };
+  }
+
+  async getProjectLedger(query: ReportQueryDto) {
+    if (!query.projectId) {
+      throw new BadRequestException(
+        "projectId is required for the project ledger report.",
+      );
+    }
+
+    const context = await this.resolveReportContext(query);
+    const project = context.project!;
+
+    const baseWhere = this.buildProjectLedgerLineFilter(query);
+    const openingTotals = await this.sumDebitCredit(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "opening"),
+    );
+    const periodTotals = await this.sumDebitCredit(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "period"),
+    );
+    const openingSigned = openingTotals.debit.minus(openingTotals.credit);
+    const lines = await this.findProjectLedgerLines(
+      baseWhere,
+      this.buildVoucherDateFilter(context, "period"),
+    );
+    let runningBalance = openingSigned;
+
+    return {
+      reportType: "PROJECT_LEDGER" satisfies string,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      project: {
+        id: project.id,
+        code: project.code,
+        name: project.name,
+      },
+      costCenter: context.costCenter
+        ? {
+            id: context.costCenter.id,
+            code: context.costCenter.code,
+            name: context.costCenter.name,
+          }
+        : null,
+      filters: this.summarizeProjectLedgerFilters(context, query),
+      totals: {
+        debitTotal: this.toMoney(periodTotals.debit),
+        creditTotal: this.toMoney(periodTotals.credit),
+        netMovement: this.toMoney(
+          periodTotals.debit.minus(periodTotals.credit),
+        ),
+      },
+      openingBalance: this.toMoney(openingSigned),
+      lineCount: lines.length,
+      lines: lines.map((line) => {
+        const lineMovement =
+          line.side === VoucherLineSide.DEBIT
+            ? line.amount
+            : line.amount.negated();
+        runningBalance = runningBalance.plus(lineMovement);
+
+        return {
+          id: line.id,
+          voucherId: line.voucher.id,
+          date: this.formatDate(line.voucher.voucherDate),
+          systemVoucherNo: line.voucher.systemVoucherNo,
+          voucherType: line.voucher.voucherType,
+          ledgerAccountId: line.ledgerAccount.id,
+          ledgerCode: line.ledgerAccount.code,
+          ledgerName: line.ledgerAccount.name,
+          accountClass: {
+            code: line.ledgerAccount.accountGroup.accountClass.code,
+            name: line.ledgerAccount.accountGroup.accountClass.name,
+          },
+          accountGroup: {
+            code: line.ledgerAccount.accountGroup.code,
+            name: line.ledgerAccount.accountGroup.name,
+          },
+          costCenterId: line.costCenter?.id ?? null,
+          costCenterCode: line.costCenter?.code ?? null,
+          costCenterName: line.costCenter?.name ?? null,
+          narration: line.voucher.narration,
+          lineDescription: line.description,
+          debit: this.toMoney(
+            line.side === VoucherLineSide.DEBIT ? line.amount : ZERO,
+          ),
+          credit: this.toMoney(
+            line.side === VoucherLineSide.CREDIT ? line.amount : ZERO,
+          ),
+          runningBalance: this.toMoney(runningBalance),
         };
       }),
     };
@@ -1222,6 +1320,94 @@ export class ReportService {
             },
           }
         : {}),
+    };
+  }
+
+  private buildProjectLedgerLineFilter(
+    query: ReportQueryDto,
+  ): Prisma.VoucherLineWhereInput {
+    const where: Prisma.VoucherLineWhereInput = {
+      projectId: query.projectId!,
+    };
+
+    if (query.costCenterId) {
+      where.costCenterId = query.costCenterId;
+    }
+
+    if (query.ledgerAccountId) {
+      where.ledgerAccountId = query.ledgerAccountId;
+    }
+
+    if (query.voucherType) {
+      where.voucher = {
+        is: { voucherType: query.voucherType as VoucherType },
+      };
+    }
+
+    return where;
+  }
+
+  private async findProjectLedgerLines(
+    lineWhere: Prisma.VoucherLineWhereInput,
+    voucherWhere: Prisma.VoucherWhereInput,
+  ) {
+    const lines = await this.prisma.voucherLine.findMany({
+      include: {
+        costCenter: true,
+        ledgerAccount: {
+          include: {
+            accountGroup: {
+              include: { accountClass: true },
+            },
+          },
+        },
+        voucher: true,
+      },
+      where: {
+        ...lineWhere,
+        voucher: voucherWhere,
+      },
+    });
+
+    return lines.sort((left, right) => {
+      const byDate =
+        left.voucher.voucherDate.getTime() -
+        right.voucher.voucherDate.getTime();
+
+      if (byDate !== 0) {
+        return byDate;
+      }
+
+      const byVoucherNo = left.voucher.systemVoucherNo.localeCompare(
+        right.voucher.systemVoucherNo,
+      );
+
+      if (byVoucherNo !== 0) {
+        return byVoucherNo;
+      }
+
+      if (left.lineNo !== right.lineNo) {
+        return left.lineNo - right.lineNo;
+      }
+
+      return left.id.localeCompare(right.id);
+    });
+  }
+
+  private summarizeProjectLedgerFilters(
+    context: ReportContext,
+    query: ReportQueryDto,
+  ) {
+    return {
+      costCenter: context.costCenter
+        ? {
+            code: context.costCenter.code,
+            id: context.costCenter.id,
+            name: context.costCenter.name,
+          }
+        : null,
+      ledgerAccount: query.ledgerAccountId ? query.ledgerAccountId : null,
+      voucherType: query.voucherType ?? null,
     };
   }
 

@@ -46,4 +46,9 @@ export class ReportController {
   getBalanceSheet(@Query() query: ReportQueryDto) {
     return this.reportService.getBalanceSheet(query);
   }
+
+  @Get("project-ledger")
+  getProjectLedger(@Query() query: ReportQueryDto) {
+    return this.reportService.getProjectLedger(query);
+  }
 }

@@ -131,6 +131,12 @@ const reportLinks: NavLink[] = [
     match: (pathname) => pathname.startsWith("/app/reports/mfs-book"),
   },
   {
+    href: "/app/reports/project-ledger",
+    icon: FolderKanban,
+    label: "Project Ledger",
+    match: (pathname) => pathname.startsWith("/app/reports/project-ledger"),
+  },
+  {
     href: "/app/reports/trial-balance",
     icon: Scale,
     label: "Trial Balance",

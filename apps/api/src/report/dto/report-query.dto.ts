@@ -1,5 +1,14 @@
-import { IsISO8601, IsOptional, IsString, MinLength } from "class-validator";
+import { IsIn, IsISO8601, IsOptional, IsString, MinLength } from "class-validator";
 import { Trim } from "../../common/dto-transforms";
+
+const VOUCHER_TYPES = [
+  "DEBIT",
+  "CREDIT",
+  "JOURNAL",
+  "CONTRA",
+  "PAYMENT",
+  "RECEIPT",
+] as const;
 
 export class ReportQueryDto {
   @IsString()
@@ -48,4 +57,9 @@ export class ReportQueryDto {
   @IsOptional()
   @IsISO8601()
   asOfDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(VOUCHER_TYPES)
+  voucherType?: string;
 }

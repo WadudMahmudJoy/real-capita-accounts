@@ -217,6 +217,7 @@ type FilterValues = {
   costCenterId: string;
   ledgerAccountId: string;
   cashBankAccountId: string;
+  voucherType: string;
 };
 
 const emptyFilters: FilterValues = {
@@ -229,6 +230,7 @@ const emptyFilters: FilterValues = {
   ledgerAccountId: "",
   projectId: "",
   startDate: "",
+  voucherType: "",
 };
 
 export type ReportFiltersConfig = {
@@ -238,6 +240,10 @@ export type ReportFiltersConfig = {
   requireLedgerAccount?: boolean;
   /** Show the cash/bank account dropdown (cash book / bank book). */
   showCashBankAccount?: boolean;
+  /** Require a project selection before the report can run. */
+  requireProject?: boolean;
+  /** Show the voucher type dropdown. */
+  showVoucherType?: boolean;
   /**
    * Show the custom start/end date range inputs. Defaults to true. The balance
    * sheet hides this because it is a point-in-time report driven by asOfDate.
@@ -364,6 +370,11 @@ export function ReportFilters({
       return;
     }
 
+    if (config?.requireProject && !values.projectId) {
+      setError("Select a project to run this report.");
+      return;
+    }
+
     if (config?.requireLedgerAccount && !values.ledgerAccountId) {
       setError("Select a ledger account to run this report.");
       return;
@@ -405,6 +416,9 @@ export function ReportFilters({
       ...(values.costCenterId ? { costCenterId: values.costCenterId } : {}),
       ...(config?.showCashBankAccount && values.cashBankAccountId
         ? { cashBankAccountId: values.cashBankAccountId }
+        : {}),
+      ...(config?.showVoucherType && values.voucherType
+        ? { voucherType: values.voucherType }
         : {}),
     });
   }
@@ -530,7 +544,7 @@ export function ReportFilters({
 
         {!config?.advancedProjectCostCenter ? (
           <>
-            <Field htmlFor="report-project" label="Project">
+            <Field htmlFor="report-project" label="Project" required={config?.requireProject}>
               <Select
                 id="report-project"
                 onChange={(event) => handleProjectChange(event.target.value)}
@@ -562,6 +576,26 @@ export function ReportFilters({
               </Select>
             </Field>
           </>
+        ) : null}
+
+        {config?.showVoucherType ? (
+          <Field htmlFor="report-voucher-type" label="Voucher type">
+            <Select
+              id="report-voucher-type"
+              onChange={(event) =>
+                update({ voucherType: event.target.value })
+              }
+              value={values.voucherType}
+            >
+              <option value="">All voucher types</option>
+              <option value="DEBIT">Debit</option>
+              <option value="CREDIT">Credit</option>
+              <option value="JOURNAL">Journal</option>
+              <option value="CONTRA">Contra</option>
+              <option value="PAYMENT">Payment</option>
+              <option value="RECEIPT">Receipt</option>
+            </Select>
+          </Field>
         ) : null}
       </div>
 

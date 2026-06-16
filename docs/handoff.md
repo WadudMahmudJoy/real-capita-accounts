@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 2G Project/Cost-Center Financial Reporting requirement lock is complete and accepted. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View) that transform `projectId` and `costCenterId` dimensions on posted voucher lines into useful accounting summaries. All reports derive from posted VoucherLine records only; `projectId` is required for all four primary reports; cost center dropdowns scope to the selected project; asset-class totals labeled separately from expense-class totals. No schema change expected; no new roles; no editable report tables; no dashboard analytics; no PDF/Excel export; no MFS voucher posting support. Stop before starting the next implementation chunk without explicit user confirmation.
+Phase 2G Chunk 2G-1 Project Ledger is implemented. Phase 2G Project/Cost-Center Financial Reporting is in progress. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View) that transform `projectId` and `costCenterId` dimensions on posted voucher lines into useful accounting summaries. All reports derive from posted VoucherLine records only; `projectId` is required for all four primary reports; cost center dropdowns scope to the selected project; asset-class totals labeled separately from expense-class totals. No schema change expected; no new roles; no editable report tables; no dashboard analytics; no PDF/Excel export; no MFS voucher posting support. Stop before starting the next implementation chunk (2G-2 Project Cost Report) without explicit user confirmation.
 
 Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at commit `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at commit `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted at commit `be2392a`. Phase 2E Chunk 2E-5 MFS Book report API is accepted at commit `d90ffd4`. Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted. Phase 2E MFS account setup and MFS Book foundation are now accepted. MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
 
@@ -106,9 +106,23 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 - Preserved existing Cash Book and Bank Book semantics. Cash Book remains filtered to `CASH`; Bank Book remains filtered to `BANK`.
 - No MFS Book endpoint, report page, frontend MFS account page, sidebar/navigation change, voucher posting behavior change, MFS transaction template, provider integration, statement import, PDF/Excel export, dashboard analytics, seed data, or role was added.
 
+Phase 2G Chunk 2G-1 Project Ledger API + Frontend Project Ledger Report Page is implemented.
+
 ## Next Stop Point
 
-Phase 2G requirement lock is complete and accepted. The next recommended task is to review/accept the Phase 2G requirement lock, then confirm implementation if approved. Do not start 2G-1 (Project Ledger implementation), Project Cost Report, Cost Center Summary, Project Financial Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2G Chunk 2G-1 Project Ledger is implemented. The next recommended task is Phase 2G Chunk 2G-2: Backend Project Cost Report API + Frontend Project Cost Report Page. Do not start 2G-2, Project Cost Report, Cost Center Summary, Project Financial Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+
+## Phase 2G Chunk 2G-1 Project Ledger - completed this session
+
+- Added guarded backend endpoint `GET /reports/project-ledger` requiring `projectId`. The report derives only from `VoucherLine` rows attached to `Voucher.status = POSTED`, `Voucher.isDeleted = false`, and `VoucherLine.projectId` matching the selected project. Draft and soft-deleted vouchers are excluded. Optional filters: cost center (scoped to selected project), ledger account, voucher type. Opening balance = sum of project-tagged debit minus credit before start date. Running balance = cumulative debit minus credit. Money values use `Prisma.Decimal.toFixed(2)` string serialization.
+- Added `voucherType` optional field to `ReportQueryDto` with `@IsIn` validation.
+- Added `buildProjectLedgerLineFilter`, `findProjectLedgerLines`, and `summarizeProjectLedgerFilters` private helpers in the report service.
+- Created frontend route/page `/app/reports/project-ledger` with project filter (required), fiscal year (required), optional cost center, optional ledger, optional voucher type. Summary cards (Total Debit, Total Credit, Net Movement, Line Count). Line table with drill-down links to `/app/vouchers/[id]`. Empty states. Browser print foundation.
+- Added `ProjectLedgerReport` and `ProjectLedgerReportLine` types, `getProjectLedgerReport` helper. Added `voucherType` to `ReportQueryParams` and `buildReportQuery`. Added `requireProject` and `showVoucherType` to `ReportFiltersConfig` with voucher type dropdown.
+- Added Project Ledger navigation link under Reports section in sidebar.
+- No Prisma schema change, migration, report table, new role, or MFS voucher posting support. All existing reports unchanged.
+- Files changed: `apps/api/src/report/dto/report-query.dto.ts`, `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.controller.ts`, `apps/web/src/lib/api.ts`, `apps/web/src/app/app/reports/_lib/report-ui.tsx`, `apps/web/src/app/app/reports/project-ledger/page.tsx` (new), `apps/web/src/app/app/layout.tsx`, plus docs.
+- Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `docker compose config`, `pnpm check:all`, `pnpm doctor`.
 
 ## Phase 2E MFS / bKash Requirement Lock - completed this session
 
