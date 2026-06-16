@@ -139,12 +139,13 @@ export function CashBankBookReport({
         <>
           <Card>
             <CardHeader
-              description="A fiscal year is required. The period, date range, cash/bank account, ledger account, project, and cost center are optional."
+              description="A fiscal year is required. The period, date range, cash/bank account, and ledger account are optional. Project and cost center filters are advanced line-level options."
               title="Report filters"
             />
             <div className="mt-6">
               <ReportFilters
                 config={{
+                  advancedProjectCostCenter: true,
                   cashBankAccountType: accountType,
                   showCashBankAccount: true,
                   showLedgerAccount: true,

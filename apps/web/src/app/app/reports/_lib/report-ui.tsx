@@ -254,6 +254,14 @@ export type ReportFiltersConfig = {
    * reject (e.g. a bank account on the Cash Book).
    */
   cashBankAccountType?: CashBankAccountType;
+  /**
+   * When true, move Project and Cost Center filters into a collapsible
+   * "Advanced filters" section instead of the main filter grid. Use this for
+   * Cash Book, Bank Book, and MFS Book where project/cost center filters
+   * apply to the line-level metadata on the cash/bank/MFS line itself rather
+   * than to the opposite voucher line or the whole voucher.
+   */
+  advancedProjectCostCenter?: boolean;
 };
 
 export type ReportFiltersProps = {
@@ -277,6 +285,7 @@ export function ReportFilters({
 }: ReportFiltersProps) {
   const [values, setValues] = useState<FilterValues>(emptyFilters);
   const [error, setError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const periods = useMemo(() => {
     if (!values.fiscalYearId) {
@@ -519,36 +528,113 @@ export function ReportFilters({
           </Field>
         ) : null}
 
-        <Field htmlFor="report-project" label="Project">
-          <Select
-            id="report-project"
-            onChange={(event) => handleProjectChange(event.target.value)}
-            value={values.projectId}
-          >
-            <option value="">All projects</option>
-            {reference.projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {projectLabel(project)}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {!config?.advancedProjectCostCenter ? (
+          <>
+            <Field htmlFor="report-project" label="Project">
+              <Select
+                id="report-project"
+                onChange={(event) => handleProjectChange(event.target.value)}
+                value={values.projectId}
+              >
+                <option value="">All projects</option>
+                {reference.projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {projectLabel(project)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-        <Field htmlFor="report-cost-center" label="Cost center">
-          <Select
-            id="report-cost-center"
-            onChange={(event) => update({ costCenterId: event.target.value })}
-            value={values.costCenterId}
-          >
-            <option value="">All cost centers</option>
-            {costCenters.map((center) => (
-              <option key={center.id} value={center.id}>
-                {costCenterLabel(center)}
-              </option>
-            ))}
-          </Select>
-        </Field>
+            <Field htmlFor="report-cost-center" label="Cost center">
+              <Select
+                id="report-cost-center"
+                onChange={(event) =>
+                  update({ costCenterId: event.target.value })
+                }
+                value={values.costCenterId}
+              >
+                <option value="">All cost centers</option>
+                {costCenters.map((center) => (
+                  <option key={center.id} value={center.id}>
+                    {costCenterLabel(center)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </>
+        ) : null}
       </div>
+
+      {config?.advancedProjectCostCenter ? (
+        <div className="flex flex-col gap-3">
+          <button
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition"
+            onClick={() => setShowAdvanced((v) => !v)}
+            type="button"
+          >
+            <svg
+              className={`size-4 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Advanced filters
+            {(values.projectId || values.costCenterId) && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                active
+              </span>
+            )}
+          </button>
+
+          {showAdvanced ? (
+            <div className="grid gap-5 rounded-md border border-border bg-secondary/30 p-4 sm:grid-cols-2">
+              <Field htmlFor="report-project" label="Project">
+                <Select
+                  id="report-project"
+                  onChange={(event) =>
+                    handleProjectChange(event.target.value)
+                  }
+                  value={values.projectId}
+                >
+                  <option value="">All projects</option>
+                  {reference.projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {projectLabel(project)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field htmlFor="report-cost-center" label="Cost center">
+                <Select
+                  id="report-cost-center"
+                  onChange={(event) =>
+                    update({ costCenterId: event.target.value })
+                  }
+                  value={values.costCenterId}
+                >
+                  <option value="">All cost centers</option>
+                  {costCenters.map((center) => (
+                    <option key={center.id} value={center.id}>
+                      {costCenterLabel(center)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">
+                Advanced line-level filters. These filter report lines by
+                stored project/cost center metadata on the selected
+                cash/bank/MFS ledger line. Use only when voucher lines carry
+                project or cost center metadata.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {error ? <Notice tone="error">{error}</Notice> : null}
 
