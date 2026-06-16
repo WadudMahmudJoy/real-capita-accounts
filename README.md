@@ -8,54 +8,12 @@ This repository is intentionally not a continuation of the previous Real Capita 
 
 - Phase 2A accounting foundation is complete and accepted.
 - Phase 2B voucher requirement documentation/specification lock is complete.
-- Phase 2C voucher implementation is complete and accepted after full integration review:
-  - Chunk 2C-1: voucher schema foundation (enums, Voucher, VoucherLine, VoucherNumberSequence).
-  - Chunk 2C-2: backend draft voucher API (list/detail/create/update/soft-delete, ACCOUNTANT guard, system voucher number).
-  - Chunk 2C-3: backend posting validation service (POST /vouchers/:id/post, full posting rules, immutability, VOUCHER_POSTED audit event).
-  - Chunk 2C-4: frontend voucher draft/create UI (voucher list with filters, draft create/edit form, debit/credit line editor, totals and balance indicator, posted read-only view).
-  - Chunk 2C-5: posting UI and print foundation (post action with confirmation panel, posted read-only view with postedBy/postingDate, browser print layout with Real Capita Group header, amount-in-words, and signature areas).
-  - Chunk 2C-6: final integration and acceptance review (API+browser smoke tests, docs update, scope verification).
-- Implemented voucher features now include: full voucher lifecycle from draft create through posting, with print layout for posted vouchers.
-- Phase 2D accounting reports are complete and accepted after full integration review:
-  - Chunk 2D-1: requirement lock review.
-  - Chunk 2D-2: backend General Ledger, Cash Book, and Bank Book report APIs.
-  - Chunk 2D-3: backend Trial Balance report API.
-  - Chunk 2D-4: backend Income Statement and Balance Sheet report APIs.
-  - Chunk 2D-5: frontend operational report pages (Ledger, Cash Book, Bank Book, Trial Balance).
-  - Chunk 2D-6: frontend financial statement pages (Income Statement, Balance Sheet) and browser print foundation for all six report pages.
-  - Chunk 2D-7: final integration and acceptance review (all backend+frontend+print smoke tests, docs update, scope verification).
-- Implemented report features: all six backend report endpoints, all six frontend report pages, and browser print foundation for all six report pages. Reports derive from posted VoucherLine records only; no primary report tables.
-- Phase 2E MFS / bKash transaction support requirement lock is complete and accepted at commit `fdffcfb`.
-- Phase 2E Chunk 2E-2 backend schema/model foundation is implemented:
-  - `CashBankAccountType` now includes `MFS` beside `CASH` and `BANK`.
-  - `MfsProvider` supports `BKASH`, `NAGAD`, `ROCKET`, `UPAY`, and `OTHER`.
-  - `CashBankAccount` has nullable MFS metadata fields for provider, custom provider name, wallet number, and account holder name.
-  - Existing CASH and BANK runtime behavior is preserved.
-- Phase 2E Chunk 2E-3 backend validation/API changes are implemented:
-  - The backend Cash & Bank account API can create, list, update, and deactivate MFS accounts.
-  - MFS accounts require provider and wallet metadata; CASH/BANK accounts continue without MFS metadata.
-  - MFS voucher posting support was not added; posting rejects MFS cash-bank accounts until a later Phase 2E chunk.
-- Phase 2E Chunk 2E-4 frontend MFS account setup UI is implemented:
-  - The existing Cash & Bank setup page is now the Cash, Bank & MFS setup page; the account type dropdown offers CASH, BANK, and MFS.
-  - ACCOUNTANT can create, view, edit, and deactivate MFS accounts with provider, wallet number / account ID, and an optional account holder name; a provider name field appears only when provider is Other.
-  - CASH and BANK forms are unchanged and do not show MFS metadata fields.
-  - The account list shows MFS provider and wallet identifier; existing CASH/BANK rows display as before.
-- No MFS Book frontend page, dashboard/report/export expansion, MFS provider integration, or MFS seed data exists yet.
-- Phase 2E Chunk 2E-5 MFS Book report API is accepted:
-  - `GET /reports/mfs-book` endpoint exists and derives from posted voucher lines filtered to MFS accounts only.
-  - Cash Book remains CASH-only; Bank Book remains BANK-only.
-- Phase 2E Chunk 2E-6 MFS Book frontend and print foundation is accepted:
-  - `/app/reports/mfs-book` renders the MFS Book report page with filters, transaction lines (provider info for MFS), and browser print.
-  - MFS Book navigation link added under Reports.
-- Phase 2E MFS account setup and MFS Book foundation are now accepted.
-- MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
-- Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted and Issues A, B, C, and D are implemented:
-  - Issue A (implemented): Balance Sheet includes current period profit/loss as a report-only equity line for management reporting. Unadjusted ledger-only view preserved.
-  - Issue B (implemented): Report/table layout widening and accounting textbook-style table readability. The app layout uses full viewport width; report tables hide less-critical columns (Project, Cost Center, Cash/Bank, Opposite Accounts) to eliminate horizontal scroll at 1280px+; long text columns use truncation with tooltip; fiscal year and period dropdowns use compact date labels with full title tooltip; filter grid uses wider 4-column layout.
-  - Issue C (implemented): Voucher line dynamic field visibility. On each voucher line, the Project, Cost Center, and Cash/Bank/MFS account fields now respond to the selected ledger account. Required fields are clearly marked; non-required fields are hidden unless the line already holds a stored value (so a draft or posted voucher never hides historical data); the Cash/Bank/MFS field is labelled by account type (Cash account / Bank account / MFS wallet / Cash/Bank/MFS account) and scoped to accounts linked to the selected ledger, auto-selecting a sole matching account and warning inline when none exists; changing the ledger clears stale Project/Cost Center/Cash-Bank values, and changing the project clears a cost center that no longer belongs to it. A small reusable `deriveVoucherLineFieldRequirements` helper documents the selection-aware UX pattern for future report-filter and setup-form reuse. Backend posting validation remains the authority; posted vouchers stay read-only; no accounting logic, schema, migration, or report table changed.
-  - Issue D (implemented): Report filter UX clarity. Cash Book, Bank Book, and MFS Book Project/Cost Center filters are moved into a collapsible "Advanced filters" section with clear helper text explaining they are line-level filters on the cash/bank/MFS ledger line itself (backend `buildLineFilter` applies `projectId`/`costCenterId` directly to the same voucher line). Primary filters remain prominent in the main 4-column grid. Ledger Statement, Trial Balance, Income Statement, and Balance Sheet filter panels remain unchanged (Project/Cost Center are appropriate for cross-account reports).
-  - Issues E-F: Issue E (dropdown/table text clipping) is mostly addressed through compact labels and tooltips; remaining edge cases are deferred. Issue F (demo data cleanliness) remains planning-only/deferred.
-- Still not implemented: MFS voucher posting support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
+- Phase 2C voucher implementation is complete and accepted.
+- Phase 2D accounting reports are complete and accepted.
+- Phase 2E MFS / bKash transaction support is accepted (MFS account setup + MFS Book foundation).
+- Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented (Balance Sheet current P/L, report/table readability, voucher line dynamic field visibility, report filter UX clarity). Issue E mostly addressed. Issue F deferred.
+- Phase 2G Project/Cost-Center Financial Reporting requirement lock is complete and accepted. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View). All reports derive from posted VoucherLine records only. No schema change is expected. No new roles. No editable report tables. Implementation awaits explicit user confirmation.
+- Still not implemented: Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary, Project Cash/Bank Movement View, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant.
 
 ## Stack
 
@@ -194,4 +152,4 @@ Use `pnpm agent:start` for a quick local orientation report.
 
 ## Strict Current Boundary
 
-The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock and implementation (accepted), the Phase 2E MFS / bKash requirement lock accepted at `fdffcfb`, the Phase 2E Chunk 2E-2 backend schema/model foundation accepted at `c820d7b`, the Phase 2E Chunk 2E-3 backend validation/API changes accepted at `97e69ab`, the Phase 2E Chunk 2E-4 frontend MFS account setup UI accepted at `be2392a`, the Phase 2E Chunk 2E-5 MFS Book report API accepted, and the Phase 2E Chunk 2E-6 MFS Book frontend and print foundation accepted. Phase 2E MFS account setup and MFS Book foundation are now accepted. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted and Issue A (Balance Sheet current P/L) is implemented: the Balance Sheet now includes a report-only Current Period Net Profit/Loss line under Equity. Remaining issues B-F are locked. `GET /reports/mfs-book` exists and `/app/reports/mfs-book` renders the MFS Book report page with filters and browser print. MFS voucher posting support is deferred to a later explicitly approved chunk/phase. The backend Cash & Bank API can manage MFS accounts and the frontend Cash, Bank & MFS page can set them up, but voucher posting rejects MFS cash-bank accounts until a later Phase 2E chunk. Do not start Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+The current completed work includes the Phase 2A accounting foundation, Phase 2C voucher implementation (accepted), the Phase 2D accounting reports requirement lock and implementation (accepted), the Phase 2E MFS / bKash requirement lock accepted at `fdffcfb`, the Phase 2E Chunk 2E-2 backend schema/model foundation accepted at `c820d7b`, the Phase 2E Chunk 2E-3 backend validation/API changes accepted at `97e69ab`, the Phase 2E Chunk 2E-4 frontend MFS account setup UI accepted at `be2392a`, the Phase 2E Chunk 2E-5 MFS Book report API accepted, and the Phase 2E Chunk 2E-6 MFS Book frontend and print foundation accepted. Phase 2E MFS account setup and MFS Book foundation are now accepted. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted and Issues A-D are implemented. Phase 2F is complete and accepted at `17fede6` (tag `phase-2f-complete`). Phase 2G Project/Cost-Center Financial Reporting requirement lock is accepted. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View). Do not start Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary, or Project Cash/Bank Movement View implementation, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.

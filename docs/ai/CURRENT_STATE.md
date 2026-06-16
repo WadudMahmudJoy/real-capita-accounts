@@ -12,22 +12,26 @@ Phase 2A accounting foundation is complete and accepted.
 
 Phase 2B voucher requirement/specification lock is complete.
 
-Phase 2C voucher implementation planning is complete.
+Phase 2C voucher engine is complete and accepted.
 
-Phase 2C Chunk 2C-1 voucher schema foundation is complete.
+Phase 2D accounting reports are complete and accepted.
 
-Phase 2C Chunk 2C-2 backend draft voucher API is complete.
+Phase 2E MFS / bKash transaction support is complete and accepted (MFS account setup + MFS Book foundation).
 
-Phase 2C Chunk 2C-3 backend posting validation service is complete.
+Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred.
 
-Phase 2C Chunk 2C-4 frontend voucher draft/create UI is complete.
+## Phase 2G Documentation Lock - this session
 
-Phase 2C Chunk 2C-5 posting UI and print foundation is complete.
+Phase 2G Project/Cost-Center Financial Reporting requirement lock is complete and accepted. Phase 2G defines four primary reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) and one optional sub-view (Project Cash/Bank Movement View). All reports derive from posted VoucherLine records only; `projectId` is required for all four primary reports; cost center dropdowns scope to the selected project; asset-class totals labeled separately from expense-class totals. No schema change expected; no new roles; no editable report tables; no dashboard analytics; no PDF/Excel export; no MFS voucher posting support.
 
-Phase 2C Chunk 2C-6 final integration and acceptance review is complete. Phase 2C is now accepted.
+Created:
+- `docs/requirements/phase-2g-project-cost-center-reporting-requirement-lock.md`: defines four primary reports (A: Project Ledger, B: Project Cost Report, C: Cost Center Summary, D: Project Financial Summary) and one optional sub-view (E: Project Cash/Bank Movement View), with required filters, output columns, rules, API endpoints, accounting source rule, technical constraints, UX constraints, security rule, open questions with recommended answers, and explicit out-of-scope list.
+- `docs/acceptance/phase-2g-acceptance-criteria.md`: acceptance for documentation lock, future Project Ledger implementation, future Project Cost Report implementation, future Cost Center Summary implementation, future Project Financial Summary implementation, optional Project Cash/Bank Movement View, regression criteria, and explicit non-acceptance conditions.
+- `docs/plans/phase-2g-project-cost-center-reporting-plan.md`: five implementation chunks (2G-1 through 2G-5), each with objective, scope, files to read, files likely to change, in-scope, out-of-scope, acceptance checks, verification commands, recommended model, and stop condition.
 
-Phase 2D accounting reports requirement/specification lock is complete.
-Phase 2D Chunk 2D-1 requirement lock review is complete.
+Updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no MFS runtime logic, no roles, no seed data, and no tooling were added.
 Phase 2D Chunk 2D-2 backend ledger/cash-book/bank-book report API is complete.
 Phase 2D Chunk 2D-2 backend report API review is complete.
 Phase 2D Chunk 2D-3 backend Trial Balance API is complete.
@@ -441,7 +445,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2F Accounting Report + Accountant UX Refinement is complete. Issues A-D are implemented (Balance Sheet current P/L, report/table readability, voucher line dynamic field visibility, report filter UX clarity). Issue E (dropdown/text clipping) is mostly addressed through compact labels and tooltips. Issue F (demo/test data cleanliness) remains deferred/planning-only. The next recommended step is Phase 2F completion tag, then a next-phase decision. Suggested next phase: Project/Cost-Center financial reporting or demo/test data cleanup, to be chosen by the user. No MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, full app-wide selection-aware refactor, demo seed cleanup, or new modules should be started without explicit user confirmation.
+Phase 2G Project/Cost-Center Financial Reporting requirement lock is complete and accepted. The next recommended step is user confirmation of Phase 2G implementation (Chunk 2G-1: Backend Project Ledger API + minimal frontend Project Ledger page). Do not start Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary, or Project Cash/Bank Movement View implementation, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 Reference docs before continuing:
 
