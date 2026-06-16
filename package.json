@@ -23,7 +23,8 @@
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
     "prisma:seed": "pnpm seed",
-    "demo:audit": "tsx prisma/demo-audit.ts"
+    "demo:audit": "tsx prisma/demo-audit.ts",
+    "demo:reset": "tsx prisma/demo-reset.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
