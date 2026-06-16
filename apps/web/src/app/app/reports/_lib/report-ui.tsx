@@ -80,8 +80,32 @@ export function fiscalYearLabel(fiscalYear: FiscalYear): string {
   return `${fiscalYear.name} (${formatDate(fiscalYear.startDate)} to ${formatDate(fiscalYear.endDate)})`;
 }
 
+/** Compact fiscal-year label for dropdowns to avoid clipping. */
+export function fiscalYearLabelCompact(fiscalYear: FiscalYear): string {
+  const start = new Date(fiscalYear.startDate);
+  const end = new Date(fiscalYear.endDate);
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+
+  return `${fiscalYear.name} (${months[start.getMonth()]} ${start.getFullYear()} - ${months[end.getMonth()]} ${end.getFullYear()})`;
+}
+
 export function accountingPeriodLabel(period: AccountingPeriod): string {
   return `${period.name} (${formatDate(period.startDate)} to ${formatDate(period.endDate)})`;
+}
+
+/** Compact accounting-period label for dropdowns to avoid clipping. */
+export function accountingPeriodLabelCompact(period: AccountingPeriod): string {
+  const start = new Date(period.startDate);
+  const end = new Date(period.endDate);
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+
+  return `${period.name} (${months[start.getMonth()]} ${start.getFullYear()} - ${months[end.getMonth()]} ${end.getFullYear()})`;
 }
 
 export function ledgerAccountLabel(account: LedgerAccount): string {
@@ -383,7 +407,7 @@ export function ReportFilters({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Field htmlFor="report-fiscal-year" label="Fiscal year" required>
           <Select
             id="report-fiscal-year"
@@ -392,8 +416,8 @@ export function ReportFilters({
           >
             <option value="">Select fiscal year</option>
             {reference.fiscalYears.map((fiscalYear) => (
-              <option key={fiscalYear.id} value={fiscalYear.id}>
-                {fiscalYearLabel(fiscalYear)}
+              <option key={fiscalYear.id} value={fiscalYear.id} title={fiscalYearLabel(fiscalYear)}>
+                {fiscalYearLabelCompact(fiscalYear)}
               </option>
             ))}
           </Select>
@@ -409,8 +433,8 @@ export function ReportFilters({
           >
             <option value="">All periods in the fiscal year</option>
             {periods.map((period) => (
-              <option key={period.id} value={period.id}>
-                {accountingPeriodLabel(period)}
+              <option key={period.id} value={period.id} title={accountingPeriodLabel(period)}>
+                {accountingPeriodLabelCompact(period)}
               </option>
             ))}
           </Select>

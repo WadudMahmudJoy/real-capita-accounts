@@ -203,7 +203,7 @@ function LedgerResult({ report }: { report: LedgerReport }) {
           </div>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[1100px] border-collapse text-sm">
+            <table className="w-full min-w-[800px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <th className="px-3 py-2.5">Date</th>
@@ -214,9 +214,6 @@ function LedgerResult({ report }: { report: LedgerReport }) {
                   <th className="px-3 py-2.5 text-right">Debit</th>
                   <th className="px-3 py-2.5 text-right">Credit</th>
                   <th className="px-3 py-2.5 text-right">Running balance</th>
-                  <th className="px-3 py-2.5">Project</th>
-                  <th className="px-3 py-2.5">Cost center</th>
-                  <th className="px-3 py-2.5">Cash/bank</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,10 +231,10 @@ function LedgerResult({ report }: { report: LedgerReport }) {
                     <td className="px-3 py-3 text-muted-foreground">
                       {voucherTypeLabel(line.voucherType)}
                     </td>
-                    <td className="px-3 py-3 text-muted-foreground">
+                    <td className="max-w-[200px] truncate px-3 py-3 text-muted-foreground" title={line.narration ?? undefined}>
                       {line.narration ?? "-"}
                     </td>
-                    <td className="px-3 py-3 text-muted-foreground">
+                    <td className="max-w-[200px] truncate px-3 py-3 text-muted-foreground" title={line.lineDescription ?? undefined}>
                       {line.lineDescription ?? "-"}
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums text-foreground">
@@ -248,17 +245,6 @@ function LedgerResult({ report }: { report: LedgerReport }) {
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums text-foreground">
                       {formatBalance(line.runningBalance)}
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {line.project ? line.project.code : "-"}
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {line.costCenter ? line.costCenter.code : "-"}
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {line.cashBankAccount
-                        ? line.cashBankAccount.displayName
-                        : "-"}
                     </td>
                   </tr>
                 ))}

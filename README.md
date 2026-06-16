@@ -49,11 +49,12 @@ This repository is intentionally not a continuation of the previous Real Capita 
   - MFS Book navigation link added under Reports.
 - Phase 2E MFS account setup and MFS Book foundation are now accepted.
 - MFS voucher posting support is deferred to a later explicitly approved chunk/phase.
-- Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted and Issue A is implemented:
+- Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted and Issues A and B are implemented:
   - Issue A (implemented): Balance Sheet includes current period profit/loss as a report-only equity line for management reporting. Unadjusted ledger-only view preserved.
-  - Issues B-F (locked): report/table layout readability, voucher line dynamic field visibility, report filter UX clarity, dropdown/table text clipping, demo data cleanliness.
-- Still not implemented: MFS voucher posting support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant, report layout widening, voucher line dynamic field visibility, report filter UX clarity, dropdown/table text clipping fixes, demo data cleanliness.
-- The next recommended task is Phase 2F Chunk 2F-4 report/table layout widening, only if the user explicitly confirms.
+  - Issue B (implemented): Report/table layout widening and accounting textbook-style table readability. The app layout uses full viewport width; report tables hide less-critical columns (Project, Cost Center, Cash/Bank, Opposite Accounts) to eliminate horizontal scroll at 1280px+; long text columns use truncation with tooltip; fiscal year and period dropdowns use compact date labels with full title tooltip; filter grid uses wider 4-column layout.
+  - Issues C-F (locked): voucher line dynamic field visibility, report filter UX clarity, dropdown/table text clipping, demo data cleanliness.
+- Still not implemented: MFS voucher posting support, Project Summary API and frontend, Cost Center Summary API and frontend, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction features, approval workflow, and extra roles beyond Accountant, voucher line dynamic field visibility, report filter UX clarity, dropdown/table text clipping fixes, demo data cleanliness.
+- The next recommended chunk is either Phase 2F Chunk 2F-5 voucher line dynamic field visibility UX, or Phase 2F Chunk 2F-6 Cash/Bank/MFS Book advanced filter clarity, depending on review findings.
 
 ## Stack
 

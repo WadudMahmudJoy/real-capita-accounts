@@ -235,7 +235,7 @@ export default function AppLayout({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-5 sm:px-8">
+      <div className="mx-auto flex min-h-screen w-full flex-col px-5 py-5 sm:px-8">
         <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground">

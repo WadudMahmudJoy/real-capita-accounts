@@ -251,7 +251,7 @@ function IncomeExpenseTable({
 
   return (
     <div className="mt-4 overflow-x-auto">
-      <table className="w-full min-w-[760px] border-collapse text-sm">
+      <table className="w-full min-w-[700px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <th className="px-3 py-2.5">Code</th>
