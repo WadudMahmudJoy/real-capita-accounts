@@ -441,7 +441,7 @@ The default API port is `4000`.
 
 ## Next Recommended Task
 
-Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted and Issues A, B, and C are implemented. The next recommended chunk is Phase 2F Chunk 2F-6 report filter UX clarity and dropdown/table text clipping fixes, depending on review findings. No MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, full app-wide selection-aware refactor, demo seed cleanup, or new modules should be started without explicit user confirmation.
+Phase 2F Accounting Report + Accountant UX Refinement is complete. Issues A-D are implemented (Balance Sheet current P/L, report/table readability, voucher line dynamic field visibility, report filter UX clarity). Issue E (dropdown/text clipping) is mostly addressed through compact labels and tooltips. Issue F (demo/test data cleanliness) remains deferred/planning-only. The next recommended step is Phase 2F completion tag, then a next-phase decision. Suggested next phase: Project/Cost-Center financial reporting or demo/test data cleanup, to be chosen by the user. No MFS voucher posting support, dashboard/report/export expansion, Project Summary, Cost Center Summary, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, full app-wide selection-aware refactor, demo seed cleanup, or new modules should be started without explicit user confirmation.
 
 Reference docs before continuing:
 

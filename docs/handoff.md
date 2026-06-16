@@ -108,7 +108,7 @@ Phase 0 is complete and accepted. Phase 1A delivered the secure login, the singl
 
 ## Next Stop Point
 
-Phase 2F Chunk 2F-2 Balance Sheet current P/L inclusion is implemented. Phase 2F Chunk 2F-4 report/table layout widening is implemented. The next recommended task is Phase 2F Chunk 2F-5 voucher line dynamic field visibility, or Phase 2F Chunk 2F-6 Cash/Bank/MFS advanced filter UX clarity, only if the user explicitly confirms. Do not start MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
+Phase 2F is complete. Issues A-D implemented (Balance Sheet current P/L, report/table readability, voucher line dynamic field visibility, report filter UX clarity). Issue E (dropdown/text clipping) is mostly addressed through compact labels and tooltips. Issue F (demo data) remains deferred/planning-only. Suggested next phase: Project/Cost-Center financial reporting or demo/test data cleanup, to be chosen by the user. Do not start MFS voucher posting support, Project Summary, Cost Center Summary, PDF/Excel export, dashboard, payroll, parties, uploads, roles, or any new module without explicit user confirmation.
 
 ## Phase 2E MFS / bKash Requirement Lock - completed this session
 
