@@ -669,12 +669,6 @@ export class VoucherService {
         throw new BadRequestException(`${label}: cash/bank account is not active.`);
       }
 
-      if (line.cashBankAccount.accountType === CashBankAccountType.MFS) {
-        throw new BadRequestException(
-          `${label}: MFS voucher posting is deferred to a later Phase 2E chunk.`,
-        );
-      }
-
       if (!line.ledgerAccount.isCashBank) {
         throw new BadRequestException(
           `${label}: cash/bank account can only be used with a cash/bank ledger account.`,
@@ -699,6 +693,19 @@ export class VoucherService {
     const cashBankLines = voucher.lines.filter((line) => line.ledgerAccount.isCashBank);
     const hasDebitCashBankLine = cashBankLines.some((line) => line.side === "DEBIT");
     const hasCreditCashBankLine = cashBankLines.some((line) => line.side === "CREDIT");
+
+    if (voucher.voucherType === "JOURNAL") {
+      const mfsLines = voucher.lines.filter(
+        (line) => line.cashBankAccount?.accountType === CashBankAccountType.MFS,
+      );
+
+      if (mfsLines.length > 0) {
+        const lineNumbers = mfsLines.map((l) => l.lineNo).join(", ");
+        throw new BadRequestException(
+          `Line ${lineNumbers}: MFS accounts are not allowed on Journal voucher lines. Use Payment, Receipt, or Contra for MFS transactions.`,
+        );
+      }
+    }
 
     if (voucher.voucherType === "PAYMENT" && !hasCreditCashBankLine) {
       throw new BadRequestException(

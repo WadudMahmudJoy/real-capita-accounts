@@ -2,15 +2,33 @@
 
 ## Current Phase
 
-Phase 2I MFS Voucher Posting Continuation requirement lock is complete. PAYMENT/RECEIPT/CONTRA accept MFS cashBankAccountId; JOURNAL rejects MFS cashBankAccountId; Cash Book CASH-only; Bank Book BANK-only; MFS Book shows MFS movement; Project reports include MFS lines only when projectId present. No runtime source changes. The MFS posting block in `voucher.service.ts` line 672 remains intact. Created three docs: requirement lock, acceptance criteria, implementation plan. Updated five docs: AGENTS.md, README.md, START_HERE.md, CURRENT_STATE.md, handoff.md. Next: confirm 2I-2 (backend MFS posting), or other. Phase 2H accepted at `96fb653` (tag `phase-2h-complete`). Phase 2H-1 Demo Audit, Phase 2H-2 Demo Reset, Phase 2H-3 Demo Verify all implemented. Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset (2 posted vouchers, 5 ledger accounts, 3 cash/bank/MFS accounts, 1 project, 1 cost center). Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. Phase 2H-4 Docs Cleanup and final review is complete. Phase 2F Issue F (demo data) is resolved by Phase 2H.
+Phase 2I MFS Voucher Posting Continuation Chunk 2I-2 backend MFS posting is complete. The MFS posting block in `voucher.service.ts` has been removed. PAYMENT, RECEIPT, and CONTRA now accept MFS cashBankAccountId; JOURNAL rejects MFS cashBankAccountId with a clear error message. Cash Book remains CASH-only; Bank Book remains BANK-only; MFS Book shows MFS movement from posted vouchers. Backend validation enforces: cashBankAccount existence/active, ledger-cashBankAccount match, isCashBank requirement, JOURNAL MFS rejection, and non-cash-bank ledger rejection with cashBankAccountId. No schema/migration/frontend changes. Smoke tests confirm all 6 scenarios pass. Deterministic demo dataset restored and verified. Phase 2H accepted at `96fb653` (tag `phase-2h-complete`). Phase 2I requirement lock accepted at `b667023` (tag `phase-2i-requirements-locked`). Phase 2H-1 Demo Audit, Phase 2H-2 Demo Reset, Phase 2H-3 Demo Verify all implemented and working. Phase 2F Issue F (demo data) is resolved by Phase 2H.
 
-Accepted minor notes for Phase 2H: (1) demo-reset creates deterministic posted vouchers directly through Prisma rather than VoucherService; accepted for local deterministic seed/reset, but not production posting behavior. (2) demo-verify uses direct Prisma reads instead of report HTTP APIs; accepted because it verifies the same posted VoucherLine source data and works offline.
-
-Next recommended user decision: confirm Phase 2I Chunk 2I-2 (backend MFS posting implementation), optional Project Cash/Bank Movement View, or UI/demo polish. Do not start any new module without explicit user confirmation.
+Next recommended user decision: confirm Phase 2I Chunk 2I-3 (frontend MFS voucher UI), optional Project Cash/Bank Movement View, or UI/demo polish. Do not start any new module without explicit user confirmation.
 
 Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.
+
+## Phase 2I Chunk 2I-2 Backend MFS Voucher Posting - this session
+
+Phase 2I Chunk 2I-2 backend MFS voucher posting support is implemented. The MFS posting block in `voucher.service.ts` has been removed. PAYMENT, RECEIPT, and CONTRA now accept MFS cashBankAccountId; JOURNAL rejects MFS cashBankAccountId with a clear error. Backend validation remains the authority: cashBankAccount existence/active, ledger-cashBankAccount match, isCashBank requirement, JOURNAL MFS rejection, and non-cash-bank ledger rejection with cashBankAccountId.
+
+Changed:
+- `apps/api/src/voucher/voucher.service.ts`: removed MFS posting blocker in `validatePostingLine`; added JOURNAL MFS rejection in `validateVoucherTypeCashBankRules`.
+- `docs/handoff.md`: updated to reflect 2I-2 completion.
+
+No Prisma schema changes, migrations, frontend changes, report changes, demo dataset changes, or new roles were added.
+
+Smoke tests (6 scenarios, all passed):
+1. PAYMENT with MFS credit line: POSTED
+2. RECEIPT with MFS debit line: POSTED
+3. CONTRA with MFS + CASH lines: POSTED
+4. JOURNAL with MFS cashBankAccountId: REJECTED with clear error
+5. Mismatched ledger/cashBankAccount: REJECTED
+6. Non-cash-bank ledger with cashBankAccountId: REJECTED
+
+Report verification: MFS Book shows MFS movement; Cash Book CASH-only; Bank Book BANK-only. Deterministic demo dataset restored and verified (demo:audit 62 pass, demo:verify 47 pass). All verification commands pass: prisma:generate, typecheck, lint, build:web, build:api, docker compose config, check:all, doctor.
 
 ## Phase 2H-3 Demo Verification - this session
 
