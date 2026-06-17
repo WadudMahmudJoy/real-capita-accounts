@@ -24,7 +24,9 @@ Phase 2F Accounting Report + Accountant UX Refinement requirement lock is comple
 
 Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`). All four primary reports are implemented and verified. The optional Report E (Project Cash/Bank Movement View) remains deferred.
 
-Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset. Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. Phase 2H-4 Docs Cleanup and final review is complete. Phase 2H is ready for the completion tag. Phase 2H directly addresses and resolves Phase 2F Issue F (demo data). Next recommended user decision: Phase 2I / MFS voucher posting continuation, optional Project Cash/Bank Movement View, or UI/demo polish.
+Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset. Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. Phase 2H-4 Docs Cleanup and final review is complete. Phase 2H is accepted at `96fb653` (tag `phase-2h-complete`). Phase 2H directly addresses and resolves Phase 2F Issue F (demo data). Next recommended user decision: Phase 2I / MFS voucher posting continuation, optional Project Cash/Bank Movement View, or UI/demo polish.
+
+Phase 2I MFS Voucher Posting Continuation requirement lock is complete. Phase 2I defines requirements for enabling MFS accounts inside voucher posting flows: PAYMENT/RECEIPT/CONTRA accept MFS cashBankAccountId; JOURNAL rejects MFS cashBankAccountId; Cash Book remains CASH-only; Bank Book remains BANK-only; MFS Book shows MFS movement from posted vouchers; Project reports include MFS lines only when projectId present. No runtime source changes were made in the requirement-lock chunk. See `docs/requirements/phase-2i-mfs-voucher-posting-requirement-lock.md`, `docs/acceptance/phase-2i-acceptance-criteria.md`, and `docs/plans/phase-2i-mfs-voucher-posting-plan.md`.
 
 Phase 2F is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
@@ -43,6 +45,7 @@ The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represent
 9. `docs/requirements/phase-2f-accounting-report-ux-refinement-requirement-lock.md` and `docs/plans/phase-2f-accounting-report-ux-refinement-plan.md` before any Phase 2F implementation.
 10. `docs/requirements/phase-2g-project-cost-center-reporting-requirement-lock.md` and `docs/plans/phase-2g-project-cost-center-reporting-plan.md` before any Phase 2G implementation.
 11. `docs/requirements/phase-2h-demo-data-cleanup-requirement-lock.md` and `docs/plans/phase-2h-demo-data-cleanup-plan.md` before any Phase 2H implementation.
+12. `docs/requirements/phase-2i-mfs-voucher-posting-requirement-lock.md` and `docs/plans/phase-2i-mfs-voucher-posting-plan.md` before any Phase 2I implementation.
 
 ## Local Setup
 
@@ -83,4 +86,4 @@ Do not rely on hidden chat memory. Reconstruct state from this repo:
 4. Check `git status --short --branch`.
 5. Continue only from documented requirements.
 
-If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/handoff.md` and `docs/ai/CURRENT_STATE.md` for the latest project state. Phase 2H is complete and ready for the completion tag. Do not start any new phase or module without explicit user confirmation.
+If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/handoff.md` and `docs/ai/CURRENT_STATE.md` for the latest project state. Phase 2H is complete and accepted at `96fb653` (tag `phase-2h-complete`). Phase 2I requirement lock is complete. Do not start any new phase or module without explicit user confirmation.

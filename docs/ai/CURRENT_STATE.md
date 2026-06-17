@@ -20,7 +20,20 @@ Phase 2E MFS / bKash transaction support is complete and accepted (MFS account s
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
-## Phase 2H-4 Final Review and Docs Cleanup - this session
+## Phase 2I MFS Voucher Posting Continuation Requirement Lock - this session
+
+Phase 2I MFS Voucher Posting Continuation requirement lock is complete. Phase 2I defines requirements for enabling MFS accounts inside voucher posting flows so accountants can record bKash/Nagad/Rocket-style money movement correctly. The requirement lock covers: MFS posting scope (PAYMENT/RECEIPT/CONTRA accept MFS cashBankAccountId; JOURNAL rejects MFS), validation rules (cashBankAccountId consistency, ledger consistency, project/cost center same-line only, voucher balance/immutability, MFS-specific validation), reporting impact (MFS Book shows MFS movement, Cash Book CASH-only, Bank Book BANK-only, Trial Balance/Balance Sheet include MFS via ledger posting, Project reports include MFS lines only when projectId present), UI requirements (MFS account selection, type labels, dynamic field behavior preservation), demo dataset decision (optional MFS scenario later, not in base dataset), and security/out-of-scope (no provider API, no real wallet numbers, no payment gateway).
+
+Created:
+- `docs/requirements/phase-2i-mfs-voucher-posting-requirement-lock.md`: defines MFS posting scope, voucher type decisions (PAYMENT/RECEIPT/CONTRA accept MFS; JOURNAL rejects MFS), validation rules, reporting impact, UI requirements, demo dataset decision, security/out-of-scope, implementation chunks (2I-1 through 2I-5), open questions with recommended answers, and exclusions. Current status: requirement lock only, not implemented.
+- `docs/acceptance/phase-2i-acceptance-criteria.md`: acceptance for documentation lock, future backend MFS posting, future frontend voucher UI, report regression, security, regression, and explicit non-acceptance conditions.
+- `docs/plans/phase-2i-mfs-voucher-posting-plan.md`: five implementation chunks (2I-1 through 2I-5), each with objective, scope, files, safety checks, acceptance checks, verification commands, recommended model, and stop condition.
+
+Updated: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No Prisma schema changes, no migrations, no backend API endpoints, no frontend pages, no MFS runtime logic, no roles, no seed data, and no tooling were added. The MFS posting block in `voucher.service.ts` remains intact.
+
+## Phase 2H-4 Final Review and Docs Cleanup - previous session
 
 Phase 2H-4 final integration review and docs cleanup is complete. All three Phase 2H CLI commands (`pnpm demo:audit`, `pnpm demo:reset`, `pnpm demo:verify`) work correctly. The deterministic demo dataset produces all expected report results. Reset safety guards (no-confirmation refusal, dry-run mode, local DB guard, production refusal) all pass. demo:audit and demo:verify are confirmed read-only. demo:reset is confirmed destructive only with explicit confirmation. No schema change, migration, report table, new role, MFS voucher posting change, or runtime API/frontend logic was changed by Phase 2H. Phase 2F Issue F is resolved by Phase 2H.
 
