@@ -2,7 +2,11 @@
 
 ## Current Phase
 
-Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset (2 posted vouchers, 5 ledger accounts, 3 cash/bank/MFS accounts, 1 project, 1 cost center). Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. Phase 2H-4 Docs Cleanup remains deferred. The deterministic demo dataset specification is defined in the requirement lock. Phase 2H directly addresses Phase 2F Issue F (demo data). The next recommended task is Phase 2H Chunk 2H-4: Docs Cleanup, with explicit user confirmation. Do not start docs cleanup, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization is complete and ready for the completion tag. Phase 2H-1 Demo Data Audit (`pnpm demo:audit`) is implemented. Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented: a destructive CLI command with CONFIRM_DEMO_RESET=YES guard, local DB guard, production refusal, dry-run mode, and mandatory backup instruction. It resets the local/dev database to a clean deterministic Real Capita demo dataset (2 posted vouchers, 5 ledger accounts, 3 cash/bank/MFS accounts, 1 project, 1 cost center). Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. Phase 2H-4 Docs Cleanup and final review is complete. Phase 2F Issue F (demo data) is resolved by Phase 2H.
+
+Accepted minor notes for Phase 2H: (1) demo-reset creates deterministic posted vouchers directly through Prisma rather than VoucherService; accepted for local deterministic seed/reset, but not production posting behavior. (2) demo-verify uses direct Prisma reads instead of report HTTP APIs; accepted because it verifies the same posted VoucherLine source data and works offline.
+
+Next recommended user decision: Phase 2I / MFS voucher posting continuation, optional Project Cash/Bank Movement View, or UI/demo polish. Do not start Project Cash/Bank Movement View implementation, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
 
 Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
 
@@ -47,7 +51,7 @@ No Prisma schema changes, migrations, backend API endpoints, frontend pages, res
 
 ## Next Stop Point
 
-Phase 2H-2 Safe Demo Reset (`pnpm demo:reset`) is implemented. The next recommended task is Phase 2H Chunk 2H-3: Demo Verification (`pnpm demo:verify`) with explicit user confirmation. Do not start demo verification, Project Cash/Bank Movement View, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2H is complete and ready for the completion tag. Next recommended user decision: Phase 2I / MFS voucher posting continuation, optional Project Cash/Bank Movement View, or UI/demo polish. Do not start any new module without explicit user confirmation.
 
 ## Phase 2G Chunk 2G-5 Final Integration Verification + Docs Cleanup - completed this session
 

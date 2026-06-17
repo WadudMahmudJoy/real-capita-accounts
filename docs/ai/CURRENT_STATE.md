@@ -20,7 +20,15 @@ Phase 2E MFS / bKash transaction support is complete and accepted (MFS account s
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
-## Phase 2H-3 Demo Verification - this session
+## Phase 2H-4 Final Review and Docs Cleanup - this session
+
+Phase 2H-4 final integration review and docs cleanup is complete. All three Phase 2H CLI commands (`pnpm demo:audit`, `pnpm demo:reset`, `pnpm demo:verify`) work correctly. The deterministic demo dataset produces all expected report results. Reset safety guards (no-confirmation refusal, dry-run mode, local DB guard, production refusal) all pass. demo:audit and demo:verify are confirmed read-only. demo:reset is confirmed destructive only with explicit confirmation. No schema change, migration, report table, new role, MFS voucher posting change, or runtime API/frontend logic was changed by Phase 2H. Phase 2F Issue F is resolved by Phase 2H.
+
+Docs updated to reflect Phase 2H completion: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+Accepted minor notes for Phase 2H: (1) demo-reset creates deterministic posted vouchers directly through Prisma rather than VoucherService; accepted for local deterministic seed/reset, but not production posting behavior. (2) demo-verify uses direct Prisma reads instead of report HTTP APIs; accepted because it verifies the same posted VoucherLine source data and works offline.
+
+## Phase 2H-3 Demo Verification - completed previous session
 
 Phase 2H-3 Demo Verification (`pnpm demo:verify`) is implemented: a read-only CLI command that asserts the deterministic demo dataset exists and matches expected accounting/report totals. It uses only Prisma read operations (count, findFirst, findMany, aggregate, groupBy) and never creates, updates, or deletes data. It exits with code 0 on all-pass and non-zero on any failure.
 
