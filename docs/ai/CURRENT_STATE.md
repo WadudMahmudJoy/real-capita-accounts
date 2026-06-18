@@ -1,6 +1,35 @@
 # Current State
 
-## Phase 2J Chunk 2J-3 Frontend Report Page - this session
+## Phase 2J Chunk 2J-4 Regression + Browser/API/Demo Verification - this session
+
+Phase 2J Chunk 2J-4 Regression, Browser, API, and Demo Verification is complete.
+- Verified that the Project Fund Movement View works end-to-end.
+- Base demo result remains empty for SK-001 under Option A (strict same-line only), which is intentional and expected since cash lines do not contain project metadata.
+- Tested account type filters (CASH, BANK, MFS) and verified empty states, notices, and zero totals render correctly in the browser.
+- Verified that date aliases (dateFrom/dateTo) map correctly to API date ranges.
+- API smoke tests verified correct status codes (400 on missing projectId, 400 on invalid accountType, 401 on unauthenticated access).
+- Verified existing reports are unchanged (no regression):
+  - Cash Book still returns 50,000.00 Dr closing for 1010.
+  - Bank Book still returns 0.00 closing for 1020.
+  - MFS Book returns no posted MFS movement (0 lines).
+  - Trial Balance remains balanced.
+  - Project Cost remains 50,000.00 for SK-001.
+  - Cost Center Summary remains SK-LD once with no unassigned row.
+  - Project Financial Summary remains expense 50,000.00, asset 0.00, income 0.00.
+- All CLI verification commands passed:
+  - `pnpm prisma:generate` PASS
+  - `pnpm typecheck` PASS
+  - `pnpm lint` PASS
+  - `pnpm build:web` PASS
+  - `pnpm build:api` PASS
+  - `pnpm check:all` PASS
+  - `pnpm doctor` PASS (with port 4000 warning as expected)
+  - `pnpm demo:audit` PASS (62 pass, 0 fail)
+  - `pnpm demo:verify` PASS (47 pass, 0 fail)
+- No database mutations, no schema modifications, no migrations were created.
+- Next chunk: 2J-5 final acceptance/docs cleanup.
+
+## Phase 2J Chunk 2J-3 Frontend Report Page - previous session
 
 Phase 2J Chunk 2J-3 Frontend Report Page is implemented.
 - Created the frontend report page at `/app/reports/project-fund-movement`.

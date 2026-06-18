@@ -6,15 +6,24 @@
 - Phase 2J Project Fund Movement View requirement lock is complete.
 - Phase 2J Chunk 2J-2 Backend Report API is implemented.
 - Phase 2J Chunk 2J-3 Frontend Report Page is implemented.
-  - Page URL: `/app/reports/project-fund-movement`.
-  - Warnings and empty states conform to Option A requirements (strict same-line only tracking, no Cross-inference).
-  - Supported filters: fiscalYearId, projectId, accountType (CASH, BANK, MFS, ALL), dateFrom, dateTo, costCenterId, voucherType (sanitized).
-  - Print/Preview support integrated via `ReportPrintFrame`.
-  - No database schema, migration, or backend logic modifications.
-- Next recommended action: begin Phase 2J Chunk 2J-4 regression and demo verification.
+- Phase 2J Chunk 2J-4 Regression + Browser/API/Demo Verification is complete.
+  - E2E Project Fund Movement View verified.
+  - Option A empty states and summaries confirmed.
+  - Cash Book, Bank Book, MFS Book, Trial Balance, and Project Cost reports verified with 0 regression.
+  - All CLI verification checks passed (`check:all` PASS, `demo:audit` 62 PASS, `demo:verify` 47 PASS).
+  - No database mutations, no schema or migration changes.
+- Next recommended action: Phase 2J Chunk 2J-5 final acceptance and tag.
 - Do not start new modules without explicit user confirmation.
 
-## Phase 2J Chunk 2J-3 Frontend Report Page - this session
+## Phase 2J Chunk 2J-4 Regression + Browser/API/Demo Verification - this session
+
+Phase 2J Chunk 2J-4 regression and verification is complete. The system is verified end-to-end.
+- Tested and confirmed the `project-fund-movement` API under multiple filter combinations (CASH, BANK, MFS, ALL) and verified that unauthenticated or invalid parameters fail as expected.
+- Verified that the UI displays Option A empty states and summary cards correctly.
+- Confirmed zero regression across existing books (Cash Book 50,000 Dr closing, Bank Book 0 closing, MFS Book empty, Trial Balance balanced, Project reports correct).
+- All workspace CLI commands successfully executed.
+
+## Phase 2J Chunk 2J-3 Frontend Report Page - previous session
 
 Phase 2J Chunk 2J-3 Frontend Report Page is implemented. The page allows Accountants to view project-wise fund movement across Cash, Bank, and MFS accounts using strict same-line tracking (Option A).
 
