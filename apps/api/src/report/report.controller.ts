@@ -66,4 +66,9 @@ export class ReportController {
   getProjectFinancialSummary(@Query() query: ReportQueryDto) {
     return this.reportService.getProjectFinancialSummary(query);
   }
+
+  @Get("project-fund-movement")
+  getProjectFundMovement(@Query() query: ReportQueryDto) {
+    return this.reportService.getProjectFundMovement(query);
+  }
 }

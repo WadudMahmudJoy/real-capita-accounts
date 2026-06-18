@@ -92,4 +92,17 @@ export class ReportQueryDto {
   @IsOptional()
   @Transform(({ value }) => value === "true" || value === true)
   expenseOnly?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["CASH", "BANK", "MFS", "ALL"])
+  accountType?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  dateFrom?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  dateTo?: string;
 }

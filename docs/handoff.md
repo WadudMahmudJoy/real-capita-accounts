@@ -4,9 +4,12 @@
 
 - Phase 2I is complete and accepted at 10d6869 (tag phase-2i-complete).
 - Phase 2J Project Fund Movement View requirement lock is complete.
-- Chosen rule: Option A, strict same-line only.
-- No implementation has started.
-- Next recommended action: review/tag Phase 2J requirement lock as phase-2j-requirements-locked, then begin Chunk 2J-2 Backend Report API only after explicit user approval.
+- Phase 2J Chunk 2J-2 Backend Report API is implemented.
+  - Endpoint name: `GET /reports/project-fund-movement`.
+  - Option A same-line rule preserved: cash/bank/MFS movement is project-related only if the cash/bank/MFS voucher line itself has the `projectId`.
+  - No schema, database migration, voucher posting, or demo dataset changes.
+  - Empty base demo result for project `SK-001` is intentional due to no `projectId` on cash/bank/MFS lines.
+- Next recommended action: begin Phase 2J Chunk 2J-3 frontend report page implementation only after explicit user approval.
 - Do not start new modules without explicit user confirmation.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.

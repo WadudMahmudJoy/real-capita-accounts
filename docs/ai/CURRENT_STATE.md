@@ -1,6 +1,31 @@
 # Current State
 
-## Phase 2J Chunk 2J-1 Requirement Lock - this session
+## Phase 2J Chunk 2J-2 Backend Report API - this session
+
+Phase 2J Chunk 2J-2 Backend Report API is implemented.
+- Added `GET /reports/project-fund-movement` endpoint guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.
+- `projectId` is required; returns 400 Bad Request if missing.
+- Option A accounting rule (strict same-line only) is implemented: cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No voucher-level inference, sibling line lookup, or expense line lookup is performed.
+- Cumulative running balance and opening/closing balances are computed chronologically starting from opening balance (cumulative debits minus credits before `startDate`).
+- Returns structured JSON payload containing metadata/filters, totals (periodDebit, periodCredit, netMovement), opening/closing balance, and lines array.
+- Flat and nested fields are both provided for ledgerAccount, project, costCenter, and cashBankAccount.
+- Mapped `dateFrom` to `startDate` and `dateTo` to `endDate` query parameters for fallback support.
+- Base deterministic demo dataset produces empty results for `SK-001` under Option A because the cash line does not have `projectId`, which is intentional and expected.
+- No schema changes, database migrations, frontend changes, voucher posting changes, or demo dataset modifications were made.
+
+Verification:
+- `pnpm check:all` PASS
+- `pnpm doctor` PASS
+- `pnpm demo:audit` PASS (62 pass, 0 fail)
+- `pnpm demo:verify` PASS (47 pass, 0 fail)
+- API smoke tests verified correct response structure, date mapping, missing projectId validation (400), invalid accountType validation (400), and empty lines array for base dataset.
+
+Files changed:
+- `apps/api/src/report/dto/report-query.dto.ts`
+- `apps/api/src/report/report.controller.ts`
+- `apps/api/src/report/report.service.ts`
+
+## Phase 2J Chunk 2J-1 Requirement Lock - previous session
 
 Phase 2J Project Fund Movement View requirement lock is complete. 
 The chosen rule is Option A (strict same-line only): A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. This prevents hidden project inference and avoids schema changes.

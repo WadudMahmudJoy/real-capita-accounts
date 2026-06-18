@@ -405,6 +405,269 @@ export class ReportService {
     );
   }
 
+  async getProjectFundMovement(query: ReportQueryDto) {
+    if (!query.projectId) {
+      throw new BadRequestException(
+        "projectId is required for the project fund movement report.",
+      );
+    }
+
+    // Map dateFrom/dateTo to startDate/endDate if they are provided
+    if (query.dateFrom) {
+      query.startDate = query.dateFrom;
+    }
+    if (query.dateTo) {
+      query.endDate = query.dateTo;
+    }
+
+    const context = await this.resolveReportContext(query);
+    const project = context.project!;
+
+    // Build the query where inputs
+    const projectFilter: Prisma.VoucherLineWhereInput["projectId"] = query.projectId;
+
+    const lineFilterOptions: Prisma.VoucherLineWhereInput = {
+      projectId: projectFilter,
+      ledgerAccount: {
+        isCashBank: true,
+      },
+      ...(query.costCenterId ? { costCenterId: query.costCenterId } : {}),
+      ...(query.cashBankAccountId ? { cashBankAccountId: query.cashBankAccountId } : {}),
+      ...(query.accountType && query.accountType !== "ALL"
+        ? {
+            cashBankAccount: {
+              accountType: query.accountType as CashBankAccountType,
+            },
+          }
+        : {}),
+    };
+
+    const periodVoucherFilter: Prisma.VoucherWhereInput = {
+      ...this.buildVoucherDateFilter(context, "period"),
+      ...(query.voucherType && query.voucherType !== "ALL"
+        ? { voucherType: query.voucherType as VoucherType }
+        : {}),
+    };
+
+    const openingVoucherFilter: Prisma.VoucherWhereInput = {
+      ...this.buildVoucherDateFilter(context, "opening"),
+      ...(query.voucherType && query.voucherType !== "ALL"
+        ? { voucherType: query.voucherType as VoucherType }
+        : {}),
+    };
+
+    // Calculate opening balances
+    const [openingDebitSum, openingCreditSum] = await Promise.all([
+      this.prisma.voucherLine.aggregate({
+        _sum: { amount: true },
+        where: {
+          ...lineFilterOptions,
+          side: VoucherLineSide.DEBIT,
+          voucher: openingVoucherFilter,
+        },
+      }),
+      this.prisma.voucherLine.aggregate({
+        _sum: { amount: true },
+        where: {
+          ...lineFilterOptions,
+          side: VoucherLineSide.CREDIT,
+          voucher: openingVoucherFilter,
+        },
+      }),
+    ]);
+
+    const openingDebit = openingDebitSum._sum.amount ? new Prisma.Decimal(openingDebitSum._sum.amount.toString()) : ZERO;
+    const openingCredit = openingCreditSum._sum.amount ? new Prisma.Decimal(openingCreditSum._sum.amount.toString()) : ZERO;
+    const openingSigned = openingDebit.minus(openingCredit);
+
+    // Calculate period totals
+    const [periodDebitSum, periodCreditSum] = await Promise.all([
+      this.prisma.voucherLine.aggregate({
+        _sum: { amount: true },
+        where: {
+          ...lineFilterOptions,
+          side: VoucherLineSide.DEBIT,
+          voucher: periodVoucherFilter,
+        },
+      }),
+      this.prisma.voucherLine.aggregate({
+        _sum: { amount: true },
+        where: {
+          ...lineFilterOptions,
+          side: VoucherLineSide.CREDIT,
+          voucher: periodVoucherFilter,
+        },
+      }),
+    ]);
+
+    const periodDebit = periodDebitSum._sum.amount ? new Prisma.Decimal(periodDebitSum._sum.amount.toString()) : ZERO;
+    const periodCredit = periodCreditSum._sum.amount ? new Prisma.Decimal(periodCreditSum._sum.amount.toString()) : ZERO;
+    const closingSigned = openingSigned.plus(periodDebit).minus(periodCredit);
+
+    // Find period report lines
+    const lines = await this.prisma.voucherLine.findMany({
+      include: {
+        cashBankAccount: {
+          include: {
+            ledgerAccount: {
+              include: {
+                accountGroup: {
+                  include: { accountClass: true },
+                },
+              },
+            },
+          },
+        },
+        costCenter: {
+          include: {
+            project: { select: { code: true, id: true, name: true } },
+          },
+        },
+        ledgerAccount: {
+          include: {
+            accountGroup: {
+              include: { accountClass: true },
+            },
+          },
+        },
+        project: true,
+        voucher: {
+          include: {
+            lines: {
+              include: {
+                ledgerAccount: {
+                  include: {
+                    accountGroup: {
+                      include: { accountClass: true },
+                    },
+                  },
+                },
+              },
+              orderBy: [{ lineNo: "asc" }, { id: "asc" }],
+            },
+          },
+        },
+      },
+      where: {
+        ...lineFilterOptions,
+        voucher: periodVoucherFilter,
+      },
+    });
+
+    // Sort lines chronologically
+    lines.sort((left, right) => {
+      const byDate =
+        left.voucher.voucherDate.getTime() - right.voucher.voucherDate.getTime();
+
+      if (byDate !== 0) {
+        return byDate;
+      }
+
+      const byVoucherNo = left.voucher.systemVoucherNo.localeCompare(
+        right.voucher.systemVoucherNo,
+      );
+
+      if (byVoucherNo !== 0) {
+        return byVoucherNo;
+      }
+
+      if (left.lineNo !== right.lineNo) {
+        return left.lineNo - right.lineNo;
+      }
+
+      return left.id.localeCompare(right.id);
+    });
+
+    let runningBalance = openingSigned;
+
+    return {
+      reportType: "PROJECT_FUND_MOVEMENT" satisfies string,
+      fiscalYear: this.summarizeFiscalYear(context.fiscalYear),
+      accountingPeriod: context.accountingPeriod
+        ? this.summarizeAccountingPeriod(context.accountingPeriod)
+        : null,
+      dateRange: this.summarizeDateRange(context.dateRange),
+      project: this.summarizeProject(project),
+      costCenter: context.costCenter
+        ? this.summarizeCostCenter(context.costCenter)
+        : null,
+      filters: {
+        ...this.summarizeFilters(context),
+        accountType: query.accountType ?? "ALL",
+        voucherType: query.voucherType ?? "ALL",
+        cashBankAccountId: query.cashBankAccountId ?? null,
+      },
+      totals: {
+        periodDebit: this.toMoney(periodDebit),
+        periodCredit: this.toMoney(periodCredit),
+        netMovement: this.toMoney(periodDebit.minus(periodCredit)),
+      },
+      openingBalance: this.formatBalance(
+        openingSigned,
+        NormalBalanceSide.DEBIT,
+      ),
+      periodDebit: this.toMoney(periodDebit),
+      periodCredit: this.toMoney(periodCredit),
+      closingBalance: this.formatBalance(
+        closingSigned,
+        NormalBalanceSide.DEBIT,
+      ),
+      lineCount: lines.length,
+      lines: lines.map((line) => {
+        runningBalance = runningBalance.plus(
+          line.side === VoucherLineSide.DEBIT
+            ? line.amount
+            : line.amount.negated(),
+        );
+
+        return {
+          id: line.id,
+          date: this.formatDate(line.voucher.voucherDate),
+          voucherId: line.voucher.id,
+          voucherNo: line.voucher.systemVoucherNo,
+          voucherNumber: line.voucher.systemVoucherNo,
+          voucherType: line.voucher.voucherType,
+          ledgerAccount: this.summarizeLedgerAccount(line.ledgerAccount),
+          ledgerCode: line.ledgerAccount.code,
+          ledgerName: line.ledgerAccount.name,
+          cashBankAccount: line.cashBankAccount
+            ? this.summarizeCashBankAccount(line.cashBankAccount)
+            : null,
+          cashBankAccountName: line.cashBankAccount?.displayName ?? null,
+          cashBankAccountType: line.cashBankAccount?.accountType ?? null,
+          project: this.summarizeProject(line.project!),
+          projectCode: line.project?.code ?? null,
+          projectName: line.project?.name ?? null,
+          costCenter: line.costCenter
+            ? this.summarizeLineCostCenter(line.costCenter)
+            : null,
+          costCenterCode: line.costCenter?.code ?? null,
+          costCenterName: line.costCenter?.name ?? null,
+          narration: line.voucher.narration,
+          description: line.description,
+          particular: line.description || line.voucher.narration || "",
+          debit: this.toMoney(
+            line.side === VoucherLineSide.DEBIT ? line.amount : ZERO,
+          ),
+          credit: this.toMoney(
+            line.side === VoucherLineSide.CREDIT ? line.amount : ZERO,
+          ),
+          inflow: this.toMoney(
+            line.side === VoucherLineSide.DEBIT ? line.amount : ZERO,
+          ),
+          outflow: this.toMoney(
+            line.side === VoucherLineSide.CREDIT ? line.amount : ZERO,
+          ),
+          runningBalance: this.formatBalance(
+            runningBalance,
+            NormalBalanceSide.DEBIT,
+          ),
+          runningBalanceAmount: this.toMoney(runningBalance),
+        };
+      }),
+    };
+  }
+
   async getProjectCost(query: ReportQueryDto) {
     if (!query.projectId) {
       throw new BadRequestException(
