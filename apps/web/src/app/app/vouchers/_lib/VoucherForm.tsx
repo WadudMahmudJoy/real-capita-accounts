@@ -42,9 +42,11 @@ import {
   cashBankLabel,
   costCenterLabel,
   deriveVoucherLineFieldRequirements,
+  filterCashBankAccountsByVoucherType,
   fiscalYearLabel,
   formatDate,
   formatMoney,
+  isMfsCashBankAccount,
   ledgerAccountLabel,
   projectLabel,
   roundMoney,
@@ -491,9 +493,32 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
               <Select
                 disabled={isReadOnly}
                 id="voucher-type"
-                onChange={(event) =>
-                  setVoucherType(event.target.value as VoucherType)
-                }
+                onChange={(event) => {
+                  const nextType = event.target.value as VoucherType;
+                  setVoucherType(nextType);
+
+                  // When switching to JOURNAL, clear any MFS cashBankAccountId
+                  // from all lines. JOURNAL does not allow MFS accounts.
+                  if (nextType === "JOURNAL") {
+                    setLines((previous) =>
+                      previous.map((line) => {
+                        if (!line.cashBankAccountId) {
+                          return line;
+                        }
+
+                        const account = reference.cashBankAccounts.find(
+                          (a) => a.id === line.cashBankAccountId,
+                        );
+
+                        if (account && isMfsCashBankAccount(account)) {
+                          return { ...line, cashBankAccountId: "" };
+                        }
+
+                        return line;
+                      }),
+                    );
+                  }
+                }}
                 value={voucherType}
               >
                 {VOUCHER_TYPE_OPTIONS.map((option) => (
@@ -614,8 +639,11 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                 : undefined;
               // Cash/bank/MFS accounts the backend will accept for this line:
               // active accounts linked to the selected ledger account.
-              const matchingCashBankAccounts = activeCashBankAccounts.filter(
-                (account) => account.ledgerAccountId === line.ledgerAccountId,
+              const matchingCashBankAccounts = filterCashBankAccountsByVoucherType(
+                activeCashBankAccounts.filter(
+                  (account) => account.ledgerAccountId === line.ledgerAccountId,
+                ),
+                voucherType,
               );
               const requirements = deriveVoucherLineFieldRequirements(
                 ledger,
@@ -731,9 +759,12 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                           // new ledger does not require/allow so stale Project,
                           // Cost Center, or Cash/Bank/MFS data is never carried
                           // forward hidden from view.
-                          const nextMatching = activeCashBankAccounts.filter(
-                            (account) =>
-                              account.ledgerAccountId === nextLedgerId,
+                          const nextMatching = filterCashBankAccountsByVoucherType(
+                            activeCashBankAccounts.filter(
+                              (account) =>
+                                account.ledgerAccountId === nextLedgerId,
+                            ),
+                            voucherType,
                           );
                           const autoCashBankId =
                             nextLedger?.isCashBank && nextMatching.length === 1
@@ -852,7 +883,9 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                         hint={
                           requirements.isCashBank &&
                           matchingCashBankAccounts.length === 0
-                            ? "No active cash/bank/MFS account is linked to this ledger. Add one in Cash, Bank & MFS setup before posting."
+                            ? voucherType === "JOURNAL"
+                              ? "MFS accounts are not allowed on Journal vouchers. Use Payment, Receipt, or Contra for MFS transactions."
+                              : "No active cash/bank/MFS account is linked to this ledger. Add one in Cash, Bank & MFS setup before posting."
                             : undefined
                         }
                         htmlFor={`${line.key}-cash-bank`}

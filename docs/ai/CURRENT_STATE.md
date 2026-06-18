@@ -20,6 +20,17 @@ Phase 2E MFS / bKash transaction support is complete and accepted (MFS account s
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
+## Phase 2I Chunk 2I-3 Frontend MFS Voucher UI - this session
+
+Phase 2I Chunk 2I-3 frontend MFS voucher UI support is implemented. The voucher form supports MFS account selection for PAYMENT, RECEIPT, and CONTRA; JOURNAL prevents MFS selection with a clear guidance message. MFS accounts display provider/wallet metadata in the dropdown. Phase 2F dynamic field behavior is preserved.
+
+Changed:
+- `apps/web/src/app/app/vouchers/_lib/voucher-ui.tsx`: enhanced `cashBankLabel` to show MFS provider/wallet metadata; added `providerDisplayName`, `isMfsCashBankAccount`, and `filterCashBankAccountsByVoucherType` helpers.
+- `apps/web/src/app/app/vouchers/_lib/VoucherForm.tsx`: MFS accounts filtered out of cashBankAccount selector for JOURNAL voucher type; switching to JOURNAL clears MFS cashBankAccountId from all lines; JOURNAL-specific hint when no eligible accounts remain.
+- `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`: updated to reflect 2I-3 completion.
+
+No Prisma schema changes, migrations, backend changes, report changes, demo dataset changes, or new roles were added.
+
 ## Phase 2I Chunk 2I-2 Backend MFS Voucher Posting - this session
 
 Phase 2I Chunk 2I-2 backend MFS voucher posting support is implemented. The MFS posting block in `voucher.service.ts` has been removed and replaced with voucher-type-aware MFS acceptance. PAYMENT, RECEIPT, and CONTRA now accept MFS cashBankAccountId; JOURNAL rejects MFS cashBankAccountId with a clear error message. Backend validation remains the authority: cashBankAccount existence/active, ledger-cashBankAccount match, isCashBank requirement, JOURNAL MFS rejection, and non-cash-bank ledger rejection with cashBankAccountId.

@@ -2,13 +2,24 @@
 
 ## Current Phase
 
-Phase 2I MFS Voucher Posting Continuation Chunk 2I-2 backend MFS posting is complete. The MFS posting block in `voucher.service.ts` has been removed. PAYMENT, RECEIPT, and CONTRA now accept MFS cashBankAccountId; JOURNAL rejects MFS cashBankAccountId with a clear error message. Cash Book remains CASH-only; Bank Book remains BANK-only; MFS Book shows MFS movement from posted vouchers. Backend validation enforces: cashBankAccount existence/active, ledger-cashBankAccount match, isCashBank requirement, JOURNAL MFS rejection, and non-cash-bank ledger rejection with cashBankAccountId. No schema/migration/frontend changes. Smoke tests confirm all 6 scenarios pass. Deterministic demo dataset restored and verified. Phase 2H accepted at `96fb653` (tag `phase-2h-complete`). Phase 2I requirement lock accepted at `b667023` (tag `phase-2i-requirements-locked`). Phase 2H-1 Demo Audit, Phase 2H-2 Demo Reset, Phase 2H-3 Demo Verify all implemented and working. Phase 2F Issue F (demo data) is resolved by Phase 2H.
+Phase 2I MFS Voucher Posting Continuation Chunk 2I-3 frontend MFS voucher UI is complete. The voucher form now supports MFS account selection for PAYMENT, RECEIPT, and CONTRA; JOURNAL prevents MFS selection with a clear guidance message. MFS accounts display provider/wallet metadata in the dropdown. Phase 2F dynamic field behavior is preserved. No schema/migration/backend changes. Phase 2H accepted at `96fb653` (tag `phase-2h-complete`). Phase 2I requirement lock accepted at `b667023` (tag `phase-2i-requirements-locked`). Phase 2I backend MFS posting accepted at `bebb609` (tag `phase-2i-backend-mfs-posting`).
 
-Next recommended user decision: confirm Phase 2I Chunk 2I-3 (frontend MFS voucher UI), optional Project Cash/Bank Movement View, or UI/demo polish. Do not start any new module without explicit user confirmation.
+Next recommended user decision: confirm Phase 2I Chunk 2I-4 (report regression verification and demo dataset extension decision), optional Project Cash/Bank Movement View, or UI/demo polish. Do not start any new module without explicit user confirmation.
 
 Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.
+
+## Phase 2I Chunk 2I-3 Frontend MFS Voucher UI - this session
+
+Phase 2I Chunk 2I-3 frontend MFS voucher UI support is implemented. The voucher form supports MFS account selection for PAYMENT, RECEIPT, and CONTRA; JOURNAL prevents MFS selection with a clear guidance message. MFS accounts display provider/wallet metadata in the dropdown ("bKash Merchant - Real Capita -- MFS / bKash / 017XXXXXXX"). Phase 2F dynamic field behavior is preserved.
+
+Changed:
+- `apps/web/src/app/app/vouchers/_lib/voucher-ui.tsx`: enhanced `cashBankLabel` to show MFS provider/wallet metadata; added `providerDisplayName`, `isMfsCashBankAccount`, and `filterCashBankAccountsByVoucherType` helpers.
+- `apps/web/src/app/app/vouchers/_lib/VoucherForm.tsx`: MFS accounts filtered out of cashBankAccount selector for JOURNAL voucher type; switching to JOURNAL clears MFS cashBankAccountId from all lines; JOURNAL-specific hint when no eligible accounts remain.
+- `docs/handoff.md`, `docs/ai/CURRENT_STATE.md`: updated to reflect 2I-3 completion.
+
+No Prisma schema changes, migrations, backend changes, report changes, demo dataset changes, or new roles were added.
 
 ## Phase 2I Chunk 2I-2 Backend MFS Voucher Posting - this session
 

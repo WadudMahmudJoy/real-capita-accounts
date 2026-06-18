@@ -99,8 +99,53 @@ function cashBankTypeWord(accountType: CashBankAccount["accountType"]): string {
   return "MFS";
 }
 
+function providerDisplayName(provider: string | null | undefined): string {
+  if (!provider) {
+    return "";
+  }
+
+  const map: Record<string, string> = {
+    BKASH: "bKash",
+    NAGAD: "Nagad",
+    ROCKET: "Rocket",
+    UPAY: "Upay",
+  };
+
+  return map[provider] ?? provider;
+}
+
 export function cashBankLabel(account: CashBankAccount): string {
-  return `${account.displayName} (${cashBankTypeWord(account.accountType)})`;
+  const type = cashBankTypeWord(account.accountType);
+
+  if (account.accountType === "MFS") {
+    const provider =
+      account.provider === "OTHER"
+        ? account.providerOtherName ?? "MFS"
+        : providerDisplayName(account.provider);
+    const wallet = account.walletNumber ? ` / ${account.walletNumber}` : "";
+    return `${account.displayName} \u2014 ${type} / ${provider}${wallet}`;
+  }
+
+  return `${account.displayName} (${type})`;
+}
+
+export function isMfsCashBankAccount(account: CashBankAccount): boolean {
+  return account.accountType === "MFS";
+}
+
+/**
+ * Filter cash/bank/MFS accounts based on voucher type. JOURNAL does not allow
+ * MFS accounts; all other voucher types allow CASH, BANK, and MFS.
+ */
+export function filterCashBankAccountsByVoucherType(
+  accounts: CashBankAccount[],
+  voucherType: VoucherType,
+): CashBankAccount[] {
+  if (voucherType === "JOURNAL") {
+    return accounts.filter((account) => account.accountType !== "MFS");
+  }
+
+  return accounts;
 }
 
 // ---------------------------------------------------------------------------
