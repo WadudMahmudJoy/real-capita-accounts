@@ -6,7 +6,7 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2J: Project Fund Movement View requirement lock is complete. The report will derive project fund movement using strict same-line only logic (Option A). No schema or demo dataset changes are required yet. Implemented chunk: 2J-1 requirement lock. Next chunks: 2J-2 backend API, 2J-3 frontend UI, 2J-4 regression, 2J-5 final review.
+Phase 2J: Project Fund Movement View is complete and accepted. The report derives project fund movement using strict same-line only logic (Option A) across Cash, Bank, and MFS. Implemented chunks: 2J-1 requirement lock, 2J-2 backend API, 2J-3 frontend UI, 2J-4 regression, 2J-5 final review. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
 
 Phase 2I: MFS Voucher Posting Continuation is complete and accepted at `10d6869` (tag `phase-2i-complete`). Phase 2I enables MFS accounts inside voucher posting flows so accountants can record bKash/Nagad/Rocket-style money movement correctly. Implemented chunks: 2I-1 requirement lock, 2I-2 backend MFS posting (PAYMENT/RECEIPT/CONTRA accept MFS cashBankAccountId; JOURNAL rejects MFS), 2I-3 frontend MFS voucher UI (MFS account selection, JOURNAL MFS prevention, MFS metadata display), 2I-4 report regression/demo decision (MFS Book shows MFS movement, Cash Book CASH-only, Bank Book BANK-only, Project reports no double-count; base deterministic demo dataset unchanged, optional MFS scenario deferred), 2I-5 final review. Cash Book remains CASH-only and Bank Book remains BANK-only. No schema/migration changes (MFS schema exists from Phase 2E).
 
@@ -189,4 +189,4 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 ## Next Phase Guidance
 
-Phase 2J Project Fund Movement View requirement lock is complete. Next recommended user decision: begin Phase 2J implementation (Chunk 2J-2 Backend Report API). Do not start Project Fund Movement View implementation, PDF/Excel export, dashboard analytics, payroll, parties, uploads, roles, MFS provider API, JOURNAL MFS acceptance, or any new module without explicit user confirmation.
+Phase 2J Project Fund Movement View is complete and accepted. Next recommended user decision: begin Phase 2K requirement lock (or next module), optional voucher UI enhancement to allow project tagging on cash/bank/MFS lines, optional MFS demo dataset extension, or UI/report polish. Do not start next module/phase without explicit user confirmation.
