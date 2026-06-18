@@ -221,6 +221,7 @@ type FilterValues = {
   accountClassCode: string;
   accountGroupId: string;
   expenseOnly: boolean;
+  accountType: string;
 };
 
 const emptyFilters: FilterValues = {
@@ -237,6 +238,7 @@ const emptyFilters: FilterValues = {
   projectId: "",
   startDate: "",
   voucherType: "",
+  accountType: "ALL",
 };
 
 export type ReportFiltersConfig = {
@@ -280,6 +282,8 @@ export type ReportFiltersConfig = {
    * than to the opposite voucher line or the whole voucher.
    */
   advancedProjectCostCenter?: boolean;
+  /** Show the account type dropdown (CASH | BANK | MFS | ALL). */
+  showAccountType?: boolean;
 };
 
 export type ReportFiltersProps = {
@@ -440,6 +444,9 @@ export function ReportFilters({
         : {}),
       ...(config?.showExpenseOnly && values.expenseOnly
         ? { expenseOnly: values.expenseOnly }
+        : {}),
+      ...(config?.showAccountType && values.accountType
+        ? { accountType: values.accountType }
         : {}),
     });
   }
@@ -615,6 +622,23 @@ export function ReportFilters({
               <option value="CONTRA">Contra</option>
               <option value="PAYMENT">Payment</option>
               <option value="RECEIPT">Receipt</option>
+            </Select>
+          </Field>
+        ) : null}
+
+        {config?.showAccountType ? (
+          <Field htmlFor="report-account-type" label="Account type">
+            <Select
+              id="report-account-type"
+              onChange={(event) =>
+                update({ accountType: event.target.value })
+              }
+              value={values.accountType}
+            >
+              <option value="ALL">All fund accounts</option>
+              <option value="CASH">Cash</option>
+              <option value="BANK">Bank</option>
+              <option value="MFS">MFS</option>
             </Select>
           </Field>
         ) : null}

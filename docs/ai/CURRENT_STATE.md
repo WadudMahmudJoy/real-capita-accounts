@@ -1,6 +1,28 @@
 # Current State
 
-## Phase 2J Chunk 2J-2 Backend Report API - this session
+## Phase 2J Chunk 2J-3 Frontend Report Page - this session
+
+Phase 2J Chunk 2J-3 Frontend Report Page is implemented.
+- Created the frontend report page at `/app/reports/project-fund-movement`.
+- Added the "Project Fund Movement" navigation link with `Coins` icon under reports in `apps/web/src/app/app/layout.tsx`.
+- Extended the shared `ReportFilters` component in `apps/web/src/app/app/reports/_lib/report-ui.tsx` to support the `showAccountType` config rendering the CASH | BANK | MFS | ALL selector.
+- Exposed required type definitions (`ProjectFundMovementReportLine`, `ProjectFundMovementReport`), query parameters, and helper fetcher `getProjectFundMovementReport` in `apps/web/src/lib/api.ts`.
+- Structured the report page to require `projectId` and `fiscalYearId`, prompting user selection if absent.
+- Handled empty state with Option A strict same-line tracking message: *"No project fund movement lines found. This report follows strict same-line tracking: only Cash, Bank, or MFS voucher lines that are explicitly tagged with the selected project are shown. If a voucher tags only the expense line but not the cash/bank/MFS line, it will not appear here."*
+- Rendered accountant warning notice: *"Important: This view does not infer project movement from sibling voucher lines."*
+- Displayed summary cards with Opening Balance, Period Inflow (debit), Period Outflow (credit), Closing Balance, and Line Count.
+- Rendered transaction table with date, voucher no, voucher type, fund ledger, cash/bank/mfs account, project, cost center, particular / narration, inflow, outflow, and running balance.
+- Integrated print preview using `ReportPrintFrame` and `PrintReportButton`.
+- Omitted `voucherType` parameter when selecting all voucher types to satisfy backend DTO validation.
+- No schema changes, database migrations, or backend logic alterations were made.
+
+Verification:
+- `pnpm check:all` PASS
+- `pnpm doctor` PASS (all ok, warnings only on port 4000 already running)
+- `pnpm demo:audit` PASS (62 pass, 0 fail)
+- `pnpm demo:verify` PASS (47 pass, 0 fail)
+
+## Phase 2J Chunk 2J-2 Backend Report API - previous session
 
 Phase 2J Chunk 2J-2 Backend Report API is implemented.
 - Added `GET /reports/project-fund-movement` endpoint guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.

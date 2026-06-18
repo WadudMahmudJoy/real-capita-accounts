@@ -1287,6 +1287,63 @@ export type ProjectFinancialSummaryReport = {
   topLedgerBreakdown: ProjectFinancialSummaryTopLedgerRow[];
 };
 
+export type ProjectFundMovementReportLine = {
+  id: string;
+  date: string;
+  voucherId: string;
+  voucherNo: string;
+  voucherNumber: string;
+  voucherType: VoucherType;
+  ledgerAccount: ReportLedgerAccountSummary;
+  ledgerCode: string;
+  ledgerName: string;
+  cashBankAccount: ReportCashBankAccountSummary | null;
+  cashBankAccountName: string | null;
+  cashBankAccountType: CashBankAccountType | null;
+  project: ReportProjectSummary;
+  projectCode: string | null;
+  projectName: string | null;
+  costCenter: ReportCostCenterSummary | null;
+  costCenterCode: string | null;
+  costCenterName: string | null;
+  narration: string | null;
+  description: string | null;
+  particular: string;
+  debit: string;
+  credit: string;
+  inflow: string;
+  outflow: string;
+  runningBalance: ReportBalanceSummary;
+  runningBalanceAmount: string;
+};
+
+export type ProjectFundMovementReport = {
+  reportType: "PROJECT_FUND_MOVEMENT";
+  fiscalYear: ReportFiscalYearSummary;
+  accountingPeriod: ReportAccountingPeriodSummary | null;
+  dateRange: ReportDateRange;
+  project: ReportProjectSummary;
+  costCenter: ReportCostCenterSummary | null;
+  filters: {
+    costCenter: ReportCostCenterSummary | null;
+    project: ReportProjectSummary | null;
+    accountType: string;
+    voucherType: string;
+    cashBankAccountId: string | null;
+  };
+  totals: {
+    periodDebit: string;
+    periodCredit: string;
+    netMovement: string;
+  };
+  openingBalance: ReportBalanceSummary;
+  periodDebit: string;
+  periodCredit: string;
+  closingBalance: ReportBalanceSummary;
+  lineCount: number;
+  lines: ProjectFundMovementReportLine[];
+};
+
 /**
  * Shared report query parameters. `fiscalYearId` is always required; the rest
  * are optional and report-specific. Empty values are omitted from the request.
@@ -1305,6 +1362,9 @@ export type ReportQueryParams = {
   accountGroupId?: string;
   accountClassCode?: string;
   expenseOnly?: boolean;
+  accountType?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -1351,6 +1411,15 @@ function buildReportQuery(params: ReportQueryParams): string {
   }
   if (params.expenseOnly) {
     search.set("expenseOnly", "true");
+  }
+  if (params.accountType) {
+    search.set("accountType", params.accountType);
+  }
+  if (params.dateFrom) {
+    search.set("dateFrom", params.dateFrom);
+  }
+  if (params.dateTo) {
+    search.set("dateTo", params.dateTo);
   }
 
   return `?${search.toString()}`;
@@ -1461,6 +1530,16 @@ export function getProjectFinancialSummaryReport(
 ): Promise<ProjectFinancialSummaryReport> {
   return apiFetch<ProjectFinancialSummaryReport>(
     `/reports/project-financial-summary${buildReportQuery(params)}`,
+    { signal },
+  );
+}
+
+export function getProjectFundMovementReport(
+  params: ReportQueryParams,
+  signal?: AbortSignal,
+): Promise<ProjectFundMovementReport> {
+  return apiFetch<ProjectFundMovementReport>(
+    `/reports/project-fund-movement${buildReportQuery(params)}`,
     { signal },
   );
 }

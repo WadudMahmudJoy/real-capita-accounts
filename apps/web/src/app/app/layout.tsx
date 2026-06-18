@@ -158,6 +158,13 @@ const reportLinks: NavLink[] = [
       pathname.startsWith("/app/reports/project-financial-summary"),
   },
   {
+    href: "/app/reports/project-fund-movement",
+    icon: Coins,
+    label: "Project Fund Movement",
+    match: (pathname) =>
+      pathname.startsWith("/app/reports/project-fund-movement"),
+  },
+  {
     href: "/app/reports/trial-balance",
     icon: Scale,
     label: "Trial Balance",

@@ -5,12 +5,35 @@
 - Phase 2I is complete and accepted at 10d6869 (tag phase-2i-complete).
 - Phase 2J Project Fund Movement View requirement lock is complete.
 - Phase 2J Chunk 2J-2 Backend Report API is implemented.
-  - Endpoint name: `GET /reports/project-fund-movement`.
-  - Option A same-line rule preserved: cash/bank/MFS movement is project-related only if the cash/bank/MFS voucher line itself has the `projectId`.
-  - No schema, database migration, voucher posting, or demo dataset changes.
-  - Empty base demo result for project `SK-001` is intentional due to no `projectId` on cash/bank/MFS lines.
-- Next recommended action: begin Phase 2J Chunk 2J-3 frontend report page implementation only after explicit user approval.
+- Phase 2J Chunk 2J-3 Frontend Report Page is implemented.
+  - Page URL: `/app/reports/project-fund-movement`.
+  - Warnings and empty states conform to Option A requirements (strict same-line only tracking, no Cross-inference).
+  - Supported filters: fiscalYearId, projectId, accountType (CASH, BANK, MFS, ALL), dateFrom, dateTo, costCenterId, voucherType (sanitized).
+  - Print/Preview support integrated via `ReportPrintFrame`.
+  - No database schema, migration, or backend logic modifications.
+- Next recommended action: begin Phase 2J Chunk 2J-4 regression and demo verification.
 - Do not start new modules without explicit user confirmation.
+
+## Phase 2J Chunk 2J-3 Frontend Report Page - this session
+
+Phase 2J Chunk 2J-3 Frontend Report Page is implemented. The page allows Accountants to view project-wise fund movement across Cash, Bank, and MFS accounts using strict same-line tracking (Option A).
+
+Changed:
+- `apps/web/src/app/app/reports/project-fund-movement/page.tsx`: Created page with filters, warning notices, summary cards, transaction table, empty states, and print layout.
+- `apps/web/src/app/app/layout.tsx`: Added "Project Fund Movement" to report sidebar navigation with `Coins` icon.
+- `apps/web/src/app/app/reports/_lib/report-ui.tsx`: Extended `ReportFilters` with `showAccountType` configuration.
+- `apps/web/src/lib/api.ts`: Added types, helper query mapping, and `getProjectFundMovementReport` helper.
+
+Verification:
+- `pnpm prisma:generate` PASS
+- `pnpm typecheck` PASS
+- `pnpm lint` PASS
+- `pnpm build:web` PASS
+- `pnpm build:api` PASS
+- `pnpm check:all` PASS
+- `pnpm doctor` PASS
+- `pnpm demo:audit` PASS (62 pass, 0 fail)
+- `pnpm demo:verify` PASS (47 pass, 0 fail)
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.
 
