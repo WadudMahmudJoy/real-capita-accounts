@@ -20,7 +20,36 @@ Phase 2E MFS / bKash transaction support is complete and accepted (MFS account s
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
-## Phase 2I Chunk 2I-3 Frontend MFS Voucher UI - this session
+## Phase 2I Chunk 2I-4 Report Regression and Demo Extension Decision - this session
+
+Phase 2I Chunk 2I-4 report regression verification and demo extension decision is complete. Local MFS smoke tests confirmed end-to-end MFS posting and report correctness:
+
+Smoke results:
+- A. PAYMENT with MFS credit line (Dr 5010 3,000, Cr 1030 bKash 3,000): POSTED. MFS Book shows credit 3,000. Cash Book unaffected.
+- B. RECEIPT with MFS debit line (Dr 1030 bKash 10,000, Cr 3010 10,000): POSTED. MFS Book shows debit 10,000. Cash/Bank Books unaffected.
+- C. CONTRA with MFS+BANK (Dr 1030 bKash 5,000, Cr 1020 City Bank 5,000): POSTED. MFS Book shows debit 5,000. Bank Book shows credit 5,000. Cash Book unaffected.
+- D. JOURNAL with MFS cashBankAccountId: REJECTED with "MFS accounts are not allowed on Journal voucher lines. Use Payment, Receipt, or Contra for MFS transactions."
+- E. Mismatched ledger/cashBankAccount pair: REJECTED with "cash/bank account can only be used with a cash/bank ledger account."
+- E2. Non-cash-bank ledger with cashBankAccountId: REJECTED with same error.
+
+Report regression with MFS vouchers posted:
+- MFS Book: 3 lines, periodDebit 15,000, periodCredit 3,000, closing 12,000 Dr. Shows only MFS movements.
+- Cash Book: 2 lines (no MFS lines), closing 50,000 Dr. CASH-only. Unchanged from base.
+- Bank Book: 1 line (CONTRA bank credit 5,000), no MFS lines. BANK-only.
+- Trial Balance: balanced (diff 0.00, closing 115,000).
+- Balance Sheet: adjusted balanced.
+- Project Ledger: 2 lines (base 50,000 expense + MFS 3,000 expense).
+- Project Cost: expense 53,000 (no double-count).
+- Cost Center Summary: SK-LD once, 53,000, no Unassigned row.
+- Project Financial Summary: expense 53,000, asset 0, income 0.
+
+Deterministic demo dataset restored after smoke. demo:verify 47 PASS, 0 FAIL. No MFS posted voucher lines remain.
+
+Demo extension decision: base deterministic dataset remains unchanged for Phase 2I. Optional MFS demo scenario deferred unless user approves. The base dataset is stable for regression and MFS posting is verified with temporary smoke.
+
+No runtime source changes, schema changes, migrations, report logic changes, or demo dataset changes were made. Only docs updated (CURRENT_STATE.md, handoff.md).
+
+## Phase 2I Chunk 2I-3 Frontend MFS Voucher UI - previous session
 
 Phase 2I Chunk 2I-3 frontend MFS voucher UI support is implemented. The voucher form supports MFS account selection for PAYMENT, RECEIPT, and CONTRA; JOURNAL prevents MFS selection with a clear guidance message. MFS accounts display provider/wallet metadata in the dropdown. Phase 2F dynamic field behavior is preserved.
 
