@@ -2,11 +2,12 @@
 
 ## Current Phase
 
-Phase 2I MFS Voucher Posting Continuation is complete and ready for completion tag. All five chunks are implemented and verified: 2I-1 requirement lock, 2I-2 backend MFS posting, 2I-3 frontend MFS voucher UI, 2I-4 report regression/demo decision, 2I-5 final review and docs cleanup. PAYMENT/RECEIPT/CONTRA accept MFS cashBankAccountId; JOURNAL rejects MFS. Frontend prevents MFS on JOURNAL. MFS Book shows MFS movement; Cash Book CASH-only; Bank Book BANK-only. Base deterministic demo dataset unchanged; optional MFS scenario deferred unless user approves. Out of scope: provider API/payment gateway/customer wallet integration.
-
-Next recommended action: tag Phase 2I as `phase-2i-complete`, then decide next phase: optional MFS demo dataset extension, Project Cash/Bank Movement View, UI/demo polish, or next accounting module. Do not start any new module without explicit user confirmation.
-
-Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
+- Phase 2I is complete and accepted at 10d6869 (tag phase-2i-complete).
+- Phase 2J Project Fund Movement View requirement lock is complete.
+- Chosen rule: Option A, strict same-line only.
+- No implementation has started.
+- Next recommended action: review/tag Phase 2J requirement lock as phase-2j-requirements-locked, then begin Chunk 2J-2 Backend Report API only after explicit user approval.
+- Do not start new modules without explicit user confirmation.
 
 Phase 0 is complete and accepted. Phase 1A delivered the secure login, the single confirmed Accountant role, the protected app shell, agent documentation, ADRs, and verification scripts. Phase 1B locked the accounting foundation requirements and acceptance criteria. Phase 2A implemented the accounting foundation in schema, backend, and frontend. Phase 2B locked voucher requirements before any voucher implementation. Phase 2C implemented the voucher engine and is complete and accepted. Phase 2D implemented the accounting report APIs, frontend report pages, and browser print foundation and is now accepted. Phase 2E Chunk 2E-1 locked the MFS / bKash transaction support requirements and is accepted. Phase 2E Chunk 2E-2 implemented the backend schema/model foundation. Phase 2E Chunk 2E-3 implemented backend account API validation for MFS setup. Phase 2E Chunk 2E-4 implemented the frontend MFS account setup UI and is accepted. Phase 2E Chunk 2E-5 implemented the backend MFS Book report API and is accepted. Phase 2E Chunk 2E-6 implemented the MFS Book frontend and print foundation. Phase 2F Accounting Report + Accountant UX Refinement requirement lock is accepted.
 

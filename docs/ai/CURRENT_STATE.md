@@ -1,8 +1,24 @@
 # Current State
 
-## Phase 2I Chunk 2I-5 Final Review and Docs Cleanup - this session
+## Phase 2J Chunk 2J-1 Requirement Lock - this session
 
-Phase 2I Chunk 2I-5 final review and docs cleanup is complete. Phase 2I is complete and ready for completion tag.
+Phase 2J Project Fund Movement View requirement lock is complete. 
+The chosen rule is Option A (strict same-line only): A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. This prevents hidden project inference and avoids schema changes.
+The report will read strictly from POSTED VoucherLine records where `isCashBank = true` and `projectId` is present.
+The deterministic demo dataset remains unchanged for now.
+
+Files created:
+- `docs/requirements/phase-2j-project-fund-movement-requirement-lock.md`
+- `docs/acceptance/phase-2j-acceptance-criteria.md`
+- `docs/plans/phase-2j-project-fund-movement-plan.md`
+
+Docs updated to reflect Phase 2J: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No schema changes, migrations, backend API endpoints, frontend pages, or runtime logic were added.
+
+## Phase 2I Chunk 2I-5 Final Review and Docs Cleanup - previous session
+
+Phase 2I Chunk 2I-5 final review and docs cleanup is complete. Phase 2I is complete and accepted at `10d6869` (tag `phase-2i-complete`).
 
 Scope check confirmed: PAYMENT supports MFS; RECEIPT supports MFS; CONTRA supports CASH/BANK/MFS; JOURNAL rejects MFS; frontend prevents MFS on JOURNAL; MFS Book shows MFS movements; Cash Book remains CASH-only; Bank Book remains BANK-only; Project reports do not double-count MFS; base deterministic demo dataset unchanged; no schema/migration; no provider API/payment gateway/customer wallet work.
 
@@ -19,7 +35,7 @@ Implemented chunks:
 - 2I-4: report regression and demo extension decision (MFS Book MFS-only, Cash/Bank Books unchanged, base dataset unchanged, optional MFS scenario deferred)
 - 2I-5: final review and docs cleanup
 
-Phase 2I is complete and ready for completion tag.
+Phase 2I is complete and accepted.
 
 ## Completed Phase
 
