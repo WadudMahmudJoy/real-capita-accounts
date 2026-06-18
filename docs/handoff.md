@@ -2,26 +2,23 @@
 
 ## Current Phase
 
-- Phase 2I is complete and accepted at 10d6869 (tag phase-2i-complete).
-- Phase 2J Project Fund Movement View requirement lock is complete.
-- Phase 2J Chunk 2J-2 Backend Report API is implemented.
-- Phase 2J Chunk 2J-3 Frontend Report Page is implemented.
-- Phase 2J Chunk 2J-4 Regression + Browser/API/Demo Verification is complete.
-  - E2E Project Fund Movement View verified.
-  - Option A empty states and summaries confirmed.
-  - Cash Book, Bank Book, MFS Book, Trial Balance, and Project Cost reports verified with 0 regression.
-  - All CLI verification checks passed (`check:all` PASS, `demo:audit` 62 PASS, `demo:verify` 47 PASS).
-  - No database mutations, no schema or migration changes.
-- Next recommended action: Phase 2J Chunk 2J-5 final acceptance and tag.
-- Do not start new modules without explicit user confirmation.
+- Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
+  - Implemented all chunks: 2J-1 requirement lock, 2J-2 backend API, 2J-3 frontend page, 2J-4 regression, and 2J-5 final acceptance/docs cleanup.
+  - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
+  - Base demo SK-001 returns empty Project Fund Movement rows intentionally because cash/bank/MFS lines have no projectId.
+  - Existing reports remain unchanged.
+  - No schema/migration/demo dataset changes.
+- Current next action: User may tag `phase-2j-complete` at the final docs commit after proof.
+- After tagging, next possible user decisions: optional voucher UI project tagging, optional MFS demo dataset extension, UI/report polish, or next accounting module requirement lock.
+- Do not start next module/phase without explicit user approval.
 
-## Phase 2J Chunk 2J-4 Regression + Browser/API/Demo Verification - this session
+## Phase 2J Chunk 2J-5 Final Acceptance and Docs Cleanup - this session
 
-Phase 2J Chunk 2J-4 regression and verification is complete. The system is verified end-to-end.
-- Tested and confirmed the `project-fund-movement` API under multiple filter combinations (CASH, BANK, MFS, ALL) and verified that unauthenticated or invalid parameters fail as expected.
-- Verified that the UI displays Option A empty states and summary cards correctly.
-- Confirmed zero regression across existing books (Cash Book 50,000 Dr closing, Bank Book 0 closing, MFS Book empty, Trial Balance balanced, Project reports correct).
-- All workspace CLI commands successfully executed.
+Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
+- Finalized and cleaned up documentation across AGENTS.md, README.md, docs/ai/START_HERE.md, docs/ai/CURRENT_STATE.md, docs/handoff.md, and docs/plans/phase-2j-project-fund-movement-plan.md.
+- Verified all workspace CLI checks pass successfully, including demo:audit (62 PASS) and demo:verify (47 PASS).
+- Confirmed that no runtime code, Prisma schema, migration, or demo data logic is modified.
+- Ready for user-created tag `phase-2j-complete`. Do not tag automatically.
 
 ## Phase 2J Chunk 2J-3 Frontend Report Page - previous session
 

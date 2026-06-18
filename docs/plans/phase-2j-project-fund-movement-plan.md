@@ -38,5 +38,6 @@ This plan breaks down the Phase 2J requirements into executable chunks.
 - **Goal**: Finalize Phase 2J.
 - **Actions**:
   - Final docs cleanup.
-  - Omit tag creation (deferred to user).
+  - Confirm readiness for user-created tag `phase-2j-complete`.
+  - Do not tag automatically.
 - **Status**: **COMPLETE**

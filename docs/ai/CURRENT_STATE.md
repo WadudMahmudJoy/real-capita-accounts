@@ -1,33 +1,20 @@
 # Current State
 
-## Phase 2J Chunk 2J-4 Regression + Browser/API/Demo Verification - this session
+## Phase 2J Chunk 2J-5 Final Acceptance and Docs Cleanup - this session
 
-Phase 2J Chunk 2J-4 Regression, Browser, API, and Demo Verification is complete.
-- Verified that the Project Fund Movement View works end-to-end.
-- Base demo result remains empty for SK-001 under Option A (strict same-line only), which is intentional and expected since cash lines do not contain project metadata.
-- Tested account type filters (CASH, BANK, MFS) and verified empty states, notices, and zero totals render correctly in the browser.
-- Verified that date aliases (dateFrom/dateTo) map correctly to API date ranges.
-- API smoke tests verified correct status codes (400 on missing projectId, 400 on invalid accountType, 401 on unauthenticated access).
-- Verified existing reports are unchanged (no regression):
-  - Cash Book still returns 50,000.00 Dr closing for 1010.
-  - Bank Book still returns 0.00 closing for 1020.
-  - MFS Book returns no posted MFS movement (0 lines).
-  - Trial Balance remains balanced.
-  - Project Cost remains 50,000.00 for SK-001.
-  - Cost Center Summary remains SK-LD once with no unassigned row.
-  - Project Financial Summary remains expense 50,000.00, asset 0.00, income 0.00.
-- All CLI verification commands passed:
-  - `pnpm prisma:generate` PASS
-  - `pnpm typecheck` PASS
-  - `pnpm lint` PASS
-  - `pnpm build:web` PASS
-  - `pnpm build:api` PASS
-  - `pnpm check:all` PASS
-  - `pnpm doctor` PASS (with port 4000 warning as expected)
-  - `pnpm demo:audit` PASS (62 pass, 0 fail)
-  - `pnpm demo:verify` PASS (47 pass, 0 fail)
-- No database mutations, no schema modifications, no migrations were created.
-- Next chunk: 2J-5 final acceptance/docs cleanup.
+Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
+- Implemented and verified all chunks:
+  - Chunk 2J-1 Requirement Lock: Locked Option A strict same-line only logic.
+  - Chunk 2J-2 Backend Report API: Implemented API endpoint `/reports/project-fund-movement`.
+  - Chunk 2J-3 Frontend Report Page: Built report UI at `/app/reports/project-fund-movement`.
+  - Chunk 2J-4 Regression + Browser/API/Demo Verification: Verified E2E, checked empty state, date aliases, and all existing reports. All CLI validation passed.
+  - Chunk 2J-5 Final Acceptance and Docs Cleanup: Completed final documentation updates across all guide files.
+- Project Fund Movement View uses Option A strict same-line only logic.
+- Only Cash, Bank, or MFS voucher lines explicitly tagged with the project are included. No sibling-line or voucher-level inference.
+- Base demo SK-001 returns empty Project Fund Movement rows intentionally because cash/bank/MFS lines have no projectId.
+- Existing reports remain unchanged.
+- No schema/migration/demo dataset changes.
+- Ready for user-created tag `phase-2j-complete`. Do not tag automatically.
 
 ## Phase 2J Chunk 2J-3 Frontend Report Page - previous session
 
@@ -132,6 +119,14 @@ Phase 2D accounting reports are complete and accepted.
 Phase 2E MFS / bKash transaction support is complete and accepted (MFS account setup + MFS Book foundation).
 
 Phase 2F Accounting Report + Accountant UX Refinement is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
+
+Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`).
+
+Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization is complete and accepted at `96fb653` (tag `phase-2h-complete`).
+
+Phase 2I MFS Voucher Posting Continuation is complete and accepted at `10d6869` (tag `phase-2i-complete`).
+
+Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
 
 ## Phase 2I Chunk 2I-4 Report Regression and Demo Extension Decision - this session
 
@@ -858,30 +853,38 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 
 ## Current Non-Features
 
-The repo intentionally does not include journals beyond the voucher draft/post workflow, MFS voucher posting support, the optional Project Cash/Bank Movement View (Report E), PDF/Excel export, dashboard analytics, payroll, salary sheets, parties, customers, vendors, file uploads, ERP modules, business seed data, bKash/MFS provider runtime integration beyond MFS account setup and the MFS Book report, unconfirmed office roles, or demo/test data cleanup. Phase 2F voucher line dynamic field visibility and report filter UX clarity are implemented. Phase 2G project finance reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary) are implemented.
-
-The Phase 2E MFS / bKash requirement lock is complete and accepted at `fdffcfb`. Phase 2E Chunk 2E-2 backend schema/model foundation is accepted at `c820d7b`. Phase 2E Chunk 2E-3 backend validation/API changes are accepted at `97e69ab`. Phase 2E Chunk 2E-4 frontend MFS account setup UI is accepted, and Phase 2E Chunk 2E-5/2E-6 MFS Book report API and frontend are accepted; MFS voucher posting support remains deferred. The Phase 2D accounting reports implementation is complete and accepted. Phase 2D added backend report APIs for all six reports, frontend report pages for all six reports, and a browser print foundation for all six report pages. Phase 2G added the four project finance reports (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary). PDF/Excel export and the optional Project Cash/Bank Movement View remain deferred.
-
-## Database Port
-
-Host tools must connect to PostgreSQL at `localhost:55432`.
-
-Docker maps host `55432` to container `5432`.
-
-## Local Port Caveats
-
-The default web port is `3000`. If it is occupied, run the web app on `3010` and start the API with `WEB_ORIGIN=http://localhost:3010`.
-
-The default API port is `4000`.
+The repo intentionally does not include:
+- optional voucher UI enhancement to allow project tagging on cash/bank/MFS lines
+- optional MFS demo dataset extension
+- PDF/Excel export
+- dashboard analytics
+- payroll / salary sheets
+- parties / customers / vendors
+- file uploads
+- reversal / correction features
+- approval workflow
+- MFS provider API / payment gateway / customer wallet integration
+- extra roles beyond Accountant (only Accountant is confirmed)
+- report tables in the Prisma schema (reports derive dynamically from posted VoucherLine records)
 
 ## Next Recommended Task
 
-Phase 2G is implemented end-to-end: all four primary reports (2G-1 Project Ledger, 2G-2 Project Cost Report, 2G-3 Cost Center Summary, 2G-4 Project Financial Summary) are built and verified. The Phase 2G Chunk 2G-5 final integration verification confirmed git/tag integrity, scope/safety boundaries, source-level report correctness (including the Project Cost double-counting fix, Cost Center Summary Unassigned behavior, and Project Financial Summary no-overlap/no-double-count behavior), API smoke tests, browser smoke tests, and existing-report regression. The optional Report E (Project Cash/Bank Movement View) remains deferred and not implemented. No report table, schema change, migration, or new role was added. The recommended next step after Phase 2G is either Phase 2H MFS voucher posting continuation or demo/test data cleanup, to be selected by the user. Do not start Project Cash/Bank Movement View implementation, PDF/Excel export, dashboard, payroll, parties, uploads, roles, MFS voucher posting support, or any new module without explicit user confirmation.
+Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
+The recommended next steps/possible user decisions are:
+- Tag `phase-2j-complete`.
+- Optional voucher UI enhancement to allow project tagging on cash/bank/MFS lines.
+- Optional MFS demo dataset extension.
+- UI/report polish.
+- Next accounting module requirement lock (Phase 2K or next module).
+
+Do not start next module/phase without explicit user confirmation.
 
 Reference docs before continuing:
 
-- `docs/plans/phase-2f-accounting-report-ux-refinement-plan.md`
-- `docs/requirements/phase-2f-accounting-report-ux-refinement-requirement-lock.md`
-- `docs/acceptance/phase-2f-acceptance-criteria.md`
-- `docs/plans/phase-2e-mfs-bkash-support-implementation-plan.md`
-- `docs/requirements/phase-2e-mfs-bkash-support-requirement-lock.md`
+- `docs/plans/phase-2j-project-fund-movement-plan.md`
+- `docs/requirements/phase-2j-project-fund-movement-requirement-lock.md`
+- `docs/acceptance/phase-2j-acceptance-criteria.md`
+- `docs/plans/phase-2i-mfs-voucher-posting-plan.md`
+- `docs/requirements/phase-2i-mfs-voucher-posting-requirement-lock.md`
+- `docs/plans/phase-2h-demo-data-cleanup-plan.md`
+- `docs/requirements/phase-2h-demo-data-cleanup-requirement-lock.md`
