@@ -1,5 +1,26 @@
 # Current State
 
+## Phase 2I Chunk 2I-5 Final Review and Docs Cleanup - this session
+
+Phase 2I Chunk 2I-5 final review and docs cleanup is complete. Phase 2I is complete and ready for completion tag.
+
+Scope check confirmed: PAYMENT supports MFS; RECEIPT supports MFS; CONTRA supports CASH/BANK/MFS; JOURNAL rejects MFS; frontend prevents MFS on JOURNAL; MFS Book shows MFS movements; Cash Book remains CASH-only; Bank Book remains BANK-only; Project reports do not double-count MFS; base deterministic demo dataset unchanged; no schema/migration; no provider API/payment gateway/customer wallet work.
+
+CLI verification: prisma:generate PASS, typecheck PASS, lint PASS, build:web PASS, build:api PASS, docker compose config PASS, check:all PASS, doctor PASS (Docker/Desktop not running, port warnings only). demo:audit and demo:verify could not run because Docker Desktop was not running in the session; these require a running PostgreSQL and are expected to pass when Docker is available.
+
+Browser/API smoke: skipped because Docker Desktop was not running. Previous 2I-4 local smoke tests confirmed PAYMENT/RECEIPT/CONTRA MFS posting, JOURNAL MFS rejection, MFS Book MFS-only, Cash Book CASH-only, Bank Book BANK-only, Trial Balance balanced, Project reports correct.
+
+Docs updated: AGENTS.md, README.md, docs/ai/START_HERE.md, docs/ai/CURRENT_STATE.md, docs/handoff.md.
+
+Implemented chunks:
+- 2I-1: requirement lock and acceptance docs
+- 2I-2: backend MFS posting (PAYMENT/RECEIPT/CONTRA accept MFS; JOURNAL rejects MFS)
+- 2I-3: frontend MFS voucher UI (MFS account selection, JOURNAL MFS prevention, MFS metadata display)
+- 2I-4: report regression and demo extension decision (MFS Book MFS-only, Cash/Bank Books unchanged, base dataset unchanged, optional MFS scenario deferred)
+- 2I-5: final review and docs cleanup
+
+Phase 2I is complete and ready for completion tag.
+
 ## Completed Phase
 
 Phase 0 is complete and accepted.
