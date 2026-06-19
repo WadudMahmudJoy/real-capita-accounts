@@ -1,6 +1,18 @@
 # Current State
 
-## Phase 2L Chunk 2L-1: Voucher Reversal / Rectification Workflow Requirement Lock - this session
+## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session
+
+Phase 2L Chunk 2L-2 is complete. Backend support for full posted-voucher reversal generation is implemented.
+- Added self-referencing 1:1 reversal linkage to `Voucher` model: `reversalOfVoucherId` (unique FK), `correctionReason`, `reversalOf` / `reversedBy` relations.
+- Created and applied database migration `20260619204559_add_voucher_reversal_linkage`.
+- Created `CreateReversalDto` (`apps/api/src/voucher/dto/create-reversal.dto.ts`) with `reason` field (min 10 chars).
+- Implemented `createReversal` method in `VoucherService`: validates original is POSTED and not already reversed, finds OPEN accounting period for today, generates DRAFT reversal with swapped debit/credit sides, copies all line metadata, sets narration and correctionReason, links via `reversalOfVoucherId`, records `REVERSAL_DRAFT_CREATED` audit event.
+- Updated `findOne` to include `reversalOf` and `reversedBy` relations in response (soft-deleted reversals filtered out).
+- Updated `softDelete` to clear `reversalOfVoucherId` when deleting a reversal draft, allowing re-generation.
+- Added `POST /vouchers/:id/reversal` endpoint in `VoucherController` guarded by `AuthGuard + RolesGuard + ACCOUNTANT`.
+- Verified: `pnpm check:all` PASS, `pnpm demo:audit` 62 PASS, `pnpm demo:verify` 47 PASS, `pnpm doctor` PASS.
+
+## Phase 2L Chunk 2L-1: Voucher Reversal / Rectification Workflow Requirement Lock - previous session
 
 Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
 - Created `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md`: defines reversal symmetry rules, metadata copy rules, mandatory justification, draft lifecycle, UI badge and banners on both original and reversed vouchers, and open/closed period validation constraints.

@@ -322,6 +322,10 @@ model Voucher {
   accountingPeriod   AccountingPeriod @relation(fields: [accountingPeriodId], references: [id])
   createdBy          User             @relation("VoucherCreatedBy", fields: [createdById], references: [id])
   postedBy           User?            @relation("VoucherPostedBy", fields: [postedById], references: [id], onDelete: SetNull)
+  reversalOfVoucherId String?          @unique
+  correctionReason   String?
+  reversalOf         Voucher?         @relation("VoucherReversal", fields: [reversalOfVoucherId], references: [id])
+  reversedBy         Voucher?         @relation("VoucherReversal")
   lines              VoucherLine[]
 
   @@unique([companyId, fiscalYearId, systemVoucherNo])

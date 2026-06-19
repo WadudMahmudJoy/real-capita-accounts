@@ -15,7 +15,7 @@ This plan breaks down the Phase 2L requirements into executable chunks.
   - Create `POST /vouchers/:id/reversal` endpoint in the NestJS api.
   - Validate that the target voucher is `POSTED`, not soft-deleted, and not already reversed.
   - implement transactional draft voucher generation swapping debit/credit sides and copying relevant metadata.
-- **Status**: **NOT STARTED**
+- **Status**: **COMPLETE**
 
 ## Chunk 2L-3: Frontend Reversal UX
 - **Goal**: Build the frontend UI workflows for initiating and reviewing voucher reversals.

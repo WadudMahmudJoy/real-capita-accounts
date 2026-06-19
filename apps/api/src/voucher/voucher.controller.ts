@@ -17,6 +17,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import type { AuthenticatedRequest } from "../auth/auth.types";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
+import { CreateReversalDto } from "./dto/create-reversal.dto";
 import { CreateVoucherDto } from "./dto/create-voucher.dto";
 import { ListVouchersQueryDto } from "./dto/list-vouchers-query.dto";
 import { UpdateVoucherDto } from "./dto/update-voucher.dto";
@@ -41,6 +42,15 @@ export class VoucherController {
   @Post(":id/post")
   postVoucher(@Param("id") id: string, @Req() request: AuthenticatedRequest) {
     return this.voucherService.postVoucher(id, buildContext(request));
+  }
+
+  @Post(":id/reversal")
+  createReversal(
+    @Param("id") id: string,
+    @Body() dto: CreateReversalDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.voucherService.createReversal(id, dto, buildContext(request));
   }
 
   @Post()

@@ -2,19 +2,37 @@
 
 ## Current Phase
 
-- Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
-  - Implemented chunks: 2L-1 requirement lock.
+- Phase 2L Voucher Reversal / Rectification Workflow is in progress.
+  - Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation.
   - Defines the linkage of original and reversal vouchers via self-referencing relationship fields and correctionReason. Swaps debit/credit sides and copies metadata.
+  - `POST /vouchers/:id/reversal` endpoint generates a DRAFT reversal voucher from a POSTED original. `findOne` returns `reversalOf`/`reversedBy` linkage. `softDelete` clears the link when a reversal draft is deleted.
 - Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`).
   - Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup.
   - Allows optional project/cost center selection on Cash/Bank/MFS voucher lines (optional, not required) to enable visibility in the Project Fund Movement report.
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
   - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
-- Next possible choices:
-  - Tag `phase-2l-requirements-locked`.
-  - Begin Phase 2L implementation (Chunk 2L-2 Schema / Linkage & Backend Reversal Draft Generation) only after explicit user approval.
+- Next steps:
+  - Phase 2L-3 Frontend Reversal UX (Create Reversal button, reason dialog, linkage banners).
+  - Phase 2L-4 Posting & Report Regression Verification.
+  - Phase 2L-5 Final Acceptance and Docs Cleanup.
 
-## Phase 2L Chunk 2L-1: Requirement Lock - this session
+## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session
+
+Phase 2L Chunk 2L-2 is complete.
+- Added `reversalOfVoucherId` (unique FK), `correctionReason`, `reversalOf` / `reversedBy` self-referencing relations to the `Voucher` Prisma model.
+- Created and applied migration `20260619204559_add_voucher_reversal_linkage`.
+- Created `CreateReversalDto` with `reason` field (min 10 chars, class-validator).
+- Implemented `createReversal` in `VoucherService`:
+  - Validates: original is POSTED, not soft-deleted, not already reversed (active non-deleted reversal check).
+  - Finds OPEN accounting period for today in the original's fiscal year.
+  - Generates DRAFT reversal: swaps debit/credit sides, copies all line metadata, sets narration `[Reversal of {no}] - {reason}`, links via `reversalOfVoucherId`.
+  - Records `REVERSAL_DRAFT_CREATED` audit event.
+- Updated `findOne` to include `reversalOf` and `reversedBy` relations (soft-deleted reversals filtered out).
+- Updated `softDelete` to clear `reversalOfVoucherId` when deleting a reversal draft, allowing re-generation.
+- Added `POST /vouchers/:id/reversal` endpoint in `VoucherController`.
+- Verified: `pnpm check:all` PASS, `pnpm demo:audit` 62 PASS, `pnpm demo:verify` 47 PASS, `pnpm doctor` PASS.
+
+## Phase 2L Chunk 2L-1: Requirement Lock - previous session
 
 Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
 - Created `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md`.

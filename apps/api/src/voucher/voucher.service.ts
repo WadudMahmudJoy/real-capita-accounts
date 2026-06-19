@@ -7,11 +7,13 @@ import {
   AccountingPeriodStatus,
   CashBankAccountType,
   Prisma,
+  VoucherLineSide,
   VoucherStatus,
   type VoucherType,
 } from "../generated/prisma/client";
 import { parseIsoDate } from "../common/date-rules";
 import { PrismaService } from "../prisma/prisma.service";
+import { CreateReversalDto } from "./dto/create-reversal.dto";
 import { CreateVoucherDto } from "./dto/create-voucher.dto";
 import { ListVouchersQueryDto } from "./dto/list-vouchers-query.dto";
 import { UpdateVoucherDto } from "./dto/update-voucher.dto";
@@ -92,6 +94,18 @@ export class VoucherService {
         accountingPeriod: true,
         createdBy: createdBySelect,
         postedBy: postedBySelect,
+        reversalOf: {
+          select: { id: true, systemVoucherNo: true, status: true },
+        },
+        reversedBy: {
+          select: {
+            id: true,
+            systemVoucherNo: true,
+            status: true,
+            correctionReason: true,
+            isDeleted: true,
+          },
+        },
         lines: {
           orderBy: { lineNo: "asc" },
           include: {
@@ -108,7 +122,22 @@ export class VoucherService {
       throw new NotFoundException("Voucher was not found.");
     }
 
-    return voucher;
+    // Filter out soft-deleted reversals from the response so deleted drafts
+    // are invisible. The raw query includes isDeleted to enable this filter.
+    const result = {
+      ...voucher,
+      reversedBy:
+        voucher.reversedBy && !voucher.reversedBy.isDeleted
+          ? {
+              id: voucher.reversedBy.id,
+              systemVoucherNo: voucher.reversedBy.systemVoucherNo,
+              status: voucher.reversedBy.status,
+              correctionReason: voucher.reversedBy.correctionReason,
+            }
+          : null,
+    };
+
+    return result;
   }
 
   async create(dto: CreateVoucherDto, context: VoucherActionContext) {
@@ -170,6 +199,142 @@ export class VoucherService {
 
       return created;
     });
+  }
+
+  async createReversal(
+    id: string,
+    dto: CreateReversalDto,
+    context: VoucherActionContext,
+  ) {
+    const reason = dto.reason;
+
+    // 1. Fetch the original voucher with lines and reversal status.
+    const original = await this.prisma.voucher.findFirst({
+      where: { id, isDeleted: false },
+      include: {
+        fiscalYear: true,
+        reversedBy: {
+          select: { id: true, isDeleted: true },
+        },
+        lines: {
+          orderBy: { lineNo: "asc" },
+        },
+      },
+    });
+
+    if (!original) {
+      throw new NotFoundException("Voucher was not found.");
+    }
+
+    // 2. Only posted vouchers can be reversed.
+    if (original.status !== VoucherStatus.POSTED) {
+      throw new BadRequestException(
+        "Only posted vouchers can be reversed.",
+      );
+    }
+
+    // 3. Cannot reverse a voucher that already has an active (non-deleted) reversal.
+    if (original.reversedBy && !original.reversedBy.isDeleted) {
+      throw new BadRequestException(
+        "This voucher has already been reversed.",
+      );
+    }
+
+    // 4. Find an OPEN accounting period in the same fiscal year for today.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const openPeriod = await this.prisma.accountingPeriod.findFirst({
+      where: {
+        fiscalYearId: original.fiscalYearId,
+        status: AccountingPeriodStatus.OPEN,
+        startDate: { lte: today },
+        endDate: { gte: today },
+      },
+    });
+
+    if (!openPeriod) {
+      throw new BadRequestException(
+        "No open accounting period found for today within the original voucher's fiscal year. " +
+          "Please ensure an accounting period is open before creating a reversal.",
+      );
+    }
+
+    // 5. Generate the reversal draft inside a transaction.
+    const reversalId = await this.prisma.$transaction(async (tx) => {
+      const systemVoucherNo = await this.reserveVoucherNumber(
+        tx,
+        original.companyId,
+        original.fiscalYearId,
+        original.voucherType,
+      );
+
+      const narration = `[Reversal of ${original.systemVoucherNo}] - ${reason}`;
+
+      // Swap debit/credit sides and build reversal line data.
+      const reversedLines = original.lines.map((line, index) => ({
+        lineNo: index + 1,
+        side:
+          line.side === VoucherLineSide.DEBIT
+            ? VoucherLineSide.CREDIT
+            : VoucherLineSide.DEBIT,
+        ledgerAccountId: line.ledgerAccountId,
+        projectId: line.projectId,
+        costCenterId: line.costCenterId,
+        cashBankAccountId: line.cashBankAccountId,
+        description: line.description,
+        amount: line.amount,
+      }));
+
+      // Compute totals from the reversed lines.
+      let totalDebit = new Prisma.Decimal(0);
+      let totalCredit = new Prisma.Decimal(0);
+      for (const line of reversedLines) {
+        if (line.side === VoucherLineSide.DEBIT) {
+          totalDebit = totalDebit.plus(line.amount);
+        } else {
+          totalCredit = totalCredit.plus(line.amount);
+        }
+      }
+
+      const created = await tx.voucher.create({
+        data: {
+          companyId: original.companyId,
+          fiscalYearId: original.fiscalYearId,
+          accountingPeriodId: openPeriod.id,
+          voucherType: original.voucherType,
+          status: VoucherStatus.DRAFT,
+          systemVoucherNo,
+          voucherDate: today,
+          narration,
+          totalDebit,
+          totalCredit,
+          createdById: context.userId,
+          reversalOfVoucherId: original.id,
+          correctionReason: reason,
+          lines: {
+            create: reversedLines,
+          },
+        },
+      });
+
+      await this.recordAudit(
+        tx,
+        "REVERSAL_DRAFT_CREATED",
+        created.id,
+        context,
+        {
+          originalVoucherId: original.id,
+          originalSystemVoucherNo: original.systemVoucherNo,
+          reversalSystemVoucherNo: systemVoucherNo,
+          correctionReason: reason,
+        },
+      );
+
+      return created.id;
+    });
+
+    return this.findOne(reversalId);
   }
 
   async update(
@@ -301,6 +466,15 @@ export class VoucherService {
         throw new BadRequestException(
           "Voucher can no longer be deleted because it is not an active draft.",
         );
+      }
+
+      // If this was a reversal draft, clear the FK so the original voucher
+      // can have a new reversal generated.
+      if (existing.reversalOfVoucherId) {
+        await tx.voucher.update({
+          where: { id },
+          data: { reversalOfVoucherId: null },
+        });
       }
 
       await this.recordAudit(tx, "VOUCHER_DELETED", id, context, {
