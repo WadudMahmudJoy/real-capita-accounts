@@ -2,21 +2,28 @@
 
 ## Current Phase
 
-- Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`.
+- Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
+  - Implemented chunks: 2L-1 requirement lock.
+  - Defines the linkage of original and reversal vouchers via self-referencing relationship fields and correctionReason. Swaps debit/credit sides and copies metadata.
+- Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`).
   - Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup.
   - Allows optional project/cost center selection on Cash/Bank/MFS voucher lines (optional, not required) to enable visibility in the Project Fund Movement report.
-  - No changes to base demo dataset or report query logic.
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
   - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
 - Next possible choices:
-  - Tag `phase-2k-complete`.
-  - Optional MFS demo dataset extension.
-  - UI/report polish.
-  - Next accounting module requirement lock.
-  - PDF/Excel export requirement lock.
-  - Reversal/correction workflow requirement lock.
-  - Parties/customers/vendors requirement lock.
-## Phase 2K Chunk 2K-5 Final Acceptance and Docs Cleanup - this session
+  - Tag `phase-2l-requirements-locked`.
+  - Begin Phase 2L implementation (Chunk 2L-2 Schema / Linkage & Backend Reversal Draft Generation) only after explicit user approval.
+
+## Phase 2L Chunk 2L-1: Requirement Lock - this session
+
+Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
+- Created `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md`.
+- Created `docs/acceptance/phase-2l-acceptance-criteria.md`.
+- Created `docs/plans/phase-2l-voucher-reversal-rectification-plan.md`.
+- Updated status files (`AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`).
+- Confirmed no changes to database schema, migrations, backend code, frontend logic, or demo scripts.
+
+## Phase 2K Chunk 2K-5 Final Acceptance and Docs Cleanup - previous session
 
 Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`.
 - Cleaned up guide files (`AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`).

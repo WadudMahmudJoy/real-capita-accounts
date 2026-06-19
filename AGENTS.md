@@ -6,7 +6,9 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2K: Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`. Phase 2K allows accountants to optionally tag Cash/Bank/MFS voucher lines with project and cost center during voucher creation, so these fund lines can appear in the Project Fund Movement View. Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
+Phase 2L: Voucher Reversal / Rectification Workflow requirement lock is complete. It defines the workflow for correcting mistakes on posted vouchers using balanced reversal vouchers linked via self-referencing relationships in the database, with rectification deferred. Implemented chunks: 2L-1 requirement lock. No schema/migration/runtime changes.
+
+Phase 2K: Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`). Phase 2K allows accountants to optionally tag Cash/Bank/MFS voucher lines with project and cost center during voucher creation, so these fund lines can appear in the Project Fund Movement View. Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
 
 Phase 2J: Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`). The report derives project fund movement using strict same-line only logic (Option A) across Cash, Bank, and MFS. Implemented chunks: 2J-1 requirement lock, 2J-2 backend API, 2J-3 frontend UI, 2J-4 regression, 2J-5 final review. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
 
@@ -14,7 +16,7 @@ Phase 2I: MFS Voucher Posting Continuation is complete and accepted at `10d6869`
 
 Phase 2H: Demo/Test Data Cleanup and Safe Demo Dataset Standardization is complete and accepted at `96fb653` (tag `phase-2h-complete`). Phase 2G Project/Cost-Center Financial Reporting is complete and accepted at `7e60a1f` (tag `phase-2g-complete`). Phase 2F is complete and accepted at `17fede6` (tag `phase-2f-complete`). Phase 2E MFS account setup and MFS Book foundation are accepted. Phase 2D accounting reports are accepted. Phase 2C voucher engine is accepted. Phase 2A accounting foundation is accepted.
 
-If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`, then read the Phase 2K requirement lock docs before any implementation.
+If continuing in Droid CLI or another agent, start with `docs/ai/START_HERE.md` and `docs/handoff.md`, then read the Phase 2L requirement lock docs before any implementation.
 
 ## Stack
 
@@ -34,9 +36,11 @@ Phase 2I is complete and accepted at `10d6869` (tag `phase-2i-complete`). PAYMEN
 
 Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`). See `docs/requirements/phase-2j-project-fund-movement-requirement-lock.md`, `docs/acceptance/phase-2j-acceptance-criteria.md`, and `docs/plans/phase-2j-project-fund-movement-plan.md`.
 
-Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete. See `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md`, `docs/acceptance/phase-2k-acceptance-criteria.md`, and `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md`.
+Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`). See `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md`, `docs/acceptance/phase-2k-acceptance-criteria.md`, and `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md`.
 
-Do not implement actual Phase 2K frontend edits, backend validator changes, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties, customers, vendors, additional roles, file uploads, business seed data, MFS provider API/payment gateway/customer wallet integration, or JOURNAL MFS acceptance until the user confirms the next phase or module.
+Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete. See `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md`, `docs/acceptance/phase-2l-acceptance-criteria.md`, and `docs/plans/phase-2l-voucher-reversal-rectification-plan.md`.
+
+Do not implement actual Phase 2L schema migration, backend reversal generation endpoints, frontend reversal buttons/reason capture, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties, customers, vendors, additional roles, file uploads, business seed data, MFS provider API/payment gateway/customer wallet integration, or JOURNAL MFS acceptance until the user confirms the next phase or module.
 
 ## Confirmed Role Model
 
@@ -186,11 +190,13 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 1. Start with `docs/ai/START_HERE.md`.
 2. Run `pnpm agent:start`.
-3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2K requirement lock docs.
+3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2L requirement lock docs.
 4. Confirm `git status` is clean before new work.
 5. Continue only inside the current phase boundary.
 6. Update handoff docs before ending the session.
 
 ## Next Phase Guidance
 
-Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`. Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup. Do not start next module/phase implementation or next requirement lock without explicit user confirmation.
+Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `91fd742` (tag `phase-2k-complete`). 
+
+Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete. Implementation of Phase 2L has not started. Next action: user may tag `phase-2l-requirements-locked`, then explicitly approve Phase 2L Chunk 2L-2 Schema / Linkage & Backend Reversal Draft Generation before any implementation begins. Do not start next module/phase implementation without explicit user confirmation.
