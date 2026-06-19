@@ -877,9 +877,11 @@ The repo intentionally does not include:
 
 ## Next Recommended Task
 
+Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` with tag `phase-2j-complete`.
 Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
 The recommended next steps/possible user decisions are:
-- Confirm readiness and begin Phase 2K implementation (Chunk 2K-2 Backend Validation Audit / Support).
+- Tag `phase-2k-requirements-locked`.
+- Begin Phase 2K implementation (Chunk 2K-2 Backend Validation Audit / Support) only after explicit user approval.
 - Optional MFS demo dataset extension.
 - UI/report polish.
 

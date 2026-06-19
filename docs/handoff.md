@@ -8,8 +8,9 @@
   - No changes to base demo dataset or report query logic.
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
   - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
-- Next recommended action: Begin Phase 2K implementation (Chunk 2K-2 Backend Validation Audit / Support).
-- Do not start next phase/module implementation without explicit user approval.
+- Current next action: User may tag `phase-2k-requirements-locked` at the cleaned requirement-lock commit.
+- After tagging, the next possible action is Phase 2K Chunk 2K-2 Backend Validation Audit / Support.
+- Do not start Phase 2K implementation without explicit user approval.
 
 ## Phase 2K Chunk 2K-1 Voucher Fund-Line Project Tagging Requirement Lock - this session
 

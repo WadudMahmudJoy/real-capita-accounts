@@ -186,11 +186,11 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 1. Start with `docs/ai/START_HERE.md`.
 2. Run `pnpm agent:start`.
-3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2I requirement lock docs.
+3. Read `docs/ai/CURRENT_STATE.md`, `docs/ai/WORKFLOW.md`, `docs/handoff.md`, and the Phase 2K requirement lock docs.
 4. Confirm `git status` is clean before new work.
 5. Continue only inside the current phase boundary.
 6. Update handoff docs before ending the session.
 
 ## Next Phase Guidance
 
-Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag. Next recommended user decision: begin Phase 2K requirement lock (or next module), optional voucher UI enhancement to allow project tagging on cash/bank/MFS lines, optional MFS demo dataset extension, or UI/report polish. Do not start next module/phase without explicit user confirmation.
+Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` with tag `phase-2j-complete`. Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete as a candidate at `2805a88` (with docs cleaned at the current commit). Phase 2K implementation has not started. Next action: user may tag `phase-2k-requirements-locked`, then explicitly approve Phase 2K Chunk 2K-2 Backend Validation Audit / Support before any implementation begins. Do not start next module/phase implementation without explicit user confirmation.
