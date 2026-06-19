@@ -200,6 +200,7 @@ export function cashBankFieldLabel(accounts: CashBankAccount[]): string {
 export function deriveVoucherLineFieldRequirements(
   ledger: LedgerAccount | undefined,
   matchingCashBankAccounts: CashBankAccount[],
+  voucherType?: VoucherType,
 ): VoucherLineFieldRequirements {
   const requiresProject = ledger?.requiresProject ?? false;
   const requiresCostCenter = ledger?.requiresCostCenter ?? false;
@@ -210,7 +211,11 @@ export function deriveVoucherLineFieldRequirements(
 
   if (ledger) {
     if (isCashBank) {
-      guidance = `${fieldLabel} is required for this cash/bank ledger.`;
+      if (voucherType && ["PAYMENT", "RECEIPT", "CONTRA"].includes(voucherType)) {
+        guidance = `${fieldLabel} is required. Project and cost center are optional for fund-line tagging (enables fund visibility in Project Fund Movement report).`;
+      } else {
+        guidance = `${fieldLabel} is required for this cash/bank ledger.`;
+      }
     } else if (requiresProject && requiresCostCenter) {
       guidance = "This ledger requires project and cost center.";
     } else if (requiresProject) {

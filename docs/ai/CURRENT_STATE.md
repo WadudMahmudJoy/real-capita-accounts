@@ -1,6 +1,17 @@
 # Current State
 
-## Phase 2K Chunk 2K-2 Backend Validation Audit / Support - this session
+## Phase 2K Chunk 2K-3 Frontend Voucher Form Update - this session
+
+Phase 2K Chunk 2K-3 Frontend Voucher Form Update is complete.
+- Updated `apps/web/src/app/app/vouchers/_lib/VoucherForm.tsx` to conditionally render optional Project and Cost Center selectors on Cash, Bank, and MFS lines for PAYMENT, RECEIPT, and CONTRA vouchers.
+- Updated `deriveVoucherLineFieldRequirements` in `apps/web/src/app/app/vouchers/_lib/voucher-ui.tsx` to accept the `voucherType` parameter and customize guidance text for Cash/Bank/MFS lines: `"Cash/Bank/MFS account is required. Project and cost center are optional for fund-line tagging (enables fund visibility in Project Fund Movement report)."`.
+- Confirmed Cost Center dropdown is scoped to the selected project on the line and disabled if the project selector is shown but no project is selected yet.
+- Preserved all state cleanup rules: switching the ledger away from Cash/Bank/MFS clears `projectId`/`costCenterId`; clearing `projectId` clears `costCenterId`; changing `projectId` clears invalid `costCenterId`; switching voucher type to `JOURNAL` clears `projectId` and `costCenterId` from Cash/Bank lines and filters out/clears MFS cash bank accounts.
+- Confirmed no automatic project inference, sibling line copying, or silent allocation.
+- Confirmed posted vouchers remain read-only.
+- Verified all workspace CLI checks, build, typecheck, lint, and demo audit/verification pass.
+
+## Phase 2K Chunk 2K-2 Backend Validation Audit / Support - previous session
 
 Phase 2K Chunk 2K-2 Backend Validation Audit / Support is complete.
 - Audited NestJS backend DTOs (`VoucherLineDto` in `apps/api/src/voucher/dto/voucher-line.dto.ts`) and confirmed that `projectId` and `costCenterId` are optional and no rules block them when `cashBankAccountId` is present.

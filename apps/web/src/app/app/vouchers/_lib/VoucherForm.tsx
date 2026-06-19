@@ -499,22 +499,31 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
 
                   // When switching to JOURNAL, clear any MFS cashBankAccountId
                   // from all lines. JOURNAL does not allow MFS accounts.
+                  // Also clear projectId and costCenterId from Cash/Bank lines.
                   if (nextType === "JOURNAL") {
                     setLines((previous) =>
                       previous.map((line) => {
-                        if (!line.cashBankAccountId) {
-                          return line;
+                        const nextLine = { ...line };
+                        const ledger = line.ledgerAccountId
+                          ? ledgerById.get(line.ledgerAccountId)
+                          : undefined;
+
+                        if (ledger?.isCashBank) {
+                          nextLine.projectId = "";
+                          nextLine.costCenterId = "";
                         }
 
-                        const account = reference.cashBankAccounts.find(
-                          (a) => a.id === line.cashBankAccountId,
-                        );
+                        if (line.cashBankAccountId) {
+                          const account = reference.cashBankAccounts.find(
+                            (a) => a.id === line.cashBankAccountId,
+                          );
 
-                        if (account && isMfsCashBankAccount(account)) {
-                          return { ...line, cashBankAccountId: "" };
+                          if (account && isMfsCashBankAccount(account)) {
+                            nextLine.cashBankAccountId = "";
+                          }
                         }
 
-                        return line;
+                        return nextLine;
                       }),
                     );
                   }
@@ -648,6 +657,7 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
               const requirements = deriveVoucherLineFieldRequirements(
                 ledger,
                 matchingCashBankAccounts,
+                voucherType,
               );
               // A field is shown when the ledger requires it, or when the line
               // already carries a value for it (e.g. a draft or posted voucher
@@ -657,10 +667,17 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
               const hasProjectValue = line.projectId !== "";
               const hasCostCenterValue = line.costCenterId !== "";
               const hasCashBankValue = line.cashBankAccountId !== "";
+              const isFundLineWithOptionalProject =
+                requirements.isCashBank &&
+                ["PAYMENT", "RECEIPT", "CONTRA"].includes(voucherType);
               const showProject =
-                requirements.requiresProject || hasProjectValue;
+                requirements.requiresProject ||
+                hasProjectValue ||
+                isFundLineWithOptionalProject;
               const showCostCenter =
-                requirements.requiresCostCenter || hasCostCenterValue;
+                requirements.requiresCostCenter ||
+                hasCostCenterValue ||
+                isFundLineWithOptionalProject;
               const showCashBank = requirements.isCashBank || hasCashBankValue;
               // Cost centers are project-specific; only offer those that belong
               // to the line's selected project.
@@ -838,9 +855,7 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                     {showCostCenter ? (
                       <Field
                         hint={
-                          requirements.requiresCostCenter &&
-                          showProject &&
-                          !line.projectId
+                          showProject && !line.projectId
                             ? "Select a project first to choose its cost center."
                             : requirements.requiresCostCenter
                               ? undefined
@@ -853,9 +868,7 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                         <Select
                           disabled={
                             isReadOnly ||
-                            (requirements.requiresCostCenter &&
-                              showProject &&
-                              !line.projectId)
+                            (showProject && !line.projectId)
                           }
                           id={`${line.key}-cost-center`}
                           onChange={(event) =>
