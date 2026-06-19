@@ -1,6 +1,18 @@
 # Current State
 
-## Phase 2K Chunk 2K-3 Frontend Voucher Form Update - this session
+## Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification - this session
+
+Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification is complete.
+- Ran baseline CLI verification tests successfully (typecheck, lint, build, config, doctor, and read-only demo audit/verify).
+- Built and executed a programmatic end-to-end integration test (`scratch/test-fund-tagging.ts`) that logged in as accountant, posted a temporary PAYMENT voucher with project-tagged Cash/Bank fund lines, and verified correct API/report responses:
+  - The Project Fund Movement report correctly shows explicitly project-tagged Cash/Bank lines with proper inflow/outflow directions and updated running balance.
+  - The Project Cost report correctly includes the expense lines but excludes the project-tagged cash lines, confirming **no double-counting**.
+  - Untagged fund lines (like base demo PAYMENT-00001) remain excluded from the Project Fund Movement view under strict same-line logic (Option A).
+  - JOURNAL vouchers correctly reject MFS accounts, and existing MFS/ledger cleanup behavior works.
+- Fully restored the deterministic demo dataset using the safe demo reset flow (`pnpm demo:reset`) and verified that the database baseline is unchanged (`demo:audit` 62 PASS, `demo:verify` 47 PASS).
+- Confirmed no changes to database schema, migrations, backend code, frontend logic, or demo scripts.
+
+## Phase 2K Chunk 2K-3 Frontend Voucher Form Update - previous session
 
 Phase 2K Chunk 2K-3 Frontend Voucher Form Update is complete.
 - Updated `apps/web/src/app/app/vouchers/_lib/VoucherForm.tsx` to conditionally render optional Project and Cost Center selectors on Cash, Bank, and MFS lines for PAYMENT, RECEIPT, and CONTRA vouchers.
