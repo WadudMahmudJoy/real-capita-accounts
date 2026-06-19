@@ -2,23 +2,31 @@
 
 ## Current Phase
 
-- Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
-  - Implemented all chunks: 2J-1 requirement lock, 2J-2 backend API, 2J-3 frontend page, 2J-4 regression, and 2J-5 final acceptance/docs cleanup.
+- Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
+  - Implemented chunks: 2K-1 requirement lock.
+  - Allows optional project/cost center selection on Cash/Bank/MFS voucher lines (optional, not required) to enable visibility in the Project Fund Movement report.
+  - No changes to base demo dataset or report query logic.
+- Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
   - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
-  - Base demo SK-001 returns empty Project Fund Movement rows intentionally because cash/bank/MFS lines have no projectId.
-  - Existing reports remain unchanged.
-  - No schema/migration/demo dataset changes.
-- Current next action: User may tag `phase-2j-complete` at the final docs commit after proof.
-- After tagging, next possible user decisions: optional voucher UI project tagging, optional MFS demo dataset extension, UI/report polish, or next accounting module requirement lock.
-- Do not start next module/phase without explicit user approval.
+- Next recommended action: Begin Phase 2K implementation (Chunk 2K-2 Backend Validation Audit / Support).
+- Do not start next phase/module implementation without explicit user approval.
 
-## Phase 2J Chunk 2J-5 Final Acceptance and Docs Cleanup - this session
+## Phase 2K Chunk 2K-1 Voucher Fund-Line Project Tagging Requirement Lock - this session
 
-Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
+Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
+- Created `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md`.
+- Created `docs/acceptance/phase-2k-acceptance-criteria.md`.
+- Created `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md`.
+- Updated guide files (`AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`).
+- Confirmed that backend DTO/validation already fully supports optional `projectId` and `costCenterId` on Cash/Bank/MFS lines; future 2K-2 is a validation review.
+- Confirmed that no database migrations, schema edits, or demo dataset modifications are planned.
+
+## Phase 2J Chunk 2J-5 Final Acceptance and Docs Cleanup - previous session
+
+Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
 - Finalized and cleaned up documentation across AGENTS.md, README.md, docs/ai/START_HERE.md, docs/ai/CURRENT_STATE.md, docs/handoff.md, and docs/plans/phase-2j-project-fund-movement-plan.md.
 - Verified all workspace CLI checks pass successfully, including demo:audit (62 PASS) and demo:verify (47 PASS).
 - Confirmed that no runtime code, Prisma schema, migration, or demo data logic is modified.
-- Ready for user-created tag `phase-2j-complete`. Do not tag automatically.
 
 ## Phase 2J Chunk 2J-3 Frontend Report Page - previous session
 

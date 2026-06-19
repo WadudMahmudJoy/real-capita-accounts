@@ -1,20 +1,27 @@
 # Current State
 
-## Phase 2J Chunk 2J-5 Final Acceptance and Docs Cleanup - this session
+## Phase 2K Chunk 2K-1 Voucher Fund-Line Project Tagging Requirement Lock - this session
 
-Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
-- Implemented and verified all chunks:
-  - Chunk 2J-1 Requirement Lock: Locked Option A strict same-line only logic.
-  - Chunk 2J-2 Backend Report API: Implemented API endpoint `/reports/project-fund-movement`.
-  - Chunk 2J-3 Frontend Report Page: Built report UI at `/app/reports/project-fund-movement`.
-  - Chunk 2J-4 Regression + Browser/API/Demo Verification: Verified E2E, checked empty state, date aliases, and all existing reports. All CLI validation passed.
-  - Chunk 2J-5 Final Acceptance and Docs Cleanup: Completed final documentation updates across all guide files.
+Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
+- Locked business rules (Option A same-line only, explicit tagging only, no auto-inference/copying, no silent allocation).
+- Defined frontend UX enhancement (optional project and cost center dropdowns on Cash, Bank, and MFS lines with descriptive hints and helper text).
+- Verified backend validation (NestJS DTO and validation logic already accept optional `projectId` and `costCenterId` on cash/bank/MFS lines; no changes needed).
+- Defined out-of-scope items (no schema changes, no migrations, no voucher-level project fields, no automatic splitting).
+- Kept deterministic base demo dataset unchanged.
+- Created `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md`.
+- Created `docs/acceptance/phase-2k-acceptance-criteria.md`.
+- Created `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md`.
+
+## Phase 2J Chunk 2J-5 Final Acceptance and Docs Cleanup - previous session
+
+Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
+- Implemented and verified all chunks (2J-1 through 2J-5).
 - Project Fund Movement View uses Option A strict same-line only logic.
 - Only Cash, Bank, or MFS voucher lines explicitly tagged with the project are included. No sibling-line or voucher-level inference.
 - Base demo SK-001 returns empty Project Fund Movement rows intentionally because cash/bank/MFS lines have no projectId.
 - Existing reports remain unchanged.
 - No schema/migration/demo dataset changes.
-- Ready for user-created tag `phase-2j-complete`. Do not tag automatically.
+- Final docs cleanup completed.
 
 ## Phase 2J Chunk 2J-3 Frontend Report Page - previous session
 
@@ -126,7 +133,8 @@ Phase 2H Demo/Test Data Cleanup and Safe Demo Dataset Standardization is complet
 
 Phase 2I MFS Voucher Posting Continuation is complete and accepted at `10d6869` (tag `phase-2i-complete`).
 
-Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
+Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
+
 
 ## Phase 2I Chunk 2I-4 Report Regression and Demo Extension Decision - this session
 
@@ -854,7 +862,7 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 ## Current Non-Features
 
 The repo intentionally does not include:
-- optional voucher UI enhancement to allow project tagging on cash/bank/MFS lines
+- actual Voucher Fund-Line Project Tagging implementation (Phase 2K Chunk 2K-2/2K-3/2K-4/2K-5)
 - optional MFS demo dataset extension
 - PDF/Excel export
 - dashboard analytics
@@ -869,22 +877,20 @@ The repo intentionally does not include:
 
 ## Next Recommended Task
 
-Phase 2J Project Fund Movement View is complete and accepted pending only the user-created completion tag.
+Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
 The recommended next steps/possible user decisions are:
-- Tag `phase-2j-complete`.
-- Optional voucher UI enhancement to allow project tagging on cash/bank/MFS lines.
+- Confirm readiness and begin Phase 2K implementation (Chunk 2K-2 Backend Validation Audit / Support).
 - Optional MFS demo dataset extension.
 - UI/report polish.
-- Next accounting module requirement lock (Phase 2K or next module).
 
-Do not start next module/phase without explicit user confirmation.
+Do not start next phase/module implementation without explicit user confirmation.
 
 Reference docs before continuing:
 
+- `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md`
+- `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md`
+- `docs/acceptance/phase-2k-acceptance-criteria.md`
 - `docs/plans/phase-2j-project-fund-movement-plan.md`
 - `docs/requirements/phase-2j-project-fund-movement-requirement-lock.md`
-- `docs/acceptance/phase-2j-acceptance-criteria.md`
 - `docs/plans/phase-2i-mfs-voucher-posting-plan.md`
 - `docs/requirements/phase-2i-mfs-voucher-posting-requirement-lock.md`
-- `docs/plans/phase-2h-demo-data-cleanup-plan.md`
-- `docs/requirements/phase-2h-demo-data-cleanup-requirement-lock.md`
