@@ -2,7 +2,7 @@
 
 ## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session
 
-Phase 2L Chunk 2L-2 is complete. Backend support for full posted-voucher reversal generation is implemented.
+Phase 2L Chunk 2L-2 is complete. Backend support for full posted-voucher reversal generation is implemented. A reversal-of-reversal blocker was corrected: a voucher that is itself a reversal (`reversalOfVoucherId` is set) cannot be reversed in Phase 2L. Reversal chains are out of scope; only full reversal of original posted vouchers is supported.
 - Added self-referencing 1:1 reversal linkage to `Voucher` model: `reversalOfVoucherId` (unique FK), `correctionReason`, `reversalOf` / `reversedBy` relations.
 - Created and applied database migration `20260619204559_add_voucher_reversal_linkage`.
 - Created `CreateReversalDto` (`apps/api/src/voucher/dto/create-reversal.dto.ts`) with `reason` field (min 10 chars).

@@ -18,7 +18,7 @@
 
 ## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session
 
-Phase 2L Chunk 2L-2 is complete.
+Phase 2L Chunk 2L-2 is complete. A reversal-of-reversal blocker was corrected: a voucher that is itself a reversal (`reversalOfVoucherId` is set) cannot be reversed in Phase 2L. Reversal chains are out of scope; only full reversal of original posted vouchers is supported.
 - Added `reversalOfVoucherId` (unique FK), `correctionReason`, `reversalOf` / `reversedBy` self-referencing relations to the `Voucher` Prisma model.
 - Created and applied migration `20260619204559_add_voucher_reversal_linkage`.
 - Created `CreateReversalDto` with `reason` field (min 10 chars, class-validator).

@@ -240,6 +240,15 @@ export class VoucherService {
       );
     }
 
+    // 3b. Cannot reverse a voucher that is itself a reversal. Phase 2L supports
+    // full reversal of original posted vouchers only; reversal-of-reversal
+    // chains are out of scope and create audit ambiguity.
+    if (original.reversalOfVoucherId) {
+      throw new BadRequestException(
+        "Reversal vouchers cannot be reversed in Phase 2L.",
+      );
+    }
+
     // 4. Find an OPEN accounting period in the same fiscal year for today.
     const today = new Date();
     today.setHours(0, 0, 0, 0);
