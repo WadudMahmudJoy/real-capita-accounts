@@ -1,6 +1,16 @@
 # Current State
 
-## Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification - this session
+## Phase 2K Chunk 2K-5 Final Acceptance and Docs Cleanup - this session
+
+Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`.
+- Cleaned up guide files (`AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`).
+- Confirmed readiness for user-created tag `phase-2k-complete`. Do not tag automatically.
+- Listed all implemented chunks (2K-1 through 2K-5) in relevant state files.
+- Preserved all Phase 2K rules (optional selectors, same-line Option A logic, no double-counting, JOURNAL MFS restriction, posted vouchers read-only).
+- Verified end-to-end regression testing with temporary local vouchers, restored the deterministic demo dataset, and passed all checks (`demo:audit` 62 PASS, `demo:verify` 47 PASS).
+- Confirmed no changes to database schema, migrations, backend code, frontend logic, or demo scripts.
+
+## Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification - previous session
 
 Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification is complete.
 - Ran baseline CLI verification tests successfully (typecheck, lint, build, config, doctor, and read-only demo audit/verify).
@@ -900,7 +910,6 @@ Future roles are to be confirmed later. They are not implemented, seeded, displa
 ## Current Non-Features
 
 The repo intentionally does not include:
-- actual Voucher Fund-Line Project Tagging implementation (Phase 2K Chunk 2K-2/2K-3/2K-4/2K-5)
 - optional MFS demo dataset extension
 - PDF/Excel export
 - dashboard analytics
@@ -915,15 +924,17 @@ The repo intentionally does not include:
 
 ## Next Recommended Task
 
-Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` with tag `phase-2j-complete`.
-Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
+Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`.
 The recommended next steps/possible user decisions are:
-- Tag `phase-2k-requirements-locked`.
-- Begin Phase 2K implementation (Chunk 2K-2 Backend Validation Audit / Support) only after explicit user approval.
+- Tag `phase-2k-complete`.
 - Optional MFS demo dataset extension.
 - UI/report polish.
+- Next accounting module requirement lock.
+- PDF/Excel export requirement lock.
+- Reversal/correction workflow requirement lock.
+- Parties/customers/vendors requirement lock.
 
-Do not start next phase/module implementation without explicit user confirmation.
+Do not start next phase/module implementation or next requirement lock without explicit user confirmation.
 
 Reference docs before continuing:
 

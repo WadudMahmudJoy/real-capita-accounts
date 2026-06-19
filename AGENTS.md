@@ -6,7 +6,7 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2K: Voucher Fund-Line Project Tagging requirement lock is complete. Phase 2K allows accountants to optionally tag Cash/Bank/MFS voucher lines with project and cost center during voucher creation, so these fund lines can appear in the Project Fund Movement View. Implemented chunks: 2K-1 requirement lock. Next steps: 2K-2 backend validation audit, 2K-3 frontend UI updates.
+Phase 2K: Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`. Phase 2K allows accountants to optionally tag Cash/Bank/MFS voucher lines with project and cost center during voucher creation, so these fund lines can appear in the Project Fund Movement View. Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
 
 Phase 2J: Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`). The report derives project fund movement using strict same-line only logic (Option A) across Cash, Bank, and MFS. Implemented chunks: 2J-1 requirement lock, 2J-2 backend API, 2J-3 frontend UI, 2J-4 regression, 2J-5 final review. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
 
@@ -193,4 +193,4 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 ## Next Phase Guidance
 
-Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` with tag `phase-2j-complete`. Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete as a candidate at `2805a88` (with docs cleaned at the current commit). Phase 2K implementation has not started. Next action: user may tag `phase-2k-requirements-locked`, then explicitly approve Phase 2K Chunk 2K-2 Backend Validation Audit / Support before any implementation begins. Do not start next module/phase implementation without explicit user confirmation.
+Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`. Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup. Do not start next module/phase implementation or next requirement lock without explicit user confirmation.

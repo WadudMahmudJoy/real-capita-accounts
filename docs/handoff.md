@@ -2,16 +2,31 @@
 
 ## Current Phase
 
-- Phase 2K Voucher Fund-Line Project Tagging regression verification is complete.
-  - Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit, 2K-3 frontend UI updates, 2K-4 regression verification.
+- Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`.
+  - Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup.
   - Allows optional project/cost center selection on Cash/Bank/MFS voucher lines (optional, not required) to enable visibility in the Project Fund Movement report.
   - No changes to base demo dataset or report query logic.
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
   - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
-- Next possible action is Phase 2K Chunk 2K-5 Final Acceptance and Docs Cleanup.
-- Do not start Phase 2K final acceptance without explicit user approval.
+- Next possible choices:
+  - Tag `phase-2k-complete`.
+  - Optional MFS demo dataset extension.
+  - UI/report polish.
+  - Next accounting module requirement lock.
+  - PDF/Excel export requirement lock.
+  - Reversal/correction workflow requirement lock.
+  - Parties/customers/vendors requirement lock.
+## Phase 2K Chunk 2K-5 Final Acceptance and Docs Cleanup - this session
 
-## Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification - this session
+Phase 2K Voucher Fund-Line Project Tagging is complete and accepted, pending only the user-created tag `phase-2k-complete`.
+- Cleaned up guide files (`AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`).
+- Confirmed readiness for user-created tag `phase-2k-complete`. Do not tag automatically.
+- Listed all implemented chunks (2K-1 through 2K-5) in relevant state files.
+- Preserved all Phase 2K rules (optional selectors, same-line Option A logic, no double-counting, JOURNAL MFS restriction, posted vouchers read-only).
+- Verified end-to-end regression testing with temporary local vouchers, restored the deterministic demo dataset, and passed all checks (`demo:audit` 62 PASS, `demo:verify` 47 PASS).
+- Confirmed no changes to database schema, migrations, backend code, frontend logic, or demo scripts.
+
+## Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification - previous session
 
 Phase 2K Chunk 2K-4 Browser/API/Report Regression Verification is complete.
 - Ran baseline CLI verification tests successfully (typecheck, lint, build, config, doctor, and read-only demo audit/verify).
