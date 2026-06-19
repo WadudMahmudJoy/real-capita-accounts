@@ -1,6 +1,21 @@
 # Current State
 
-## Phase 2K Chunk 2K-1 Voucher Fund-Line Project Tagging Requirement Lock - this session
+## Phase 2K Chunk 2K-2 Backend Validation Audit / Support - this session
+
+Phase 2K Chunk 2K-2 Backend Validation Audit / Support is complete.
+- Audited NestJS backend DTOs (`VoucherLineDto` in `apps/api/src/voucher/dto/voucher-line.dto.ts`) and confirmed that `projectId` and `costCenterId` are optional and no rules block them when `cashBankAccountId` is present.
+- Audited backend validation logic (`validatePostingLine` in `apps/api/src/voucher/voucher.service.ts`) and confirmed that Cash/Bank/MFS lines can carry `projectId` and `costCenterId`.
+- Verified that if `projectId` is provided, it must exist and be active.
+- Verified that if `costCenterId` is provided with `projectId`, the cost center must belong to the selected project.
+- Verified that if `costCenterId` is provided without `projectId`, it follows the existing validation convention and does not throw if `projectId` is absent.
+- Confirmed that MFS `cashBankAccountId` remains strictly rejected on `JOURNAL` vouchers.
+- Confirmed that `PAYMENT`, `RECEIPT`, and `CONTRA` allow MFS according to Phase 2I.
+- Confirmed cash/bank account ledger mismatch validation remains intact, and non-cash-bank ledgers cannot carry `cashBankAccountId`.
+- Confirmed posted vouchers remain immutable.
+- This is a no-code backend audit: backend support is already fully present, and no code edits were required.
+- Verified all workspace CLI checks and demo audit/verification pass.
+
+## Phase 2K Chunk 2K-1 Voucher Fund-Line Project Tagging Requirement Lock - previous session
 
 Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
 - Locked business rules (Option A same-line only, explicit tagging only, no auto-inference/copying, no silent allocation).

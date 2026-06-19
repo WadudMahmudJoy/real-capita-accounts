@@ -2,24 +2,38 @@
 
 ## Current Phase
 
-- Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
-  - Implemented chunks: 2K-1 requirement lock.
+- Phase 2K Voucher Fund-Line Project Tagging backend validation audit is complete.
+  - Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit.
   - Allows optional project/cost center selection on Cash/Bank/MFS voucher lines (optional, not required) to enable visibility in the Project Fund Movement report.
   - No changes to base demo dataset or report query logic.
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
   - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
-- Current next action: User may tag `phase-2k-requirements-locked` at the cleaned requirement-lock commit.
-- After tagging, the next possible action is Phase 2K Chunk 2K-2 Backend Validation Audit / Support.
-- Do not start Phase 2K implementation without explicit user approval.
+- Next possible action is Phase 2K Chunk 2K-3 Frontend Voucher Form Update.
+- Do not start Phase 2K frontend implementation without explicit user approval.
 
-## Phase 2K Chunk 2K-1 Voucher Fund-Line Project Tagging Requirement Lock - this session
+## Phase 2K Chunk 2K-2 Backend Validation Audit / Support - this session
+
+Phase 2K Chunk 2K-2 Backend Validation Audit / Support is complete.
+- Audited NestJS backend DTOs (`VoucherLineDto` in `apps/api/src/voucher/dto/voucher-line.dto.ts`) and confirmed that `projectId` and `costCenterId` are optional and no rules block them when `cashBankAccountId` is present.
+- Audited backend validation logic (`validatePostingLine` in `apps/api/src/voucher/voucher.service.ts`) and confirmed that Cash/Bank/MFS lines can carry `projectId` and `costCenterId`.
+- Verified that if `projectId` is provided, it must exist and be active.
+- Verified that if `costCenterId` is provided with `projectId`, the cost center must belong to the selected project.
+- Verified that if `costCenterId` is provided without `projectId`, it follows the existing validation convention and does not throw if `projectId` is absent.
+- Confirmed that MFS `cashBankAccountId` remains strictly rejected on `JOURNAL` vouchers.
+- Confirmed that `PAYMENT`, `RECEIPT`, and `CONTRA` allow MFS according to Phase 2I.
+- Confirmed cash/bank account ledger mismatch validation remains intact, and non-cash-bank ledgers cannot carry `cashBankAccountId`.
+- Confirmed posted vouchers remain immutable.
+- This is a no-code backend audit: backend support is already fully present, and no code edits were required.
+- Verified all workspace CLI checks and demo audit/verification pass.
+
+## Phase 2K Chunk 2K-1 Voucher Fund-Line Project Tagging Requirement Lock - previous session
 
 Phase 2K Voucher Fund-Line Project Tagging requirement lock is complete.
 - Created `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md`.
 - Created `docs/acceptance/phase-2k-acceptance-criteria.md`.
 - Created `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md`.
 - Updated guide files (`AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`).
-- Confirmed that backend DTO/validation already fully supports optional `projectId` and `costCenterId` on Cash/Bank/MFS lines; future 2K-2 is a validation review.
+- Confirmed that backend DTO/validation already fully supports optional `projectId` and `costCenterId` on Cash/Bank/MFS lines.
 - Confirmed that no database migrations, schema edits, or demo dataset modifications are planned.
 
 ## Phase 2J Chunk 2J-5 Final Acceptance and Docs Cleanup - previous session
