@@ -225,6 +225,20 @@ export type Voucher = {
   postedBy?: VoucherUserRef | null;
   lines?: VoucherLine[];
   _count?: { lines: number };
+  reversalOfVoucherId?: string | null;
+  correctionReason?: string | null;
+  reversalOf?: {
+    id: string;
+    systemVoucherNo: string;
+    status: VoucherStatus;
+  } | null;
+  reversedBy?: {
+    id: string;
+    systemVoucherNo: string;
+    status: VoucherStatus;
+    correctionReason: string | null;
+    isDeleted: boolean;
+  } | null;
 };
 
 export type VoucherListFilters = {
@@ -721,6 +735,16 @@ export function deleteVoucher(
 
 export function postVoucher(id: string): Promise<Voucher> {
   return apiFetch<Voucher>(`/vouchers/${id}/post`, { method: "POST" });
+}
+
+export function createReversal(
+  id: string,
+  input: { reason: string },
+): Promise<Voucher> {
+  return apiFetch<Voucher>(`/vouchers/${id}/reversal`, {
+    body: input,
+    method: "POST",
+  });
 }
 
 // ---------------------------------------------------------------------------

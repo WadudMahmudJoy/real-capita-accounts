@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import {
   ApiError,
   createVoucher,
+  createReversal,
   deleteVoucher,
   postVoucher,
   toErrorMessage,
@@ -153,6 +154,22 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
   const [showConfirmPost, setShowConfirmPost] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  const [showReversalModal, setShowReversalModal] = useState(false);
+  const [reversalReason, setReversalReason] = useState("");
+  const [reversalError, setReversalError] = useState<string | null>(null);
+  const [isCreatingReversal, setIsCreatingReversal] = useState(false);
+
+  const isEligibleForReversal = useMemo(() => {
+    if (!voucher) return false;
+    // 1. Must be POSTED
+    if (voucher.status !== "POSTED") return false;
+    // 2. Must not be a reversal itself
+    if (voucher.reversalOfVoucherId) return false;
+    // 3. Must not have been already reversed
+    if (voucher.reversedBy && !voucher.reversedBy.isDeleted) return false;
+    return true;
+  }, [voucher]);
 
   // Periods are constrained to the selected fiscal year so an invalid pairing
   // is never submitted; the backend rejects mismatches too.
@@ -423,6 +440,46 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
     }
   }
 
+  async function handleCreateReversal(e: FormEvent) {
+    e.preventDefault();
+    if (!voucher) return;
+
+    setReversalError(null);
+    const trimmedReason = reversalReason.trim();
+
+    if (!trimmedReason) {
+      setReversalError("Reason is required.");
+      return;
+    }
+
+    if (trimmedReason.length < 10) {
+      setReversalError("Reason must be at least 10 characters long.");
+      return;
+    }
+
+    setIsCreatingReversal(true);
+
+    try {
+      const draftReversal = await createReversal(voucher.id, {
+        reason: trimmedReason,
+      });
+      setShowReversalModal(false);
+      setReversalReason("");
+      
+      // Navigate to the newly created reversal draft voucher
+      router.push(`/app/vouchers/${draftReversal.id}`);
+      router.refresh();
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.isUnauthorized) {
+        router.replace("/login");
+        return;
+      }
+      setReversalError(toErrorMessage(caught));
+    } finally {
+      setIsCreatingReversal(false);
+    }
+  }
+
   const pageTitle =
     mode === "create"
       ? "New voucher"
@@ -459,6 +516,34 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
             : ""}
         </Notice>
       ) : null}
+
+      {voucher?.reversalOf && (
+        <Notice tone="info">
+          This voucher is a <strong>Reversal of Voucher{" "}
+          <Link href={`/app/vouchers/${voucher.reversalOf.id}`} className="underline font-bold">
+            {voucher.reversalOf.systemVoucherNo}
+          </Link></strong>.
+          {voucher.correctionReason && (
+            <span className="block mt-1">
+              <strong>Correction Reason:</strong> &ldquo;{voucher.correctionReason}&rdquo;
+            </span>
+          )}
+        </Notice>
+      )}
+
+      {voucher?.reversedBy && !voucher.reversedBy.isDeleted && (
+        <Notice tone="info">
+          <strong>Reversal voucher exists:{" "}
+          <Link href={`/app/vouchers/${voucher.reversedBy.id}`} className="underline font-bold">
+            {voucher.reversedBy.systemVoucherNo}
+          </Link></strong>.
+          {voucher.reversedBy.correctionReason && (
+            <span className="block mt-1">
+              <strong>Correction Reason:</strong> &ldquo;{voucher.reversedBy.correctionReason}&rdquo;
+            </span>
+          )}
+        </Notice>
+      )}
 
       <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
         <Card>
@@ -1020,6 +1105,15 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
             >
               Print voucher
             </Button>
+            {isEligibleForReversal && (
+              <Button
+                onClick={() => setShowReversalModal(true)}
+                type="button"
+                variant="danger"
+              >
+                Create Reversal
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -1108,8 +1202,62 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
           </>
         )}
       </form>
-
       {isReadOnly && voucher ? <VoucherPrintLayout voucher={voucher} /> : null}
+
+      {showReversalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-lg shadow-xl bg-card">
+            <CardHeader
+              description="This will create a new DRAFT reversal voucher with swapped debit and credit sides."
+              title="Create Reversal Voucher"
+            />
+            <form onSubmit={handleCreateReversal} className="mt-4 flex flex-col gap-4">
+              <Field
+                htmlFor="reversal-reason"
+                label="Correction Reason"
+                required
+                hint="Please explain why this voucher is being reversed (minimum 10 characters)."
+              >
+                <TextArea
+                  id="reversal-reason"
+                  onChange={(e) => setReversalReason(e.target.value)}
+                  placeholder="Enter correction reason..."
+                  rows={3}
+                  value={reversalReason}
+                  className="w-full"
+                  required
+                />
+              </Field>
+
+              {reversalError && (
+                <Notice tone="error">{reversalError}</Notice>
+              )}
+
+              <div className="flex justify-end gap-3 mt-2">
+                <Button
+                  disabled={isCreatingReversal}
+                  onClick={() => {
+                    setShowReversalModal(false);
+                    setReversalReason("");
+                    setReversalError(null);
+                  }}
+                  type="button"
+                  variant="ghost"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={isCreatingReversal}
+                  type="submit"
+                  variant="danger"
+                >
+                  {isCreatingReversal ? "Creating Reversal..." : "Create Reversal"}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
