@@ -33,3 +33,6 @@ prisma/dev.db
 prisma/dev.db-journal
 prisma/generated/
 apps/api/src/generated/
+
+# Local MCP/tooling config
+.mcp.json

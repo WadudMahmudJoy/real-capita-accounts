@@ -17,8 +17,8 @@ This repository is intentionally not a continuation of the previous Real Capita 
 - Phase 2I MFS Voucher Posting Continuation is complete and accepted at `10d6869` (tag `phase-2i-complete`). PAYMENT/RECEIPT/CONTRA accept MFS cashBankAccountId; JOURNAL rejects MFS cashBankAccountId. Frontend prevents MFS on JOURNAL. MFS Book shows MFS movement; Cash Book remains CASH-only; Bank Book remains BANK-only. Project reports include MFS lines only when projectId present. Base deterministic demo dataset unchanged; optional MFS demo scenario deferred unless user approves. No schema/migration changes.
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`). The report derives project fund movement using strict same-line only logic (Option A) across Cash, Bank, and MFS.
 - Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `91fd742` (tag `phase-2k-complete`).
-- Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
-- Still not implemented: optional MFS demo dataset extension, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, reversal/correction implementation, approval workflow, MFS provider API/payment gateway/customer wallet integration, and extra roles beyond Accountant.
+- Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete. Backend reversal generation, frontend reversal UX, and posting with line-level equivalence enforcement are implemented.
+- Still not implemented: optional MFS demo dataset extension, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, approval workflow, MFS provider API/payment gateway/customer wallet integration, and extra roles beyond Accountant.
 
 ## Stack
 

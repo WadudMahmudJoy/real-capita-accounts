@@ -34,6 +34,7 @@ This document defines the acceptance criteria for the Phase 2L implementation.
 
 ## 4. Posting & Report Verification (Phase 2L-4)
 - [x] PAYMENT/RECEIPT reversal posting validation fixed: reversal drafts can now be posted. `validateReversalLinkage` validates the original voucher exists, is POSTED, and has matching type. `validateVoucherTypeCashBankRules` allows reversed fund-line direction only for legitimate reversals. Normal non-reversal PAYMENT/RECEIPT rules unchanged.
+- [x] **Reversal line-level equivalence enforced**: `validateReversalLineEquivalence` enforces exact line-level equivalence against the original posted voucher using a Map-based multiset comparison. A reversal draft can no longer be edited into a different amount/account/project/cost-center/cash-bank composition and still post. Line count must match; duplicate lines handled safely.
 - [ ] Posting the reversal voucher follows normal posting rules:
   - Must be balanced (total debit equals total credit).
   - Date must be in an `OPEN` accounting period.

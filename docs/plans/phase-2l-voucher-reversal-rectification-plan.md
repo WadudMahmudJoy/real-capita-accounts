@@ -30,11 +30,12 @@ This plan breaks down the Phase 2L requirements into executable chunks.
 - **Goal**: Verify end-to-end reversal posting and correctness across general ledger and project reports.
 - **Actions**:
   - PAYMENT/RECEIPT reversal posting blocker resolved: `validateReversalLinkage` validates original exists, is POSTED, and has matching type; `validateVoucherTypeCashBankRules` allows reversed fund-line direction only for legitimate reversals. Normal non-reversal rules unchanged.
+  - **Reversal line-level equivalence enforced**: `validateReversalLineEquivalence` enforces exact line-level equivalence against the original posted voucher using a Map-based multiset comparison. A reversal draft can no longer be edited into a different amount/account/project/cost-center/cash-bank composition and still post. Line count must match; duplicate lines handled safely.
   - Run local dev servers and verify the reversal flow manually.
   - Confirm that reversal vouchers post correctly to open periods and reject closed ones.
   - Verify that reports (Trial Balance, Ledger, Books, Project reports) net out corrected entries correctly.
   - Restore database and verify that `pnpm demo:audit` (62 PASS) and `pnpm demo:verify` (47 PASS) pass successfully.
-- **Status**: **IN PROGRESS** (posting fix complete; full report regression pending)
+- **Status**: **IN PROGRESS** (posting fix + line equivalence enforcement complete; full report regression pending)
 
 ## Chunk 2L-5: Final Acceptance and Docs Cleanup
 - **Goal**: Finalize documentation and prepare for final user review.

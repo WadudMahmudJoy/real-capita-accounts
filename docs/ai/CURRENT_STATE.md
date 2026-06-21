@@ -1,6 +1,66 @@
 # Current State
 
-## Phase 2L PAYMENT/RECEIPT Reversal Posting Fix - this session
+## Phase 2L Reversal Line-Level Equivalence Enforcement - this session
+
+Phase 2L reversal posting now enforces exact line-level equivalence against the original posted voucher. A reversal draft can no longer be edited into a different amount/account/project/cost-center/cash-bank composition and still post.
+
+**Problem**: Reversal drafts could be edited before posting, and posting validation did not enforce exact line-level equivalence against the original voucher. An accountant could change a reversal line's amount, ledger account, project, cost center, or cash/bank account, or add/remove lines, and the reversal would still post, breaking the accounting reversal invariant.
+
+**Fix** (single file: `apps/api/src/voucher/voucher.service.ts`, 2 new methods + 1 call site):
+
+1. Added `validateReversalLineEquivalence` private method: loads the original voucher lines inside the posting transaction, builds expected reversal keys (original lines with opposite sides), counts them in a Map-based multiset, builds actual reversal keys from the voucher being posted, and compares the multisets exactly. If any key count differs, posting fails with a clear accounting-safe error.
+
+2. Added `buildLineEquivalenceKey` private helper: constructs a canonical delimiter-separated key from `ledgerAccountId`, `side`, `amount.toFixed(2)`, `projectId`, `costCenterId`, `cashBankAccountId`, and `description`. Amounts are compared as stable two-decimal strings; never as floating-point.
+
+3. Added `validateReversalLineEquivalence` call in `postVoucher` after `validateReversalLinkage` and before `validatePostingRules`.
+
+**Enforced invariants**:
+- Line count must equal original line count
+- Every reversal line must match exactly one original line with opposite side
+- Same ledgerAccountId, amount, description, projectId, costCenterId, cashBankAccountId
+- Opposite side: original DEBIT → reversal CREDIT, original CREDIT → reversal DEBIT
+- No extra lines, no missing lines
+- Duplicate lines handled correctly via multiset (key-count) comparison
+
+**Preserved behavior**:
+- Normal non-reversal PAYMENT still requires cash/bank CREDIT
+- Normal non-reversal RECEIPT still requires cash/bank DEBIT
+- CONTRA rules unchanged
+- JOURNAL MFS rejection unchanged
+- Reversal-of-reversal still rejected
+- DRAFT/non-posted original reversal generation still rejected
+- Posted voucher immutability intact
+- All line-level validation unchanged (ledger, project, cost center, cashBankAccount)
+- Fiscal-year/accounting-period validation unchanged
+- Debit-credit balance validation unchanged
+- PAYMENT/RECEIPT reversal direction allowance from afcc50b remains
+
+**Smoke tests** (all 10/10 PASS):
+1. Unmodified PAYMENT reversal draft posts: PASS
+2. Unmodified RECEIPT reversal draft posts: PASS
+3. Edited PAYMENT reversal with changed amount fails: PASS
+4. Edited PAYMENT reversal with changed ledger account fails: PASS
+5. Edited reversal with extra line fails: PASS
+6. Normal valid PAYMENT still posts: PASS
+7. Invalid PAYMENT without cash/bank CREDIT fails: PASS
+8. Reversal-of-reversal rejected: PASS
+9. Error mentions "line equivalence" for amount change: PASS
+10. Error mentions "line count" for extra line: PASS
+
+**Verification**:
+- `pnpm typecheck`: PASS
+- `pnpm lint`: PASS
+- `pnpm build:api`: PASS
+- `pnpm build:web`: PASS
+- `pnpm demo:audit`: 62 PASS, 0 FAIL
+- `pnpm demo:verify`: 47 PASS, 0 FAIL
+- DB restored after smoke tests
+
+**Files changed**: `apps/api/src/voucher/voucher.service.ts` only.
+
+**No changes to**: Prisma schema, migrations, frontend, reports, project fund movement, demo dataset, demo scripts.
+
+## Phase 2L PAYMENT/RECEIPT Reversal Posting Fix - previous session
 
 Phase 2L reversal posting validation fix is complete. PAYMENT and RECEIPT reversal drafts can now be posted without weakening normal voucher posting rules.
 

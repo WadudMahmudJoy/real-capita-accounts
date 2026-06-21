@@ -530,6 +530,13 @@ export class VoucherService {
       // deleted or altered since the draft was generated.
       await this.validateReversalLinkage(tx, voucher);
 
+      // Enforce exact line-level reversal equivalence. A reversal draft
+      // can be edited before posting, but the posted result must be an
+      // exact mirror of the original with debit/credit sides swapped.
+      // Any deviation in account, amount, project, cost center, cash/bank
+      // account, description, or line count causes posting to fail.
+      await this.validateReversalLineEquivalence(tx, voucher);
+
       const totals = this.validatePostingRules(voucher);
       const postingDate = new Date();
       const updated = await tx.voucher.updateMany({
@@ -993,6 +1000,114 @@ export class VoucherService {
         `Reversal of ${voucher.systemVoucherNo}: reversal voucher type must match the original voucher type.`,
       );
     }
+  }
+
+  // Enforces exact line-level reversal equivalence. For every original line
+  // there must be exactly one reversal line with the same ledger account,
+  // amount, description, project, cost center, and cash/bank account, but
+  // with the opposite debit/credit side. Duplicate lines are handled safely
+  // via a Map-based multiset comparison that never collapses identical keys.
+  private async validateReversalLineEquivalence(
+    tx: Prisma.TransactionClient,
+    voucher: VoucherForPosting,
+  ): Promise<void> {
+    if (!voucher.reversalOfVoucherId) return;
+
+    const originalLines = await tx.voucherLine.findMany({
+      where: { voucherId: voucher.reversalOfVoucherId },
+      orderBy: { lineNo: "asc" },
+    });
+
+    if (originalLines.length !== voucher.lines.length) {
+      throw new BadRequestException(
+        `Reversal of ${voucher.systemVoucherNo}: line count (${voucher.lines.length}) ` +
+          `does not match the original voucher (${originalLines.length}). ` +
+          `A reversal must have exactly the same number of lines as the original.`,
+      );
+    }
+
+    // Build expected reversal keys from the original lines. Each original
+    // line is expected to appear in the reversal with the opposite side.
+    const expectedCounts = new Map<string, number>();
+    for (const line of originalLines) {
+      const reversedSide =
+        line.side === VoucherLineSide.DEBIT
+          ? VoucherLineSide.CREDIT
+          : VoucherLineSide.DEBIT;
+
+      const key = this.buildLineEquivalenceKey({
+        ledgerAccountId: line.ledgerAccountId,
+        side: reversedSide,
+        amount: line.amount,
+        projectId: line.projectId,
+        costCenterId: line.costCenterId,
+        cashBankAccountId: line.cashBankAccountId,
+        description: line.description,
+      });
+      expectedCounts.set(key, (expectedCounts.get(key) ?? 0) + 1);
+    }
+
+    // Build actual reversal keys from the voucher being posted.
+    const actualCounts = new Map<string, number>();
+    for (const line of voucher.lines) {
+      const key = this.buildLineEquivalenceKey({
+        ledgerAccountId: line.ledgerAccountId,
+        side: line.side,
+        amount: line.amount,
+        projectId: line.projectId,
+        costCenterId: line.costCenterId,
+        cashBankAccountId: line.cashBankAccountId,
+        description: line.description,
+      });
+      actualCounts.set(key, (actualCounts.get(key) ?? 0) + 1);
+    }
+
+    // Compare the multisets. Every expected key must be present with the
+    // same count in the actual lines, and no extra keys may exist.
+    const allKeys = new Set([
+      ...expectedCounts.keys(),
+      ...actualCounts.keys(),
+    ]);
+
+    for (const key of allKeys) {
+      const expected = expectedCounts.get(key) ?? 0;
+      const actual = actualCounts.get(key) ?? 0;
+
+      if (expected !== actual) {
+        throw new BadRequestException(
+          `Reversal of ${voucher.systemVoucherNo}: line equivalence check failed. ` +
+            `One or more reversal lines do not match the expected reversal pattern. ` +
+            `Each reversal line must have the same ledger account, amount, description, ` +
+            `project, cost center, and cash/bank account as the original, ` +
+            `with the opposite debit/credit side.`,
+        );
+      }
+    }
+  }
+
+  // Builds a canonical string key for a voucher line used in reversal
+  // equivalence comparison. The key includes all fields that must be
+  // identical (except side, which is expected to be opposite) between
+  // the original and reversal lines. Amounts are compared as stable
+  // two-decimal strings; never as floating-point.
+  private buildLineEquivalenceKey(line: {
+    ledgerAccountId: string;
+    side: VoucherLineSide;
+    amount: Prisma.Decimal;
+    projectId: string | null;
+    costCenterId: string | null;
+    cashBankAccountId: string | null;
+    description: string | null;
+  }): string {
+    return [
+      line.ledgerAccountId,
+      line.side,
+      line.amount.toFixed(2),
+      line.projectId ?? "\x00null",
+      line.costCenterId ?? "\x00null",
+      line.cashBankAccountId ?? "\x00null",
+      line.description ?? "\x00null",
+    ].join("\x01");
   }
 
   // Atomically reserves the next sequential number for the
