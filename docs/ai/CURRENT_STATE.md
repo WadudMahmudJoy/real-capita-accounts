@@ -1,6 +1,51 @@
 # Current State
 
-## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session
+## Phase 2L PAYMENT/RECEIPT Reversal Posting Fix - this session
+
+Phase 2L reversal posting validation fix is complete. PAYMENT and RECEIPT reversal drafts can now be posted without weakening normal voucher posting rules.
+
+**Problem**: PAYMENT/RECEIPT reversal drafts could be generated and displayed, but posting failed because the reversal swaps the fund-line direction. Normal PAYMENT expects cash/bank CREDIT; a PAYMENT reversal has cash/bank DEBIT. Normal RECEIPT expects cash/bank DEBIT; a RECEIPT reversal has cash/bank CREDIT.
+
+**Fix** (single file: `apps/api/src/voucher/voucher.service.ts`, 78 insertions, 8 deletions):
+
+1. Added `validateReversalLinkage` private method: validates the reversal's `reversalOfVoucherId` points to a valid, posted original voucher of the same type. Runs inside the posting transaction before `validatePostingRules`.
+
+2. Modified `validateVoucherTypeCashBankRules` to be reversal-aware: when `reversalOfVoucherId` is set (and validated by `validateReversalLinkage`), the fund-line direction expectations are inverted. PAYMENT reversal requires cash/bank DEBIT; RECEIPT reversal requires cash/bank CREDIT. When `reversalOfVoucherId` is absent, normal PAYMENT/RECEIPT rules are enforced exactly as before.
+
+3. Added `validateReversalLinkage` call in `postVoucher` method before `validatePostingRules`.
+
+**Preserved behavior**:
+- Normal non-reversal PAYMENT still requires cash/bank CREDIT
+- Normal non-reversal RECEIPT still requires cash/bank DEBIT
+- CONTRA rules unchanged (reversal still has 2 cash/bank lines, one debit, one credit)
+- JOURNAL MFS rejection unchanged
+- Reversal-of-reversal still rejected
+- DRAFT/non-posted original reversal generation still rejected
+- Posted voucher immutability intact
+- All line-level validation unchanged (ledger, project, cost center, cashBankAccount)
+- Fiscal-year/accounting-period validation unchanged
+- Debit-credit balance validation unchanged
+
+**Smoke tests** (all PASS):
+- A. PAYMENT reversal draft posting: PASS
+- B. RECEIPT reversal draft posting: PASS
+- C. Reversal-of-reversal: PASS (correctly rejected)
+- D. Invalid normal PAYMENT (no cash CREDIT): PASS (correctly rejected)
+
+**Verification**:
+- `pnpm typecheck`: PASS
+- `pnpm lint`: PASS
+- `pnpm build:api`: PASS
+- `pnpm build:web`: PASS
+- `pnpm demo:audit`: 62 PASS, 0 FAIL
+- `pnpm demo:verify`: 47 PASS, 0 FAIL
+- DB restored after smoke tests
+
+**Files changed**: `apps/api/src/voucher/voucher.service.ts` only.
+
+**No changes to**: Prisma schema, migrations, frontend, reports, project fund movement, demo dataset, demo scripts.
+
+## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - previous session
 
 Phase 2L Chunk 2L-2 is complete. Backend support for full posted-voucher reversal generation is implemented. A reversal-of-reversal blocker was corrected: a voucher that is itself a reversal (`reversalOfVoucherId` is set) cannot be reversed in Phase 2L. Reversal chains are out of scope; only full reversal of original posted vouchers is supported.
 - Added self-referencing 1:1 reversal linkage to `Voucher` model: `reversalOfVoucherId` (unique FK), `correctionReason`, `reversalOf` / `reversedBy` relations.

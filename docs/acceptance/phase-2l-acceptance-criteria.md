@@ -33,6 +33,7 @@ This document defines the acceptance criteria for the Phase 2L implementation.
 - [ ] Once the reversal voucher is posted, the original voucher detail page shows a notice/badge: `"Reversed by {reversalVoucherNo} on {postingDate}"` with the reason.
 
 ## 4. Posting & Report Verification (Phase 2L-4)
+- [x] PAYMENT/RECEIPT reversal posting validation fixed: reversal drafts can now be posted. `validateReversalLinkage` validates the original voucher exists, is POSTED, and has matching type. `validateVoucherTypeCashBankRules` allows reversed fund-line direction only for legitimate reversals. Normal non-reversal PAYMENT/RECEIPT rules unchanged.
 - [ ] Posting the reversal voucher follows normal posting rules:
   - Must be balanced (total debit equals total credit).
   - Date must be in an `OPEN` accounting period.

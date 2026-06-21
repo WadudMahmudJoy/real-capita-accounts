@@ -24,16 +24,17 @@ This plan breaks down the Phase 2L requirements into executable chunks.
   - Implement a reversal reason dialog on click.
   - Route the user to the generated draft form with reversal banner alerts.
   - Render linkage banners on both the original and reversal voucher detail views.
-- **Status**: **NOT STARTED**
+- **Status**: **COMPLETE** (accepted at `c66744a`, tag `phase-2l-frontend-reversal-ux`)
 
 ## Chunk 2L-4: Posting & Report Regression Verification
 - **Goal**: Verify end-to-end reversal posting and correctness across general ledger and project reports.
 - **Actions**:
+  - PAYMENT/RECEIPT reversal posting blocker resolved: `validateReversalLinkage` validates original exists, is POSTED, and has matching type; `validateVoucherTypeCashBankRules` allows reversed fund-line direction only for legitimate reversals. Normal non-reversal rules unchanged.
   - Run local dev servers and verify the reversal flow manually.
   - Confirm that reversal vouchers post correctly to open periods and reject closed ones.
   - Verify that reports (Trial Balance, Ledger, Books, Project reports) net out corrected entries correctly.
   - Restore database and verify that `pnpm demo:audit` (62 PASS) and `pnpm demo:verify` (47 PASS) pass successfully.
-- **Status**: **NOT STARTED**
+- **Status**: **IN PROGRESS** (posting fix complete; full report regression pending)
 
 ## Chunk 2L-5: Final Acceptance and Docs Cleanup
 - **Goal**: Finalize documentation and prepare for final user review.

@@ -6,7 +6,7 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 ## Current Phase
 
-Phase 2L: Voucher Reversal / Rectification Workflow requirement lock is complete. It defines the workflow for correcting mistakes on posted vouchers using balanced reversal vouchers linked via self-referencing relationships in the database, with rectification deferred. Implemented chunks: 2L-1 requirement lock. No schema/migration/runtime changes.
+Phase 2L: Voucher Reversal / Rectification Workflow is in progress. Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX. PAYMENT/RECEIPT reversal posting blocker resolved: reversal drafts can now be posted. `POST /vouchers/:id/reversal` generates a DRAFT reversal from a POSTED original. `POST /vouchers/:id/post` allows posting reversal drafts. `validateReversalLinkage` and reversal-aware `validateVoucherTypeCashBankRules` ensure reversal posting is safe without weakening normal voucher rules. Next: 2L-4 posting & report regression verification.
 
 Phase 2K: Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`). Phase 2K allows accountants to optionally tag Cash/Bank/MFS voucher lines with project and cost center during voucher creation, so these fund lines can appear in the Project Fund Movement View. Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
 
@@ -38,9 +38,9 @@ Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba`
 
 Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`). See `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md`, `docs/acceptance/phase-2k-acceptance-criteria.md`, and `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md`.
 
-Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete. See `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md`, `docs/acceptance/phase-2l-acceptance-criteria.md`, and `docs/plans/phase-2l-voucher-reversal-rectification-plan.md`.
+Phase 2L Voucher Reversal / Rectification Workflow is in progress. Schema migration, backend reversal generation, and frontend reversal UX are implemented. See `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md`, `docs/acceptance/phase-2l-acceptance-criteria.md`, and `docs/plans/phase-2l-voucher-reversal-rectification-plan.md`.
 
-Do not implement actual Phase 2L schema migration, backend reversal generation endpoints, frontend reversal buttons/reason capture, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties, customers, vendors, additional roles, file uploads, business seed data, MFS provider API/payment gateway/customer wallet integration, or JOURNAL MFS acceptance until the user confirms the next phase or module.
+Do not implement PDF/Excel export, dashboard analytics, payroll, salary sheets, parties, customers, vendors, additional roles, file uploads, business seed data, MFS provider API/payment gateway/customer wallet integration, or JOURNAL MFS acceptance until the user confirms the next phase or module.
 
 ## Confirmed Role Model
 
@@ -199,4 +199,4 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `91fd742` (tag `phase-2k-complete`). 
 
-Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete. Implementation of Phase 2L has not started. Next action: user may tag `phase-2l-requirements-locked`, then explicitly approve Phase 2L Chunk 2L-2 Schema / Linkage & Backend Reversal Draft Generation before any implementation begins. Do not start next module/phase implementation without explicit user confirmation.
+Phase 2L Voucher Reversal / Rectification Workflow is in progress. Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX. PAYMENT/RECEIPT reversal posting blocker resolved. Next action: Phase 2L-4 full posting & report regression verification, then 2L-5 final acceptance. Do not start next module/phase implementation without explicit user confirmation.

@@ -524,6 +524,12 @@ export class VoucherService {
         throw new NotFoundException("Voucher was not found.");
       }
 
+      // Validate reversal linkage before posting rules. A reversal voucher
+      // must reference a valid, posted original of the same voucher type.
+      // This prevents posting a reversal draft whose original has been
+      // deleted or altered since the draft was generated.
+      await this.validateReversalLinkage(tx, voucher);
+
       const totals = this.validatePostingRules(voucher);
       const postingDate = new Date();
       const updated = await tx.voucher.updateMany({
@@ -890,16 +896,42 @@ export class VoucherService {
       }
     }
 
-    if (voucher.voucherType === "PAYMENT" && !hasCreditCashBankLine) {
-      throw new BadRequestException(
-        "Payment vouchers require at least one cash/bank credit line before posting.",
-      );
+    // Reversal vouchers have their fund-line direction swapped relative to
+    // the original. A normal PAYMENT requires a cash/bank CREDIT, but a
+    // PAYMENT reversal has a cash/bank DEBIT. The reversalOfVoucherId link
+    // is validated by validateReversalLinkage before this check runs.
+    const isReversal = voucher.reversalOfVoucherId != null;
+
+    if (voucher.voucherType === "PAYMENT") {
+      if (isReversal) {
+        if (!hasDebitCashBankLine) {
+          throw new BadRequestException(
+            "Payment reversal vouchers require at least one cash/bank debit line before posting.",
+          );
+        }
+      } else {
+        if (!hasCreditCashBankLine) {
+          throw new BadRequestException(
+            "Payment vouchers require at least one cash/bank credit line before posting.",
+          );
+        }
+      }
     }
 
-    if (voucher.voucherType === "RECEIPT" && !hasDebitCashBankLine) {
-      throw new BadRequestException(
-        "Receipt vouchers require at least one cash/bank debit line before posting.",
-      );
+    if (voucher.voucherType === "RECEIPT") {
+      if (isReversal) {
+        if (!hasCreditCashBankLine) {
+          throw new BadRequestException(
+            "Receipt reversal vouchers require at least one cash/bank credit line before posting.",
+          );
+        }
+      } else {
+        if (!hasDebitCashBankLine) {
+          throw new BadRequestException(
+            "Receipt vouchers require at least one cash/bank debit line before posting.",
+          );
+        }
+      }
     }
 
     if (
@@ -923,6 +955,44 @@ export class VoucherService {
         AND "isDeleted" = false
       FOR UPDATE
     `;
+  }
+
+  // Validates that a reversal voucher's linkage to its original voucher is
+  // legitimate. The original must exist, be posted, and have the same
+  // voucher type. This is the only place reversalOfVoucherId is trusted;
+  // validateVoucherTypeCashBankRules then allows the reversed fund-line
+  // direction based on the validated link.
+  private async validateReversalLinkage(
+    tx: Prisma.TransactionClient,
+    voucher: {
+      reversalOfVoucherId: string | null;
+      voucherType: VoucherType;
+      systemVoucherNo: string;
+    },
+  ): Promise<void> {
+    if (!voucher.reversalOfVoucherId) return;
+
+    const original = await tx.voucher.findFirst({
+      where: { id: voucher.reversalOfVoucherId, isDeleted: false },
+    });
+
+    if (!original) {
+      throw new BadRequestException(
+        `Reversal of ${voucher.systemVoucherNo}: the original voucher no longer exists.`,
+      );
+    }
+
+    if (original.status !== VoucherStatus.POSTED) {
+      throw new BadRequestException(
+        `Reversal of ${voucher.systemVoucherNo}: the original voucher must be posted.`,
+      );
+    }
+
+    if (original.voucherType !== voucher.voucherType) {
+      throw new BadRequestException(
+        `Reversal of ${voucher.systemVoucherNo}: reversal voucher type must match the original voucher type.`,
+      );
+    }
   }
 
   // Atomically reserves the next sequential number for the
