@@ -23,32 +23,63 @@ This plan breaks down the Phase 2M requirements into executable chunks.
 - **Verification Commands**: `git diff --check`, `git status --short --branch`, `git diff --stat`.
 - **Recommended Model**: DeepSeek V4 Pro Max (or Claude Opus 4.8 as backup).
 - **Stop Condition**: All docs created and verified. No code changes. Working tree is clean aside from new docs.
-- **Status**: **IN PROGRESS** (current chunk)
+- **Status**: **COMPLETE** at `522416e`; Phase 2M-1B clarification patch follows before implementation
+
+## Chunk 2M-1B: Requirement Clarification Patch
+
+- **Goal**: Resolve independent requirement quality review blockers before Phase 2M-2 schema/data-model work starts.
+- **Actions**:
+  - Clarify receipt-to-booking cardinality as an allocation/link table model.
+  - Clarify generated collection receipt vouchers are always `DRAFT` first and never auto-posted.
+  - Clarify installment paid/due state is derived from posted receipt allocations, not manual paid flags.
+  - Split stored administrative booking status from derived financial status.
+  - Lock report inclusion/exclusion rules for draft, active, cancelled, refunded, and posted entities.
+  - Lock customer uniqueness, bookable item uniqueness, SHARE category boundary, Project Fund Movement Option A separation, aging scope, reversal netting behavior, and GL/control-account boundary.
+  - Update status files (`docs/ai/CURRENT_STATE.md`, `docs/handoff.md`) to show Phase 2M-1B docs-only clarification state.
+- **In-Scope**: Documentation only.
+- **Out-of-Scope**: No schema changes, migrations, backend code, frontend code, tests, demo data changes, database mutations, commits, tags, or pushes.
+- **Acceptance Checks**:
+  - [ ] Requirement lock reflects all Phase 2M-1B decisions.
+  - [ ] Plan and acceptance criteria no longer contain schema-shaping contradictions.
+  - [ ] Phase 2M-2 remains `NOT STARTED`.
+  - [ ] Docs state Phase 2M-2 may start only after this patch is reviewed and committed.
+  - [ ] No source, Prisma schema, migration, test, or DB changes are made.
+- **Verification Commands**: `git diff --check`, `git status --short --branch`, `git diff --stat`.
+- **Recommended Model**: GPT-5.5 (or Claude Opus 4.8 as backup if available).
+- **Stop Condition**: Docs clarified and verified. Do not commit.
+- **Status**: **IN PROGRESS** (docs-only clarification patch)
 
 ## Chunk 2M-2: Data Model & Backend Foundation
 
 - **Goal**: Design and implement the Prisma schema models, database migration, and NestJS backend API endpoints for customer, bookable item, and booking management.
+- **Precondition**: Do not start until Phase 2M-1B is reviewed and committed.
 - **Actions**:
   - Design Prisma models:
-    - `Customer` model with fields: code, name, phone, email, nid/passport, address, profession, nominee, notes, isActive.
-    - `BookableItem` model with fields: code, projectId, category (enum: LAND, PLOT, FLAT, UNIT, SHARE, OTHER), block/zone/phase, itemIdentifier, size/area, basePrice, status (enum: AVAILABLE, BOOKED, SOLD, HOLD, CANCELLED).
-    - `Booking` model with fields: bookingNumber, customerId, projectId, bookableItemId, bookingDate, totalAgreedPrice, discount, netBookingValue, bookingMoney, status (enum: DRAFT, ACTIVE, PARTIALLY_PAID, FULLY_PAID, CANCELLED, REFUNDED), remarks.
-    - `BookingInstallment` model with fields: bookingId, dueDate, amount, isPaid, paidDate, paidAmount, receiptVoucherId (nullable FK to Voucher).
-    - `BookingReceipt` model (junction/link table) with fields: bookingId, voucherId (FK to Voucher), amount, linkedAt.
+    - `Customer` model with fields: code, customer type or business/customer handling, name, phone, email, nid/passport, address, profession/business, nominee/reference, notes, isActive/status. `customerCode` must be unique; phone is required but not globally unique; NID/passport is optional and unique where practical.
+    - `BookableItem` model with fields: code, projectId, category (enum: LAND, PLOT, FLAT, UNIT, SHARE, OTHER), optional block/zone/phase metadata, itemIdentifier, size/area/share quantity, basePrice, status (enum: AVAILABLE, BOOKED, SOLD, HOLD, CANCELLED). Enforce uniqueness within project by `category + itemIdentifier`; include block/zone/phase in displayed code if they are real identity fields.
+    - `Booking` model with fields: bookingNumber, customerId, projectId, bookableItemId, bookingDate, totalAgreedPrice, discount, netBookingValue, bookingMoney, administrative status (enum: DRAFT, ACTIVE, CANCELLED, REFUNDED, optional HOLD), remarks. Do not store `PARTIALLY_PAID`, `FULLY_PAID`, or `OVERDUE` as administrative statuses.
+    - `BookingInstallment` model with fields: bookingId, dueDate, amount, sequence/reference, notes. Do not make manual `isPaid`/`paidDate` flags authoritative; paid/due values are derived from posted receipt allocations.
+    - `BookingReceiptAllocation` (or similarly named allocation/link table) with fields: bookingId, voucherId (FK to Voucher), amount, allocationDate, allocationReference/notes, createdAt. This supports one receipt voucher allocated to one or more bookings and one booking collected by many receipt vouchers.
   - Create and apply database migration.
   - Create NestJS modules:
     - `CustomerModule` with CRUD endpoints (`GET /customers`, `POST /customers`, `GET /customers/:id`, `PATCH /customers/:id`).
     - `BookableItemModule` with CRUD endpoints (`GET /bookable-items`, `POST /bookable-items`, `GET /bookable-items/:id`, `PATCH /bookable-items/:id`).
     - `BookingModule` with CRUD endpoints (`GET /bookings`, `POST /bookings`, `GET /bookings/:id`, `PATCH /bookings/:id`).
-    - `BookingReceiptModule` with link/unlink endpoints (`POST /bookings/:id/receipts`, `GET /bookings/:id/receipts`).
+    - `BookingReceiptAllocationModule` (or equivalent) with allocation/link endpoints (`POST /bookings/:id/receipt-allocations`, `GET /bookings/:id/receipt-allocations`).
   - Implement auto-generated codes (CUST-00001, BOOK-00001, ITEM-00001).
   - Implement status transition validation.
+  - Implement derived financial status calculation (`UNPAID`, `PARTIALLY_PAID`, `FULLY_PAID`, `OVERDUE`) from schedule plus posted allocations.
+  - Keep `SHARE` as a generic category with no special legal/investment behavior.
   - Add DTO validation (class-validator).
   - Guard all endpoints with `AuthGuard + RolesGuard + ACCOUNTANT`.
 - **In-Scope**: Prisma schema, migration, backend modules, DTOs, validation, guards.
 - **Out-of-Scope**: Frontend pages, client portal, voucher posting changes, report changes, demo data changes.
 - **Acceptance Checks**:
-  - [ ] Prisma models defined and migration applied.
+  - [ ] Prisma models defined according to Phase 2M-1B clarification and migration applied.
+  - [ ] Receipt-to-booking allocation/link table supports many-to-many allocation with amount/date/reference.
+  - [ ] Stored booking status is administrative only; financial status is derived.
+  - [ ] Installment paid/due values are derived from posted receipt allocations, not authoritative manual flags.
+  - [ ] Customer uniqueness and bookable item uniqueness rules are enforced.
   - [ ] All CRUD endpoints return correct responses.
   - [ ] Auto-generated codes work correctly.
   - [ ] Status transitions are validated.
@@ -77,7 +108,7 @@ This plan breaks down the Phase 2M requirements into executable chunks.
     - `/app/bookings/[id]` -- detail page showing booking info, payment schedule, collection history, status badge.
   - Add navigation links in app sidebar under new "Customers & Bookings" section.
   - Implement booking status badges (color-coded).
-  - Implement payment schedule display (table of installments with due dates, amounts, paid status).
+  - Implement payment schedule display (table of installments with due dates, amounts, derived paid/due status).
   - Implement booking status transitions (DRAFT → ACTIVE, ACTIVE → CANCELLED, etc.) with confirmation dialogs.
 - **In-Scope**: Frontend pages for customer, bookable item, and booking CRUD.
 - **Out-of-Scope**: Collection/receipt voucher linkage UI, customer statement, reports, client portal.
@@ -85,8 +116,9 @@ This plan breaks down the Phase 2M requirements into executable chunks.
   - [ ] Customer list/create/edit/detail pages work correctly.
   - [ ] Bookable item list/create/edit/detail pages work correctly.
   - [ ] Booking list/create/detail pages work correctly.
-  - [ ] Booking status transitions work with validation.
-  - [ ] Payment schedule is displayed correctly.
+  - [ ] Administrative booking status transitions work with validation.
+  - [ ] Financial status badges display derived values (`UNPAID`, `PARTIALLY_PAID`, `FULLY_PAID`, `OVERDUE`).
+  - [ ] Payment schedule displays derived paid/due status correctly.
   - [ ] Navigation links are present in sidebar.
   - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm build:web` pass.
 - **Verification Commands**: `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `pnpm check:all`.
@@ -99,30 +131,33 @@ This plan breaks down the Phase 2M requirements into executable chunks.
 - **Goal**: Implement the ability to create receipt vouchers from booking collections or link existing receipt vouchers to bookings. Ensure accounting source of truth is preserved.
 - **Actions**:
   - Backend:
-    - Create `POST /bookings/:id/collections` endpoint to record a collection and optionally create a linked receipt voucher.
-    - Create `POST /bookings/:id/link-voucher` endpoint to link an existing receipt voucher to a booking.
-    - Create `DELETE /bookings/:id/receipts/:receiptId` endpoint to unlink (only if voucher is DRAFT).
+    - Create `POST /bookings/:id/collections` endpoint to record a collection and create a linked receipt voucher as `DRAFT` only.
+    - Create `POST /bookings/:id/receipt-allocations` endpoint to allocate an existing RECEIPT voucher to one or more bookings with explicit amounts.
+    - Create `DELETE /bookings/:id/receipt-allocations/:allocationId` endpoint to unlink only if voucher is `DRAFT`.
     - Update `GET /bookings/:id` to include collection history with voucher status.
-    - Implement validation: cannot unlink posted voucher; cannot link non-RECEIPT vouchers; cannot link the same voucher to multiple bookings (if 1:1 is chosen).
+    - Implement validation: cannot unlink posted voucher; cannot link non-RECEIPT vouchers; allocation amounts must be explicit; draft allocations are pending only; posted reversal vouchers net down collected totals.
   - Frontend:
     - Add "Record Collection" button on booking detail page.
-    - Collection form: enter amount, date, payment mode (cash/bank/MFS), optional narration → creates receipt voucher + links to booking.
+    - Collection form: enter amount, date, payment mode (cash/bank/MFS), optional narration -> creates `DRAFT` receipt voucher + pending allocation to booking.
     - Add "Link Existing Voucher" button to search and link an existing RECEIPT voucher.
-    - Show collection history table on booking detail: date, voucher number (clickable), amount, status (DRAFT/POSTED).
+    - Show collection history table on booking detail: date, voucher number (clickable), amount, allocation reference, status (DRAFT/POSTED), and reversal references when applicable.
     - Show running total: total collected, total due.
   - Voucher integration:
     - When creating a receipt voucher from a collection, the voucher narration should reference the booking: `[Booking {bookingNumber}] - {customerName}`.
     - The receipt voucher is a standard RECEIPT voucher; no special voucher type is created.
-    - Posted voucher status changes update the booking's collected amount and payment status.
+    - Posted voucher status changes update derived collected amount, due amount, overdue amount/count, next installment date, and financial status.
+    - Draft vouchers and draft reversal vouchers have no collected/due report effect.
+    - Posted reversal vouchers net down collected totals and remain visible in customer history.
 - **In-Scope**: Collection creation, voucher linkage, collection history display, running totals.
 - **Out-of-Scope**: Customer statement, reports, automated installment tracking, refund workflow.
 - **Acceptance Checks**:
-  - [ ] Can create receipt voucher from booking collection.
-  - [ ] Can link existing receipt voucher to booking.
+  - [ ] Can create a DRAFT receipt voucher from booking collection; no auto-posting occurs.
+  - [ ] Can allocate an existing RECEIPT voucher to one or more bookings with explicit allocation rows.
   - [ ] Cannot unlink posted voucher from booking.
-  - [ ] Collection history shows all linked vouchers with status.
-  - [ ] Booking collected amount updates when voucher is posted.
-  - [ ] DRAFT receipts do not affect booking collected amount.
+  - [ ] Collection history shows all linked vouchers, allocation references, statuses, and reversal references.
+  - [ ] Booking collected amount updates only when linked voucher is posted.
+  - [ ] DRAFT receipts and DRAFT allocations are visible as pending but do not affect collected, due, overdue, financial status, or reports.
+  - [ ] Posted reversal vouchers net down customer collection totals.
   - [ ] Customer payment history is visible.
   - [ ] `pnpm demo:audit` and `pnpm demo:verify` pass.
 - **Verification Commands**: `pnpm typecheck`, `pnpm lint`, `pnpm build:web`, `pnpm build:api`, `pnpm check:all`, `pnpm demo:audit`, `pnpm demo:verify`.
@@ -148,16 +183,23 @@ This plan breaks down the Phase 2M requirements into executable chunks.
     - `/app/reports/project-collection` -- project selector, collection summary, print.
     - `/app/reports/project-receivable` -- project selector, receivable summary, print.
     - `/app/reports/overdue-installments` -- overdue bookings list, print.
-  - All reports derive from posted voucher lines + booking data.
+  - All reports derive from posted receipt allocation links + booking data, with existing accounting reports still deriving from posted VoucherLine records.
+  - State in each report whether cancelled/refunded bookings are excluded by default or explicitly included.
+  - Keep customer/project collection reports separate from Project Fund Movement Option A.
   - Add navigation links under Reports section.
   - Browser print foundation for all report pages.
 - **In-Scope**: Six report APIs, six frontend report pages, print foundation.
-- **Out-of-Scope**: PDF/Excel export, dashboard analytics, aging analysis, cancelled/refunded booking report.
+- **Out-of-Scope**: PDF/Excel export, dashboard analytics, 30/60/90 aging buckets, advanced aging analytics, automated reminders, cancelled/refunded booking report.
 - **Acceptance Checks**:
   - [ ] All six report endpoints return correct data.
   - [ ] All six frontend report pages render and filter correctly.
   - [ ] Reports derive from posted voucher lines only.
   - [ ] DRAFT collections do not affect report totals.
+  - [ ] DRAFT bookings do not affect receivable/collection totals.
+  - [ ] ACTIVE bookings affect receivable/due totals.
+  - [ ] CANCELLED/REFUNDED bookings are excluded from active receivable totals unless explicitly included and labelled.
+  - [ ] Project collection reports allocate by booking allocation amounts; Project Fund Movement only reflects same-line voucher project tags.
+  - [ ] Overdue report includes simple overdue amount, overdue installment count, and next installment date, without 30/60/90 buckets.
   - [ ] Customer statement shows correct running balance.
   - [ ] Browser print works on all report pages.
   - [ ] Existing 12 reports continue to work correctly.

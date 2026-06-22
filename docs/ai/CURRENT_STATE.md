@@ -1,12 +1,22 @@
 # Current State
 
-## Phase 2M-1 Customer Booking & Receivable Control Requirement Lock - this session
+## Phase 2M-1B Customer Booking & Receivable Control Requirement Clarification - this session
+
+Phase 2M-1B clarification patch is in progress as a docs-only follow-up to the Phase 2M-1 requirement lock at `522416e`. Independent requirement quality review passed the high-level scope/accounting-first intent but blocked immediate Phase 2M-2 implementation until schema-shaping decisions were clarified.
+
+**Clarified decisions**: Receipt-to-booking uses a separate allocation/link table; generated collection receipt vouchers are DRAFT first with no auto-posting; installment paid/due state is derived from posted receipt allocations; stored booking status is administrative only while financial status is derived; report inclusion/exclusion rules are locked; customer and bookable item uniqueness are locked; SHARE has no special legal/investment behavior; customer/project collection reports are separate from Project Fund Movement Option A; Phase 2M includes simple overdue amount, overdue installment count, and next installment date while 30/60/90 aging buckets remain deferred; linked receipt voucher reversals net down collected totals; Phase 2M receivable reports are customer receivable/control subledger views, not revenue recognition, legal ownership transfer, or approved GL receivable recognition.
+
+**Phase 2M-2 status**: NOT STARTED. Phase 2M-2 may start only after this Phase 2M-1B clarification patch is reviewed and committed. No schema, migration, backend, frontend, test, demo data, or DB changes have been made.
+
+**Files updated in this clarification patch**: `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`, `docs/plans/phase-2m-customer-booking-receivable-control-plan.md`, `docs/acceptance/phase-2m-acceptance-criteria.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+## Phase 2M-1 Customer Booking & Receivable Control Requirement Lock - previous session
 
 Phase 2M-1 requirement lock is created. Phase 2M Customer Booking & Receivable Control defines the internal accounting-first workflow for recording customers, their bookings (land, plot, flat, unit, share, or other project-based assets), agreed values, payment schedules, money received, due amounts, voucher-backed transaction history, and customer statements.
 
 **Scope locked**: Customer master, bookable item reference, booking record, receivable/due tracking, collection/receipt voucher linkage, customer transaction history, customer statement, and six receivable reports (customer ledger, booking receivable, customer due, project collection, project receivable, overdue installments).
 
-**Explicitly deferred**: Client portal / customer login, SMS/email/WhatsApp notifications, sales lead CRM, marketing pipeline, agent commission, legal deed/registration workflow, handover workflow, cancellation/refund accounting automation, ownership transfer, multi-role approval workflow, public payment gateway, mobile app, PDF/Excel export, dashboard analytics, aging analysis, revenue recognition.
+**Explicitly deferred**: Client portal / customer login, SMS/email/WhatsApp notifications, sales lead CRM, marketing pipeline, agent commission, legal deed/registration workflow, handover workflow, cancellation/refund accounting automation, ownership transfer, multi-role approval workflow, public payment gateway, mobile app, PDF/Excel export, dashboard analytics, 30/60/90 aging buckets and advanced aging analytics, revenue recognition.
 
 **Accounting-first invariants preserved**: All reports derive from POSTED VoucherLine records; customer/booking module must not bypass voucher posting; DRAFT booking or DRAFT receipt must not affect reports; receipt voucher remains the accounting source of truth.
 

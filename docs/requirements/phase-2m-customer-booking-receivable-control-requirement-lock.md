@@ -24,7 +24,9 @@ Phase 2M answers the business question: "When a customer wants to buy a plot, ho
 
 ## Current Status
 
-**Requirement lock only. Not implemented.** No schema changes, migrations, backend API endpoints, frontend pages, or demo data changes have been made for Phase 2M.
+**Requirement lock plus Phase 2M-1B clarification patch only. Not implemented.** The Phase 2M-1 requirement lock exists at `522416e`. Phase 2M-1B resolves schema-shaping clarification blockers before Phase 2M-2 starts. No schema changes, migrations, backend API endpoints, frontend pages, database mutations, or demo data changes have been made for Phase 2M.
+
+Phase 2M-2 may start only after the Phase 2M-1B clarification patch is reviewed and committed.
 
 ## Scope Included
 
@@ -34,6 +36,7 @@ A customer record captures identity and contact information for internal account
 
 Fields:
 - **Customer code** (auto-generated, e.g., `CUST-00001`)
+- **Customer type** (individual or business/company, if required by implementation)
 - **Name** (required, full name or business name)
 - **Phone** (required, primary contact number)
 - **Email** (optional)
@@ -46,7 +49,12 @@ Fields:
 
 Rules:
 - Customer code is auto-generated and immutable after creation.
+- Customer code is unique.
 - Name and phone are required at minimum.
+- Phone is required but not globally unique. Families, offices, or business contacts may share a phone number.
+- NID/passport is optional. If present, it should be unique where practical, but missing ID must not block customer creation.
+- Duplicate customer warning/search can be added later; it is not required for Phase 2M-2 schema foundation.
+- Business/company customers must be supported either through a `customerType` field or through clear notes/business-name handling if no separate company model exists.
 - Deactivating a customer does not delete the record; it prevents new bookings.
 - Customer master is internal-only. No public-facing customer registration or login.
 - Only the `ACCOUNTANT` role can create, view, edit, and deactivate customers.
@@ -73,6 +81,11 @@ Fields:
 
 Rules:
 - If the current system does not have full inventory/unit management, Phase 2M starts with a minimal bookable item reference attached to Project, not a full inventory module.
+- Within a project, `category + itemIdentifier` must be unique.
+- Block, zone, and phase are optional metadata/search fields unless AGM/accounts confirms they are part of the real item identity.
+- If block, zone, or phase are part of the real item identity, they must be included in the displayed item code/reference so accountants can distinguish units clearly.
+- No two `ACTIVE`, `BOOKED`, or `SOLD` records should represent the same real plot, flat, unit, land, or share reference.
+- `SHARE` remains a generic bookable item category in Phase 2M. It has no special company-share, investment-share, legal ownership, dividend, or securities behavior until AGM/accounts confirms the business meaning.
 - Item status transitions: `AVAILABLE` → `BOOKED` (when booking created) → `SOLD` (when fully paid and handed over, future) or `CANCELLED` (when booking cancelled).
 - `HOLD` status may be used for temporary reservation (manual status change, no automated timer).
 - Only the `ACCOUNTANT` role can manage bookable items.
@@ -92,21 +105,30 @@ Fields:
 - **Net booking value** (computed: total agreed price minus discount/adjustment)
 - **Booking money / Down payment** (required, the initial payment amount)
 - **Payment schedule / Installment plan** (optional at creation, can be defined as a list of installment dates and amounts)
-- **Booking status**:
+- **Administrative booking status** (stored):
   - `DRAFT` -- booking created but not yet confirmed/active
   - `ACTIVE` -- booking confirmed, payment tracking begins
-  - `PARTIALLY_PAID` -- some payments received, balance remains
-  - `FULLY_PAID` -- all installments paid
   - `CANCELLED` -- booking cancelled
   - `REFUNDED` -- booking cancelled and payments refunded
-  - `TRANSFERRED` / `HANDED_OVER` (optional, deferred to future phase)
+  - `HOLD` -- optional manual hold/reservation status
+  - `TRANSFERRED` / `HANDED_OVER` -- deferred to future phase
+- **Financial booking status** (derived):
+  - `UNPAID`
+  - `PARTIALLY_PAID`
+  - `FULLY_PAID`
+  - `OVERDUE`
 - **Remarks** (optional, free-text notes)
 
 Rules:
 - Booking number is auto-generated and immutable after creation.
 - Net booking value is computed, not manually entered.
 - Booking money / down payment is recorded as part of the booking record but does not automatically create a receipt voucher; the accountant must explicitly create or link a receipt voucher.
-- Booking status transitions follow the defined lifecycle; jumping statuses (e.g., DRAFT → FULLY_PAID) requires explicit receipt voucher linkage.
+- Administrative status and financial status are separate. Do not store `PARTIALLY_PAID`, `FULLY_PAID`, or `OVERDUE` as administrative booking statuses.
+- Financial status is derived from the payment schedule and posted receipt allocations only.
+- `DRAFT` bookings are excluded from receivable totals.
+- `ACTIVE` bookings are included in receivable and due reports.
+- `CANCELLED` and `REFUNDED` bookings are excluded from active receivable totals but remain visible in history/status reports.
+- `TRANSFERRED` and `HANDED_OVER` are deferred and must not be implemented in Phase 2M unless separately approved.
 - Only the `ACCOUNTANT` role can create, view, edit, and manage bookings.
 
 ### D. Receivable / Due Tracking
@@ -117,29 +139,44 @@ For every active booking, the system tracks:
 - **Total collected** (sum of posted receipt voucher amounts linked to this booking)
 - **Total due** (total receivable minus total collected)
 - **Overdue amount** (sum of installment amounts past their due date that remain unpaid)
+- **Overdue installment count** (count of unpaid installments past due date)
 - **Next installment date** (earliest unpaid installment due date)
-- **Payment status** (derived: `ON_TRACK`, `OVERDUE`, `FULLY_PAID`, `NO_SCHEDULE`)
+- **Financial status** (derived: `UNPAID`, `PARTIALLY_PAID`, `FULLY_PAID`, `OVERDUE`)
 
 Rules:
 - Receivable/due values are derived from posted voucher lines only. DRAFT receipts do not affect these calculations.
-- Overdue amount is computed against the payment schedule; if no schedule is defined, overdue is zero.
-- Payment status is derived, not manually set.
+- Installment paid/due status is derived from posted receipt allocations. Manual paid flags must not be trusted as the source of truth.
+- Paid amount, due amount, overdue amount, overdue installment count, and next installment date are calculated from the payment schedule plus posted receipt allocations.
+- If cached/display fields exist later, they must be recomputable and not authoritative.
+- Overdue amount and overdue installment count are computed against the payment schedule; if no schedule is defined, overdue amount and count are zero.
+- Advanced aging buckets (30/60/90), aging analytics, and automated reminders are deferred.
 
 ### E. Collection / Receipt Linkage
 
 Collections (money received from customers) must link to accounting. The receipt voucher remains the accounting source of truth.
 
 Options (both must be supported):
-1. **Create receipt voucher from booking collection**: The accountant enters a collection against a booking, and the system generates a linked receipt voucher (DRAFT or POSTED).
+1. **Create receipt voucher from booking collection**: The accountant enters a collection against a booking, and the system generates a linked receipt voucher as `DRAFT`.
 2. **Link existing receipt voucher to booking/customer**: The accountant can link an already-created receipt voucher to a booking and/or customer.
 
 Rules:
 - Receipt voucher remains the accounting source of truth after posting.
+- Use a separate allocation/link table model for receipt-to-booking linkage.
+- One receipt voucher may be allocated to one or more bookings.
+- One booking may receive collections from many receipt vouchers.
+- Every allocation stores `bookingId`, `voucherId`, `amount`, allocation date, and allocation/reference note.
+- Generated collection receipt vouchers are always `DRAFT` first. No auto-posting is allowed.
+- Normal voucher review and posting remains required before customer collection totals change.
+- Allocation linked to a `DRAFT` voucher is visible as pending but must not affect collected, due, overdue, or financial status totals.
+- Allocation counts as collected only when the linked receipt voucher is `POSTED`.
 - DRAFT collections must not affect reports or customer due balance.
 - POSTED receipt vouchers update customer payment history, booking collected amount, and accounting reports.
-- Collection history must show voucher number, voucher status (DRAFT/POSTED), date, amount, and linked booking.
+- If a linked voucher is rejected, deleted, or reversed, customer collection totals must reflect only the net posted voucher effect.
+- Collection history must show voucher number, voucher status (DRAFT/POSTED), date, amount, linked booking(s), and allocation reference.
 - Unlinking a receipt voucher from a booking is not allowed after the voucher is posted.
-- A receipt voucher can be linked to at most one booking (1:1 or many:1 relationship to be decided during implementation).
+- A receipt voucher can be linked to multiple bookings only through explicit allocation rows; do not model this as a single nullable `bookingId` on `Voucher`.
+- If a receipt voucher linked to customer collection is reversed through Phase 2L, reports net down according to posted voucher effect: original posted receipt increases collected, posted reversal decreases/net-offs collected, and a draft reversal has no report effect.
+- Customer history should show both the original and reversal voucher references.
 
 ### F. Customer Transaction History
 
@@ -156,6 +193,8 @@ Rules:
 - Transaction history is derived from posted voucher lines plus booking records.
 - History is read-only; no manual entries.
 - History can be filtered by date range and project.
+- Pending allocations linked to draft vouchers may be shown separately, but they must be labelled pending and excluded from paid/due totals.
+- Reversed linked receipts must show both original and reversal voucher references so the net effect is auditable.
 
 ### G. Customer Statement
 
@@ -171,6 +210,7 @@ Rules:
 - Statement is derived from posted vouchers and booking data.
 - Statement supports browser print (no PDF/Excel export in this phase).
 - Statement format follows accounting conventions: date, particular, voucher ref, debit, credit, balance.
+- Pending draft receipt allocations may appear in a separate pending section only; they must not affect statement paid/due totals.
 
 ### H. Reports
 
@@ -178,7 +218,7 @@ Minimum reports for Phase 2M:
 
 1. **Customer Ledger / Statement** -- date-wise debit/credit/balance per customer, filterable by project and date range.
 2. **Booking-wise Receivable Report** -- all bookings with total value, total collected, total due, status, next installment.
-3. **Customer-wise Due Report** -- customers with outstanding dues, overdue amounts, and aging.
+3. **Customer-wise Due Report** -- customers with outstanding dues, overdue amounts, overdue installment count, and next installment date.
 4. **Project-wise Collection Report** -- total collections received per project, grouped by customer or booking.
 5. **Project-wise Receivable Report** -- total outstanding receivables per project, grouped by customer or booking.
 6. **Overdue / Installment Due Report** -- bookings with overdue installments, days overdue, amount overdue.
@@ -186,8 +226,22 @@ Minimum reports for Phase 2M:
 Deferred reports (not in Phase 2M):
 - Cancelled / refunded booking report
 - Aging analysis (30/60/90 day buckets)
+- Advanced aging analytics
 - Customer acquisition / conversion report
 - Sales pipeline / lead report
+
+Report inclusion policy:
+- `DRAFT` bookings do not affect receivable or collection report totals.
+- `DRAFT` receipt vouchers and allocations do not affect collected, due, overdue, or financial status totals.
+- `ACTIVE` bookings affect receivable and due reports.
+- `POSTED` linked receipt vouchers affect collected totals through allocation rows.
+- `CANCELLED` and `REFUNDED` bookings appear only in separate status/history reporting unless a report explicitly includes them.
+- Every report must state whether it includes or excludes cancelled/refunded bookings.
+- Customer/project collection reports may use booking allocation links.
+- Project Fund Movement remains separate and continues strict same-line Option A: no sibling-line inference and no voucher-level project shortcut.
+- A generated single-booking receipt voucher may tag the fund line with the booking project/cost center.
+- Multi-booking or multi-project receipt allocations must not fake Project Fund Movement by inference.
+- If a receipt voucher covers multiple projects, project-wise customer collection reports allocate by booking allocation amounts, while Project Fund Movement only reflects actual voucher line project tags.
 
 ## Accounting Rules
 
@@ -198,9 +252,11 @@ These rules are non-negotiable and must be preserved throughout Phase 2M impleme
 3. **Receipt collection should create or link to receipt vouchers.** The receipt voucher is the accounting entry; the customer/booking module is a control layer on top.
 4. **DRAFT booking or DRAFT receipt must not affect ledger/trial balance.** Only posted vouchers affect accounting reports.
 5. **Posted receipt voucher should update customer payment history and accounting reports.** The customer/booking module reads from posted voucher state.
-6. **Customer receivable subledger should reconcile with accounting control accounts** when receivable accounting is introduced (future phase). For now, customer balances are informational and derived from voucher data.
+6. **Phase 2M customer receivable reports are subledger/control reports.** Do not claim statutory revenue recognition or GL receivable recognition unless voucher accounts support and AGM/accounts approve that policy.
 7. **Revenue recognition is policy-sensitive** and must be confirmed by AGM/accounts before recognizing revenue for land/flat/unit sales. Phase 2M does not implement revenue recognition.
 8. **Booking money may be treated as liability/advance or receivable settlement** depending on accounting policy. Do not hardcode policy without AGM/accounts approval. Phase 2M records the collection; the accounting treatment of the receipt voucher (which ledger account is credited) is determined by the accountant when creating the voucher.
+9. **Project Fund Movement Option A remains unchanged.** Customer/project collection reports can allocate collections by booking allocation rows, but Project Fund Movement includes only actual Cash/Bank/MFS voucher lines that carry the project tag on the same line.
+10. **Legal ownership transfer is not claimed.** Phase 2M stores booking/control information only and does not implement deed, registration, handover, securities, or legal ownership behavior.
 
 ## What Is Deferred
 
@@ -221,6 +277,7 @@ These items are explicitly deferred and must not be implemented in Phase 2M:
 - **PDF / Excel export** -- browser print only; no file export
 - **Dashboard analytics** -- no charts, KPIs, or graphical dashboards for customer/booking data
 - **Aging analysis** -- no 30/60/90 day receivable aging buckets
+- **Advanced aging analytics** -- no detailed aging dashboards beyond simple overdue amount/count and next installment date
 - **Revenue recognition** -- no automatic revenue recognition journal entries
 - **Automated installment reminders** -- no automated due date alerts or reminders
 
@@ -233,6 +290,8 @@ Phase 2M must not:
 - Infer accounting entries without voucher approval/posting
 - Implement full real-estate inventory ERP in this phase
 - Implement revenue recognition policy without business approval
+- Claim GL receivable recognition without an approved control-account policy and voucher-account design
+- Claim legal ownership transfer, deed completion, registration, securities ownership, or investment-share behavior
 - Create a CRM or sales automation system
 - Build a public-facing customer portal
 - Change the existing role model (only `ACCOUNTANT` role is confirmed)
@@ -282,7 +341,7 @@ Customer comes to book a plot
   → Customer makes subsequent installment payments
   → Accountant records each collection with a receipt voucher
   → Customer due balance decreases with each posted receipt
-  → When fully paid, booking status changes to FULLY_PAID
+  → When fully paid, derived financial status becomes FULLY_PAID while administrative status remains ACTIVE unless separately changed
 ```
 
 ## Open Decisions for AGM / Accounts

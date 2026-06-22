@@ -34,7 +34,7 @@ Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `9
 
 Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`. All 12 accounting reports verified: original+reversal pairs net to zero correctly. Reversal generation, frontend UX, PAYMENT/RECEIPT posting, line-level equivalence enforcement, and report regression are complete. Rectification remains deferred.
 
-**Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock is in progress. See `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`. Client portal is explicitly deferred. Do not start Phase 2M implementation without explicit user confirmation.
+**Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock exists at `522416e`; Phase 2M-1B requirement clarification patch is in progress. See `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`. Client portal is explicitly deferred. Do not start Phase 2M-2 implementation until the clarification patch is reviewed/committed and the user explicitly confirms implementation.
 
 Phase 2F is complete and accepted at `17fede6` (tag `phase-2f-complete`). Issues A-D implemented, Issue E mostly addressed, Issue F deferred to Phase 2H.
 
@@ -57,7 +57,7 @@ The only confirmed role is `ACCOUNTANT`, displayed as `Accountant`. It represent
 13. `docs/requirements/phase-2j-project-fund-movement-requirement-lock.md` and `docs/plans/phase-2j-project-fund-movement-plan.md` before any Phase 2J implementation.
 14. `docs/requirements/phase-2k-voucher-fund-line-project-tagging-requirement-lock.md` and `docs/plans/phase-2k-voucher-fund-line-project-tagging-plan.md` before any Phase 2K implementation.
 15. `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md` and `docs/plans/phase-2l-voucher-reversal-rectification-plan.md` before any Phase 2L implementation.
-16. `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md` and `docs/plans/phase-2m-customer-booking-receivable-control-plan.md` before any Phase 2M implementation.
+16. `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`, `docs/acceptance/phase-2m-acceptance-criteria.md`, and `docs/plans/phase-2m-customer-booking-receivable-control-plan.md` before any Phase 2M implementation.
 
 ## Local Setup
 
@@ -98,4 +98,4 @@ Do not rely on hidden chat memory. Reconstruct state from this repo:
 4. Check `git status --short --branch`.
 5. Continue only from documented requirements.
 
-If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/handoff.md` and `docs/ai/CURRENT_STATE.md` for the latest project state. Phase 2H is complete and accepted at `96fb653` (tag `phase-2h-complete`). Phase 2I MFS Voucher Posting Continuation is complete and accepted at `10d6869` (tag `phase-2i-complete`). Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` with tag `phase-2j-complete`. Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `91fd742` with tag `phase-2k-complete`. Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`. Phase 2M-1 Customer Booking & Receivable Control requirement lock is in progress.
+If continuing after Codex limit in Droid CLI, GLM, DeepSeek, Opus, Gemini, or another tool, read `docs/handoff.md` and `docs/ai/CURRENT_STATE.md` for the latest project state. Phase 2H is complete and accepted at `96fb653` (tag `phase-2h-complete`). Phase 2I MFS Voucher Posting Continuation is complete and accepted at `10d6869` (tag `phase-2i-complete`). Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` with tag `phase-2j-complete`. Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `91fd742` with tag `phase-2k-complete`. Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`. Phase 2M-1 Customer Booking & Receivable Control requirement lock exists at `522416e`; Phase 2M-1B clarification patch is in progress. Phase 2M-2 must not start until that patch is reviewed/committed and the user explicitly confirms implementation.

@@ -8,10 +8,28 @@
   - PAYMENT/RECEIPT reversal posting validated. Reversal line-level equivalence enforced. Reversal-of-reversal correctly rejected.
   - Rectification remains deferred.
 - **Next proposed phase: Phase 2M Customer Booking & Receivable Control.**
-  - Phase 2M-1 requirement lock is in progress (docs created, not yet implemented).
+  - Phase 2M-1 requirement lock exists at `522416e`; Phase 2M-1B clarification patch is in progress as a docs-only follow-up.
   - Phase 2M defines internal accounting-first workflow for customer booking, receivable tracking, collection/receipt voucher linkage, customer statements, and receivable reports.
+  - Phase 2M-2 backend/data-model implementation is NOT STARTED and may start only after the Phase 2M-1B clarification patch is reviewed and committed.
   - Client portal is explicitly deferred.
   - See `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`.
+
+## Phase 2M-1B Requirement Clarification Patch - this session
+
+Phase 2M-1B is a documentation-only clarification patch based on independent requirement quality review. It resolves schema-shaping blockers before Phase 2M-2 starts.
+- Receipt-to-booking cardinality is locked as a separate allocation/link table: one receipt voucher can allocate to one or more bookings, and one booking can receive allocations from many receipt vouchers. Each allocation stores booking, voucher, amount, allocation date, and reference/note.
+- Generated collection receipt vouchers are DRAFT first. No auto-posting is allowed; normal voucher review/posting remains required. Draft allocations are visible as pending only and do not affect collected/due totals.
+- Installment paid/due state is derived from posted receipt allocations. Manual paid flags are not authoritative; cached/display fields, if added later, must be recomputable.
+- Booking status is split: stored administrative status (`DRAFT`, `ACTIVE`, `CANCELLED`, `REFUNDED`, optional `HOLD`) and derived financial status (`UNPAID`, `PARTIALLY_PAID`, `FULLY_PAID`, `OVERDUE`). `TRANSFERRED`/`HANDED_OVER` remain deferred.
+- Report inclusion is locked: DRAFT bookings and DRAFT receipt allocations do not affect totals; ACTIVE bookings affect receivable/due; CANCELLED/REFUNDED bookings are excluded from active receivable totals unless explicitly included; reports must state inclusion policy.
+- Customer uniqueness is locked: customer code unique, phone required but not globally unique, NID/passport optional and unique where practical, business/company customers supported through type or notes/business-name handling.
+- Bookable item uniqueness is locked: within a project, category + item identifier is unique; block/zone/phase are optional metadata unless used as real identity; no duplicate active/booked/sold real item references.
+- Project-wise customer collection reports remain separate from Project Fund Movement. Project Fund Movement stays strict same-line Option A with no sibling-line inference, no voucher-level shortcut, and no fake allocation from multi-booking receipt links.
+- Aging scope is clarified: Phase 2M includes simple overdue amount, overdue installment count, and next installment date; 30/60/90 buckets, advanced analytics, and automated reminders remain deferred.
+- SHARE remains a generic category only; no legal ownership, company-share, investment-share, dividend, or securities behavior is implemented in Phase 2M.
+- Linked receipt voucher reversal behavior is locked: original posted receipt increases collected; posted reversal decreases/nets collected; draft reversal has no report effect; customer history shows both references.
+- Control-account boundary is locked: Phase 2M customer receivable reports are subledger/control views, not statutory revenue recognition, legal ownership transfer, or approved GL receivable recognition.
+- No source code, Prisma schema, migrations, tests, database mutations, commits, tags, or pushes were made in this patch.
 
 ## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session
 
@@ -196,7 +214,7 @@ No Prisma schema changes, migrations, backend API endpoints, frontend pages, res
 
 ## Next Stop Point
 
-Phase 2L is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`. Phase 2M-1 Customer Booking & Receivable Control requirement lock is in progress. Next recommended user decision: review Phase 2M requirement lock, confirm AGM open decisions, then approve Phase 2M-2 implementation. Do not start any new module without explicit user confirmation.
+Phase 2L is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`. Phase 2M-1 Customer Booking & Receivable Control requirement lock exists at `522416e`; Phase 2M-1B clarification patch is in progress. Next recommended user decision: review and commit Phase 2M-1B, confirm remaining AGM/open accounting decisions, then explicitly approve Phase 2M-2 implementation. Do not start Phase 2M-2 or any new module before review/commit and explicit user confirmation.
 
 ## Phase 2G Chunk 2G-5 Final Integration Verification + Docs Cleanup - completed this session
 

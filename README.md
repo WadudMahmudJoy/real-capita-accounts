@@ -18,7 +18,7 @@ This repository is intentionally not a continuation of the previous Real Capita 
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`). The report derives project fund movement using strict same-line only logic (Option A) across Cash, Bank, and MFS.
 - Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `91fd742` (tag `phase-2k-complete`).
 - Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough checklist added at `3bccdb7`. All 12 accounting reports verified: original+reversal pairs net to zero correctly. Reversal generation, frontend UX, PAYMENT/RECEIPT posting, and line-level equivalence enforcement are complete. Rectification remains deferred.
-- **Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock is in progress. Client portal is explicitly deferred.
+- **Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock exists at `522416e`; Phase 2M-1B requirement clarification patch is in progress. Client portal is explicitly deferred. Phase 2M-2 implementation must not start until clarification review/commit and explicit user confirmation.
 - Still not implemented: optional MFS demo dataset extension, PDF/Excel export, dashboard analytics, payroll, salary sheets, parties/customers/vendors, file uploads, approval workflow, MFS provider API/payment gateway/customer wallet integration, and extra roles beyond Accountant.
 
 ## Stack

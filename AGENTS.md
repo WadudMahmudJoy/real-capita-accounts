@@ -8,7 +8,7 @@ Build a clean accounting-first web application for Real Capita Group. The reposi
 
 Phase 2L: Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX, 2L-4 posting & report regression verification, 2L-5 final acceptance and docs cleanup. AGM/MD review walkthrough added at `3bccdb7`. PAYMENT/RECEIPT reversal posting blocker resolved: reversal drafts can now be posted. Reversal line-level equivalence enforced: `validateReversalLineEquivalence` enforces exact line-level equivalence against the original posted voucher. All 12 accounting reports verified: original+reversal pairs net to zero correctly. Project Fund Movement Option A preserved. Rectification remains deferred.
 
-**Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock is in progress. Client portal is explicitly deferred. Do not start implementation without explicit user confirmation.
+**Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock exists at `522416e`; Phase 2M-1B requirement clarification patch is in progress. Client portal is explicitly deferred. Do not start Phase 2M-2 implementation until the clarification patch is reviewed/committed and the user explicitly confirms implementation.
 
 Phase 2K: Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`). Phase 2K allows accountants to optionally tag Cash/Bank/MFS voucher lines with project and cost center during voucher creation, so these fund lines can appear in the Project Fund Movement View. Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup. Cash Book remains CASH-only, Bank Book remains BANK-only. No schema/migration/demo dataset changes.
 
@@ -201,7 +201,7 @@ When switching from Codex to Droid CLI, GLM, DeepSeek, Opus, Gemini, another AI,
 
 Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`. All 12 accounting reports verified: original+reversal pairs net to zero correctly. Rectification remains deferred.
 
-**Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock is in progress. See `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`. Client portal is explicitly deferred. Do not start Phase 2M implementation without explicit user confirmation.
+**Next proposed phase: Phase 2M Customer Booking & Receivable Control.** Phase 2M-1 requirement lock exists at `522416e`; Phase 2M-1B requirement clarification patch is in progress. See `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`. Client portal is explicitly deferred. Do not start Phase 2M-2 implementation until the clarification patch is reviewed/committed and the user explicitly confirms implementation.
 
 Before any Phase 2M implementation, read:
 
