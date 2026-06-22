@@ -24,9 +24,9 @@ Read these files before making non-trivial changes:
 
 ## Current Boundary
 
-Phase 1A includes multi-agent continuity docs, secure login, one Accountant role, one development Accountant user, and a protected app shell.
+The project has implemented the accounting foundation, voucher engine, core accounting reports (Ledger, Cash Book, Bank Book, MFS Book, Trial Balance, Income Statement, Balance Sheet), project financial reporting (Project Ledger, Project Cost Report, Cost Center Summary, Project Financial Summary, Project Fund Movement View), MFS account setup and voucher posting, Phase 2K voucher fund-line project tagging, and Phase 2L voucher reversal workflow. The only confirmed role is ACCOUNTANT, displayed as Accountant.
 
-Do not build accounting business modules yet. Do not implement vouchers, chart of accounts, ledger, cash book, bank book, trial balance, reports, payroll, project finance, parties, customers, vendors, dashboards, file uploads, ERP modules, or business seed data.
+Do not implement new modules or phases without explicit user confirmation. Deferred items include: rectification (partial corrections), salary/payroll, role expansion beyond ACCOUNTANT, approval workflow, PDF/Excel export, dashboard analytics, parties/customers/vendors, file uploads, MFS provider API/payment gateway/customer wallet integration, and extra business seed data.
 
 ## Role Rule
 

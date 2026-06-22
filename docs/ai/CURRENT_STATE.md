@@ -153,7 +153,7 @@ Phase 2L Chunk 2L-2 is complete. Backend support for full posted-voucher reversa
 
 ## Phase 2L Chunk 2L-1: Voucher Reversal / Rectification Workflow Requirement Lock - previous session
 
-Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
+Phase 2L Voucher Reversal / Rectification Workflow is implemented and verified through 2L-4 report regression. Backend reversal generation, frontend reversal UX, PAYMENT/RECEIPT reversal posting, line-level equivalence enforcement, and report regression are complete. Rectification remains deferred. Phase 2L-5 final docs cleanup and acceptance tag are pending.
 - Created `docs/requirements/phase-2l-voucher-reversal-rectification-requirement-lock.md`: defines reversal symmetry rules, metadata copy rules, mandatory justification, draft lifecycle, UI badge and banners on both original and reversed vouchers, and open/closed period validation constraints.
 - Created `docs/acceptance/phase-2l-acceptance-criteria.md`: defines acceptance criteria for linkage, endpoint logic, swaps, UX buttons and banners, report nets, and validation scripts.
 - Created `docs/plans/phase-2l-voucher-reversal-rectification-plan.md`: defines five implementation chunks (2L-1 to 2L-5).
@@ -1086,10 +1086,10 @@ The repo intentionally does not include:
 
 Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at commit `91fd742` (tag `phase-2k-complete`).
 
-Phase 2L Voucher Reversal / Rectification Workflow requirement lock is complete.
+Phase 2L Voucher Reversal / Rectification Workflow is implemented and verified through 2L-4 report regression. Backend reversal generation, frontend reversal UX, PAYMENT/RECEIPT reversal posting, line-level equivalence enforcement, and report regression are complete. Rectification remains deferred. Phase 2L-5 final docs cleanup and acceptance tag are pending.
 The recommended next steps/possible user decisions are:
-- Tag `phase-2l-requirements-locked`.
-- Begin Phase 2L implementation (Chunk 2L-2 Schema / Linkage & Backend Reversal Draft Generation) only after explicit user approval.
+- Complete Phase 2L-5 docs cleanup and tag `phase-2l-complete`.
+
 
 Do not start next phase/module implementation without explicit user confirmation.
 
