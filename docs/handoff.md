@@ -2,18 +2,16 @@
 
 ## Current Phase
 
-- Phase 2L Voucher Reversal / Rectification Workflow is in progress.
-  - Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX, 2L-4 posting & report regression verification.
-  - PAYMENT/RECEIPT reversal posting blocker resolved: reversal drafts can now be posted. `validateReversalLinkage` validates the original voucher exists, is POSTED, and has matching type. `validateVoucherTypeCashBankRules` allows reversed fund-line direction only for legitimate reversals. Normal non-reversal PAYMENT/RECEIPT rules unchanged.
-  - **Reversal line-level equivalence enforced**: `validateReversalLineEquivalence` enforces exact line-level equivalence against the original posted voucher using a Map-based multiset comparison. A reversal draft can no longer be edited into a different amount/account/project/cost-center/cash-bank composition and still post. Line count must match; duplicate lines handled safely.
-  - `POST /vouchers/:id/reversal` generates a DRAFT reversal from a POSTED original. `POST /vouchers/:id/post` allows posting reversal drafts. `findOne` returns `reversalOf`/`reversedBy` linkage. `softDelete` clears the link when a reversal draft is deleted.
-- Phase 2K Voucher Fund-Line Project Tagging is complete and accepted at `91fd742` (tag `phase-2k-complete`).
-  - Implemented chunks: 2K-1 requirement lock, 2K-2 backend validation audit / support, 2K-3 frontend voucher form update, 2K-4 browser/API/report regression verification, 2K-5 final acceptance/docs cleanup.
-  - Allows optional project/cost center selection on Cash/Bank/MFS voucher lines (optional, not required) to enable visibility in the Project Fund Movement report.
-- Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
-  - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
-- Next steps:
-  - Phase 2L-5 Final Acceptance and Docs Cleanup.
+- Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`.
+  - Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX, 2L-4 posting & report regression verification, 2L-5 final acceptance and docs cleanup.
+  - All 12 accounting reports verified: original+reversal pairs net to zero correctly. Project Fund Movement Option A preserved.
+  - PAYMENT/RECEIPT reversal posting validated. Reversal line-level equivalence enforced. Reversal-of-reversal correctly rejected.
+  - Rectification remains deferred.
+- **Next proposed phase: Phase 2M Customer Booking & Receivable Control.**
+  - Phase 2M-1 requirement lock is in progress (docs created, not yet implemented).
+  - Phase 2M defines internal accounting-first workflow for customer booking, receivable tracking, collection/receipt voucher linkage, customer statements, and receivable reports.
+  - Client portal is explicitly deferred.
+  - See `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`.
 
 ## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session
 
@@ -198,7 +196,7 @@ No Prisma schema changes, migrations, backend API endpoints, frontend pages, res
 
 ## Next Stop Point
 
-Phase 2H is complete and ready for the completion tag. Next recommended user decision: Phase 2I / MFS voucher posting continuation, optional Project Cash/Bank Movement View, or UI/demo polish. Do not start any new module without explicit user confirmation.
+Phase 2L is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`. Phase 2M-1 Customer Booking & Receivable Control requirement lock is in progress. Next recommended user decision: review Phase 2M requirement lock, confirm AGM open decisions, then approve Phase 2M-2 implementation. Do not start any new module without explicit user confirmation.
 
 ## Phase 2G Chunk 2G-5 Final Integration Verification + Docs Cleanup - completed this session
 

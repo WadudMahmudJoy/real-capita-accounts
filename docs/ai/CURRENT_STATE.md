@@ -1,6 +1,31 @@
 # Current State
 
-## Phase 2L-4 Reversal Report Regression Verification - this session
+## Phase 2M-1 Customer Booking & Receivable Control Requirement Lock - this session
+
+Phase 2M-1 requirement lock is created. Phase 2M Customer Booking & Receivable Control defines the internal accounting-first workflow for recording customers, their bookings (land, plot, flat, unit, share, or other project-based assets), agreed values, payment schedules, money received, due amounts, voucher-backed transaction history, and customer statements.
+
+**Scope locked**: Customer master, bookable item reference, booking record, receivable/due tracking, collection/receipt voucher linkage, customer transaction history, customer statement, and six receivable reports (customer ledger, booking receivable, customer due, project collection, project receivable, overdue installments).
+
+**Explicitly deferred**: Client portal / customer login, SMS/email/WhatsApp notifications, sales lead CRM, marketing pipeline, agent commission, legal deed/registration workflow, handover workflow, cancellation/refund accounting automation, ownership transfer, multi-role approval workflow, public payment gateway, mobile app, PDF/Excel export, dashboard analytics, aging analysis, revenue recognition.
+
+**Accounting-first invariants preserved**: All reports derive from POSTED VoucherLine records; customer/booking module must not bypass voucher posting; DRAFT booking or DRAFT receipt must not affect reports; receipt voucher remains the accounting source of truth.
+
+**Open AGM decisions captured**: Booking item types, "share" meaning, accounting treatment of booking money, revenue recognition timing, cancellation/refund policy, transfer/handover policy, discount approval policy, receipt numbering format, customer statement format, portal visibility rules, installment plan structure, customer identification.
+
+**Files created**:
+- `docs/requirements/phase-2m-customer-booking-receivable-control-requirement-lock.md`
+- `docs/acceptance/phase-2m-acceptance-criteria.md`
+- `docs/plans/phase-2m-customer-booking-receivable-control-plan.md`
+
+**Files updated**: `AGENTS.md`, `README.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/handoff.md`.
+
+No schema changes, migrations, backend code, frontend code, or demo data changes were made.
+
+## Phase 2L-5 Final Acceptance and Docs Cleanup - previous session
+
+Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough checklist committed at `3bccdb7`. All 12 accounting reports verified: original+reversal pairs net to zero correctly. Rectification remains deferred.
+
+## Phase 2L-4 Reversal Report Regression Verification - previous session
 
 Phase 2L-4 posting & report regression verification is complete. All 12 accounting reports were verified after posting reversal pairs for all 4 voucher types.
 
