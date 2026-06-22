@@ -1,6 +1,40 @@
 # Current State
 
-## Phase 2L Reversal Line-Level Equivalence Enforcement - this session
+## Phase 2L-4 Reversal Report Regression Verification - this session
+
+Phase 2L-4 posting & report regression verification is complete. All 12 accounting reports were verified after posting reversal pairs for all 4 voucher types.
+
+**Verification**: Programmatic test script (`scratch/test-reversal-report-regression.ts`) created, posted, and verified reverse-and-post pairs for PAYMENT, RECEIPT, CONTRA, and JOURNAL voucher types. All 12 report endpoints were queried and assertions passed.
+
+**Results** (all PASS):
+- Ledger (1010, 1020, 3010, 5010): all net to zero after original+reversal pairs
+- Cash Book: closing 0, CASH-only lines only
+- Bank Book: closing 0, BANK-only lines only
+- MFS Book: 0 lines (no MFS transactions)
+- Trial Balance: balanced, diff=0.00
+- Income Statement: net income 0 (PAYMENT reversal nets expense)
+- Balance Sheet: balanced, diff=0.00
+- Project Ledger: 2 lines, debit=credit (net zero)
+- Project Cost: net=0
+- Cost Center Summary: net=0
+- Project Financial Summary: expense=0, asset=0, income=0
+- Project Fund Movement: 0 lines, closing=0 (Option A preserved)
+
+**Verification commands**:
+- `pnpm typecheck`: PASS
+- `pnpm lint`: PASS
+- `pnpm build:api`: PASS
+- `pnpm build:web`: PASS
+- `pnpm demo:audit`: 62 PASS, 0 FAIL
+- `pnpm demo:verify`: 47 PASS, 0 FAIL
+
+**DB state**: Restored to deterministic baseline after testing. demo:audit 62 PASS, demo:verify 47 PASS confirmed.
+
+**Files changed**: scratch/test-reversal-report-regression.ts (new test script), docs only (AGENTS.md, CURRENT_STATE.md, handoff.md, acceptance criteria, plan). No runtime source, schema, migration, or frontend changes.
+
+**No changes to**: Prisma schema, migrations, voucher posting logic, reversal generation, line-equivalence validation, report calculations, Project Fund Movement Option A, frontend, roles, demo dataset.
+
+## Phase 2L Reversal Line-Level Equivalence Enforcement - previous session
 
 Phase 2L reversal posting now enforces exact line-level equivalence against the original posted voucher. A reversal draft can no longer be edited into a different amount/account/project/cost-center/cash-bank composition and still post.
 

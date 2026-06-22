@@ -35,14 +35,14 @@ This document defines the acceptance criteria for the Phase 2L implementation.
 ## 4. Posting & Report Verification (Phase 2L-4)
 - [x] PAYMENT/RECEIPT reversal posting validation fixed: reversal drafts can now be posted. `validateReversalLinkage` validates the original voucher exists, is POSTED, and has matching type. `validateVoucherTypeCashBankRules` allows reversed fund-line direction only for legitimate reversals. Normal non-reversal PAYMENT/RECEIPT rules unchanged.
 - [x] **Reversal line-level equivalence enforced**: `validateReversalLineEquivalence` enforces exact line-level equivalence against the original posted voucher using a Map-based multiset comparison. A reversal draft can no longer be edited into a different amount/account/project/cost-center/cash-bank composition and still post. Line count must match; duplicate lines handled safely.
-- [ ] Posting the reversal voucher follows normal posting rules:
+- [x] Posting the reversal voucher follows normal posting rules:
   - Must be balanced (total debit equals total credit).
   - Date must be in an `OPEN` accounting period.
   - Sets `status` to `POSTED` and captures `postingDate` and `postedById`.
-- [ ] Once posted, the reversal voucher is immutable (no editing or deletion).
-- [ ] Ledgers, Trial Balance, Cash Book, Bank Book, and MFS Book show the reversed entries chronologically.
-- [ ] Project Cost report nets out the expense correctly.
-- [ ] Project Fund Movement report nets out the fund movement correctly (Option A same-line logic).
+- [x] Once posted, the reversal voucher is immutable (no editing or deletion).
+- [x] Ledgers, Trial Balance, Cash Book, Bank Book, and MFS Book show the reversed entries chronologically.
+- [x] Project Cost report nets out the expense correctly.
+- [x] Project Fund Movement report nets out the fund movement correctly (Option A same-line logic).
 
 ## 5. Verification Commands (Phase 2L-5)
 - [ ] `pnpm prisma:generate` completes without errors.

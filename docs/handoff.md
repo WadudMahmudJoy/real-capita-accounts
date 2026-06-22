@@ -3,7 +3,7 @@
 ## Current Phase
 
 - Phase 2L Voucher Reversal / Rectification Workflow is in progress.
-  - Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX.
+  - Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX, 2L-4 posting & report regression verification.
   - PAYMENT/RECEIPT reversal posting blocker resolved: reversal drafts can now be posted. `validateReversalLinkage` validates the original voucher exists, is POSTED, and has matching type. `validateVoucherTypeCashBankRules` allows reversed fund-line direction only for legitimate reversals. Normal non-reversal PAYMENT/RECEIPT rules unchanged.
   - **Reversal line-level equivalence enforced**: `validateReversalLineEquivalence` enforces exact line-level equivalence against the original posted voucher using a Map-based multiset comparison. A reversal draft can no longer be edited into a different amount/account/project/cost-center/cash-bank composition and still post. Line count must match; duplicate lines handled safely.
   - `POST /vouchers/:id/reversal` generates a DRAFT reversal from a POSTED original. `POST /vouchers/:id/post` allows posting reversal drafts. `findOne` returns `reversalOf`/`reversedBy` linkage. `softDelete` clears the link when a reversal draft is deleted.
@@ -13,7 +13,6 @@
 - Phase 2J Project Fund Movement View is complete and accepted at commit `98212ba` (tag `phase-2j-complete`).
   - Option A strict same-line rule: A cash/bank/MFS movement is considered project-related only if the cash/bank/MFS voucher line itself has the `projectId`. No sibling-line or voucher-level inference is done.
 - Next steps:
-  - Phase 2L-4 Full Posting & Report Regression Verification.
   - Phase 2L-5 Final Acceptance and Docs Cleanup.
 
 ## Phase 2L Chunk 2L-2: Schema / Linkage & Backend Reversal Draft Generation - this session

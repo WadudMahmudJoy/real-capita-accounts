@@ -35,7 +35,7 @@ This plan breaks down the Phase 2L requirements into executable chunks.
   - Confirm that reversal vouchers post correctly to open periods and reject closed ones.
   - Verify that reports (Trial Balance, Ledger, Books, Project reports) net out corrected entries correctly.
   - Restore database and verify that `pnpm demo:audit` (62 PASS) and `pnpm demo:verify` (47 PASS) pass successfully.
-- **Status**: **IN PROGRESS** (posting fix + line equivalence enforcement complete; full report regression pending)
+- **Status**: **COMPLETE** (report regression verification passed: all 12 reports verified, all 4 reversal scenarios PASS, Project Fund Movement Option A preserved)
 
 ## Chunk 2L-5: Final Acceptance and Docs Cleanup
 - **Goal**: Finalize documentation and prepare for final user review.
