@@ -2,9 +2,12 @@ import { Module } from "@nestjs/common";
 import { AccountingPeriodModule } from "./accounting-period/accounting-period.module";
 import { AccountingModule } from "./accounting/accounting.module";
 import { AuthModule } from "./auth/auth.module";
+import { BookableItemModule } from "./bookable-item/bookable-item.module";
+import { BookingModule } from "./booking/booking.module";
 import { CashBankModule } from "./cash-bank/cash-bank.module";
 import { CompanyModule } from "./company/company.module";
 import { CostCenterModule } from "./cost-center/cost-center.module";
+import { CustomerModule } from "./customer/customer.module";
 import { FiscalYearModule } from "./fiscal-year/fiscal-year.module";
 import { HealthController } from "./health.controller";
 import { ProjectModule } from "./project/project.module";
@@ -23,6 +26,9 @@ import { VoucherModule } from "./voucher/voucher.module";
     CashBankModule,
     VoucherModule,
     ReportModule,
+    CustomerModule,
+    BookableItemModule,
+    BookingModule,
   ],
   controllers: [HealthController],
 })

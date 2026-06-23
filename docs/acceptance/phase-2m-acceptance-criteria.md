@@ -35,9 +35,12 @@ This document defines the acceptance criteria for the Phase 2M implementation.
 
 ## 2. Data Model & Backend Foundation (Phase 2M-2)
 
+Candidate verification note: Phase 2M-2 is implemented as uncommitted backend/data-model WIP. Prisma models and migration exist, guarded backend endpoints are added, receipt allocation uses a separate table, financial status is derived, and verification passed (`pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:api`, `pnpm build:web`, `pnpm demo:reset`, `pnpm demo:audit` 62 PASS / 0 FAIL / 1 WARN, `pnpm demo:verify` 47 PASS / 0 FAIL, `pnpm exec prisma migrate status`). Independent review blockers were fixed: booking creation marks item `BOOKED`; cancellation/refund without posted allocations releases the item to `AVAILABLE` if no other open booking exists; material booking edits are blocked after allocations exist; cancellation/refund is blocked when posted allocations exist; allocation capacity is effective/net posted allocation aware and supports replacement after posted reversal. Final Opus 4.8 blockers were fixed: customer address is required in schema/migration/create DTO/create service and cannot be blank/null-cleared on PATCH when supplied; boolean query filters explicitly parse only `true`/`false` strings for customer `isActive`, bookable-item `includeDeleted`, and booking `includeDeleted`. Voucher-level global allocation cap remains deferred/non-blocking; Phase 2M-2 keeps booking-level effective/net allocation validation only. Demo reset compatibility was fixed: `prisma/demo-reset.ts` clears Phase 2M tables in FK-safe order before vouchers/projects (`booking_receipt_allocations`, `booking_installments`, `bookings`, `bookable_items`, `customers`). Targeted Prisma smoke verified these scenarios plus DRAFT allocation pending behavior; reset-specific smoke created temporary Phase 2M rows, then `demo:reset` succeeded and baseline was reverified. Local DB migration status is up to date. No frontend, reports, voucher posting changes, Project Fund Movement changes, auto-posting receipt vouchers, client portal, revenue recognition, legal workflow, approval workflow, or new roles were added. Guarded HTTP endpoint smoke remains useful before commit if time permits.
+
 - [ ] Prisma models created for `Customer`, `BookableItem`, `Booking`, `BookingInstallment`, and `BookingReceiptAllocation` (or equivalent allocation/link table name).
 - [ ] Database migration created and applied successfully.
 - [ ] `Customer.customerCode` is unique; phone is required but not globally unique; optional NID/passport uniqueness is enforced where practical.
+- [ ] Customer address is required on create and stored as non-null; PATCH may omit address but cannot clear it to blank/null.
 - [ ] Business/company customers are supported by customer type or clear business/customer-name handling.
 - [ ] `BookableItem` enforces uniqueness within a project by category + item identifier, with block/zone/phase included in display code if they are part of real identity.
 - [ ] `SHARE` is implemented only as a generic category.
@@ -51,13 +54,19 @@ This document defines the acceptance criteria for the Phase 2M implementation.
 - [ ] `BookingReceiptAllocationModule` (or equivalent) with link/unlink/allocation endpoints implemented and guarded.
 - [ ] Auto-generated codes (CUST-00001, BOOK-00001, ITEM-00001) work correctly.
 - [ ] Status transition validation prevents invalid state changes.
+- [ ] Creating a booking marks the related bookable item `BOOKED` inside the same transaction.
+- [ ] Bookings with receipt allocations reject material edits to customer, project, item, date, value, booking money, and installments.
+- [ ] Bookings with posted receipt allocations cannot be cancelled or refunded in Phase 2M-2.
+- [ ] Receipt allocation capacity validation uses effective/net posted allocation totals, including posted receipt reversal netting.
 - [ ] DTO validation (class-validator) catches invalid input.
+- [ ] Boolean query filters parse only boolean values and string `true`/`false`; arbitrary strings remain invalid.
 - [ ] All endpoints return 401 for unauthenticated requests.
 - [ ] `pnpm prisma:generate` completes without errors.
 - [ ] `pnpm typecheck` finds no TypeScript errors.
 - [ ] `pnpm lint` passes.
 - [ ] `pnpm build:api` and `pnpm build:web` complete successfully.
 - [ ] No frontend changes made.
+- [ ] Demo reset clears Phase 2M tables in FK-safe order before vouchers/projects and leaves the deterministic baseline intact.
 
 ## 3. Internal Customer/Booking UI (Phase 2M-3)
 

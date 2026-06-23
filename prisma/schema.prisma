@@ -144,6 +144,37 @@ enum VoucherLineSide {
   CREDIT
 }
 
+enum CustomerType {
+  INDIVIDUAL
+  COMPANY
+  OTHER
+}
+
+enum BookableItemCategory {
+  LAND
+  PLOT
+  FLAT
+  UNIT
+  SHARE
+  OTHER
+}
+
+enum BookableItemStatus {
+  AVAILABLE
+  HOLD
+  BOOKED
+  SOLD
+  CANCELLED
+}
+
+enum BookingAdministrativeStatus {
+  DRAFT
+  ACTIVE
+  HOLD
+  CANCELLED
+  REFUNDED
+}
+
 model Company {
   id                     String                  @id @default(cuid())
   singletonKey           String                  @unique @default("PRIMARY")
@@ -207,6 +238,8 @@ model Project {
   notes        String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  bookableItems BookableItem[]
+  bookings      Booking[]
   costCenters  CostCenter[]
   voucherLines VoucherLine[]
 
@@ -326,6 +359,7 @@ model Voucher {
   correctionReason   String?
   reversalOf         Voucher?         @relation("VoucherReversal", fields: [reversalOfVoucherId], references: [id])
   reversedBy         Voucher?         @relation("VoucherReversal")
+  bookingReceiptAllocations BookingReceiptAllocation[]
   lines              VoucherLine[]
 
   @@unique([companyId, fiscalYearId, systemVoucherNo])
@@ -336,6 +370,128 @@ model Voucher {
   @@index([status])
   @@index([voucherType])
   @@map("vouchers")
+}
+
+model Customer {
+  id                  String     @id @default(cuid())
+  customerCode        String     @unique
+  customerType        CustomerType @default(INDIVIDUAL)
+  name                String
+  phone               String
+  email               String?
+  nidOrPassport       String?    @unique
+  address             String
+  professionOrBusiness String?
+  nomineeOrReference  String?
+  notes               String?
+  isActive            Boolean    @default(true)
+  isDeleted           Boolean    @default(false)
+  deletedAt           DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  bookings            Booking[]
+
+  @@index([customerType])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@map("customers")
+}
+
+model BookableItem {
+  id             String                @id @default(cuid())
+  itemCode       String                @unique
+  projectId      String
+  category       BookableItemCategory
+  itemIdentifier String
+  block          String?
+  zone           String?
+  phase          String?
+  sizeOrArea     String?
+  shareQuantity  Decimal?              @db.Decimal(18, 2)
+  basePrice      Decimal               @db.Decimal(18, 2)
+  status         BookableItemStatus     @default(AVAILABLE)
+  notes          String?
+  isDeleted      Boolean               @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  project        Project               @relation(fields: [projectId], references: [id])
+  bookings       Booking[]
+
+  @@unique([projectId, category, itemIdentifier])
+  @@index([projectId])
+  @@index([category])
+  @@index([status])
+  @@index([isDeleted])
+  @@map("bookable_items")
+}
+
+model Booking {
+  id                   String                      @id @default(cuid())
+  bookingNumber        String                      @unique
+  customerId           String
+  projectId            String
+  bookableItemId       String
+  bookingDate          DateTime
+  totalAgreedPrice     Decimal                     @db.Decimal(18, 2)
+  discountAmount       Decimal                     @default(0) @db.Decimal(18, 2)
+  netBookingValue      Decimal                     @db.Decimal(18, 2)
+  bookingMoney         Decimal?                    @db.Decimal(18, 2)
+  administrativeStatus BookingAdministrativeStatus @default(DRAFT)
+  remarks              String?
+  isDeleted            Boolean                     @default(false)
+  deletedAt            DateTime?
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  customer             Customer                    @relation(fields: [customerId], references: [id])
+  project              Project                     @relation(fields: [projectId], references: [id])
+  bookableItem         BookableItem                @relation(fields: [bookableItemId], references: [id])
+  installments         BookingInstallment[]
+  receiptAllocations   BookingReceiptAllocation[]
+
+  @@index([customerId])
+  @@index([projectId])
+  @@index([bookableItemId])
+  @@index([administrativeStatus])
+  @@index([bookingDate])
+  @@index([isDeleted])
+  @@map("bookings")
+}
+
+model BookingInstallment {
+  id            String   @id @default(cuid())
+  bookingId     String
+  installmentNo Int
+  dueDate       DateTime
+  amount        Decimal  @db.Decimal(18, 2)
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, installmentNo])
+  @@index([bookingId])
+  @@index([dueDate])
+  @@map("booking_installments")
+}
+
+model BookingReceiptAllocation {
+  id                 String   @id @default(cuid())
+  bookingId          String
+  voucherId          String
+  amount             Decimal  @db.Decimal(18, 2)
+  allocationDate     DateTime
+  allocationReference String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  booking            Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  voucher            Voucher  @relation(fields: [voucherId], references: [id])
+
+  @@index([bookingId])
+  @@index([voucherId])
+  @@index([allocationDate])
+  @@map("booking_receipt_allocations")
 }
 
 model VoucherLine {

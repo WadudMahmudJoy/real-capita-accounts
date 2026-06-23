@@ -2,6 +2,18 @@
 
 ## Current Phase
 
+- **Phase 2M-2 Customer Booking & Receivable Control backend/data-model foundation is implemented as an uncommitted candidate WIP.**
+  - Resumed from interrupted OpenCode WIP; no restart, commit, tag, push, frontend, or report work was performed.
+  - Added Prisma models/enums for `Customer`, `BookableItem`, `Booking`, `BookingInstallment`, and `BookingReceiptAllocation` with migration `20260623000000_phase_2m_customer_booking_foundation`.
+  - Added guarded backend API groups for customers, bookable items, bookings, installments through booking create/update payloads, and booking receipt allocations.
+  - Independent review blockers fixed in `BookingService`: booking creation marks item `BOOKED` in the same transaction; cancellation/refund without posted allocations releases the item back to `AVAILABLE` when no other open booking exists; bookings with allocations reject material customer/project/item/date/value/booking-money/installment edits; bookings with posted allocations cannot move to `CANCELLED` or `REFUNDED`; allocation capacity now uses effective/net posted allocation logic so posted receipt reversals release replacement capacity.
+  - Final Opus 4.8 review blockers fixed: customer address is required in Prisma schema, migration SQL, create DTO, and create service writes; PATCH keeps address optional but rejects blank/null clearing when supplied. Boolean query filters explicitly parse only `true` and `false` strings for customer `isActive`, bookable-item `includeDeleted`, and booking `includeDeleted`.
+  - Preserved accounting-first boundaries: no `bookingId` on `Voucher`, no voucher posting changes, no generated receipt voucher auto-posting, no Project Fund Movement changes, no existing report changes, no frontend, no client portal, no revenue recognition, no legal/ownership/handover workflow, no approval workflow, and no new roles.
+  - Deferred/non-blocking: voucher-level global allocation cap remains deferred; this fix does not add voucher-level allocation capacity rules.
+  - Local DB migration status is up to date after applying the Phase 2M migration. Demo baseline remains intact: `pnpm demo:audit` 62 PASS / 0 FAIL / 1 WARN and `pnpm demo:verify` 47 PASS / 0 FAIL.
+  - Demo reset compatibility was fixed: `prisma/demo-reset.ts` now clears Phase 2M tables in FK-safe order before vouchers/projects (`booking_receipt_allocations`, `booking_installments`, `bookings`, `bookable_items`, `customers`). No Phase 2M demo seed data was added.
+  - Verification passed: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build:api`, `pnpm build:web`, `pnpm demo:reset`, `pnpm demo:audit`, `pnpm demo:verify`, and `pnpm exec prisma migrate status`. Targeted Prisma smoke verified all three blocker fixes and DRAFT allocation pending behavior. Reset-specific Prisma smoke created temporary Phase 2M customer/bookable item/booking/allocation rows, then `demo:reset` succeeded and baseline was reverified.
+  - Next recommended task: final independent review before committing. Guarded HTTP endpoint smoke is still useful before commit if time permits. Do not start Phase 2M-3 UI until the user explicitly confirms.
 - Phase 2L Voucher Reversal / Rectification Workflow is complete and accepted at `95333d5` (tag `phase-2l-complete`). AGM/MD review walkthrough committed at `3bccdb7`.
   - Implemented chunks: 2L-1 requirement lock, 2L-2 schema/linkage & backend reversal draft generation, 2L-3 frontend reversal UX, 2L-4 posting & report regression verification, 2L-5 final acceptance and docs cleanup.
   - All 12 accounting reports verified: original+reversal pairs net to zero correctly. Project Fund Movement Option A preserved.

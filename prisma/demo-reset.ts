@@ -155,6 +155,11 @@ async function main() {
     console.log("  - All AuditEvent rows");
     console.log("  - All AuthSession rows");
     console.log("  - All UserRole rows");
+    console.log("  - All BookingReceiptAllocation rows");
+    console.log("  - All BookingInstallment rows");
+    console.log("  - All Booking rows");
+    console.log("  - All BookableItem rows");
+    console.log("  - All Customer rows");
     console.log("  - All VoucherLine rows (via Voucher cascade)");
     console.log("  - All Voucher rows");
     console.log("  - All VoucherNumberSequence rows");
@@ -221,6 +226,22 @@ async function main() {
         // User roles (FK to User and Role)
         console.log("  Clearing user roles...");
         await tx.userRole.deleteMany();
+
+        // Phase 2M customer booking tables must be cleared before vouchers/projects.
+        console.log("  Clearing booking receipt allocations...");
+        await tx.bookingReceiptAllocation.deleteMany();
+
+        console.log("  Clearing booking installments...");
+        await tx.bookingInstallment.deleteMany();
+
+        console.log("  Clearing bookings...");
+        await tx.booking.deleteMany();
+
+        console.log("  Clearing bookable items...");
+        await tx.bookableItem.deleteMany();
+
+        console.log("  Clearing customers...");
+        await tx.customer.deleteMany();
 
         // Voucher lines cascade from Voucher, but delete explicitly for clarity
         console.log("  Clearing voucher lines...");
