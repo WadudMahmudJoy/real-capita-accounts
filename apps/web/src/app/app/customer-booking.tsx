@@ -116,7 +116,7 @@ export function optionalString(value: string): string | undefined {
 
 export function nullableOptionalString(value: string): string | null | undefined {
   const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 export function moneyInput(value: string | number | null | undefined): string {
