@@ -117,9 +117,9 @@ export default function CustomersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageIntro
-        title="Customers"
-        description="Maintain customer master records for internal customer booking and receivable control. This is an internal accounting control view, not a customer portal."
+        <PageIntro
+        title="Customers & Bookings - Customers"
+        description="Maintain customer master records for internal booking control. Posted receipt vouchers remain the evidence for collection effects."
       />
 
       {status === "loading" ? (

@@ -122,7 +122,7 @@ export default function NewBookableItemPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
-        <PageIntro title="New bookable item" description="Create a project-linked bookable item. Status defaults to AVAILABLE; BOOKED is only reached after successful booking creation." />
+        <PageIntro title="Customers & Bookings - New Bookable Item" description="Create a project-linked bookable item. Status defaults to AVAILABLE; BOOKED is only reached after successful booking creation." />
         <Link href="/app/bookable-items"><Button variant="ghost"><ArrowLeft aria-hidden="true" className="size-4" />Back to items</Button></Link>
       </div>
       {status === "loading" ? <LoadingPanel message="Loading project references..." /> : null}

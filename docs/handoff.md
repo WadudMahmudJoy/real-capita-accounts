@@ -2,6 +2,14 @@
 
 ## Current Phase
 
+- **Phase 2M-3E AGM-ready polish and final hardening is implemented in this session.**
+  - Baseline verified before work: `main` at `788f381`, `origin/main` at `788f381`, tag `phase-2m-frontend-booking-ui` present, and working tree clean.
+  - Scope stayed limited to Phase 2M frontend UI and docs. No `apps/api`, `prisma`, migration, package/dependency, backend API, voucher posting, Project Fund Movement, report, dashboard, public portal, PDF/Excel export, SMS, payment gateway, or fake demo data changes were made.
+  - UI polish: standardized Customers & Bookings / Booking Control titles, clarified DRAFT allocation pending status, clarified POSTED receipt collection effect, stated that voucher posting remains in the existing voucher workflow, improved empty-state guidance, and made posted receipt allocations display as locked instead of offering any delete/test-delete action.
+  - Display polish: shared money formatting remains BDT with two decimals; shared display dates now use one `DD-MM-YYYY` convention while form date inputs remain ISO-compatible.
+  - Demo docs: added `docs/demo/phase-2m-agm-demo-walkthrough.md` with pre-demo commands, login route, exact AGM flow, talking points, known boundaries, and rollback/reset command.
+  - Required validation and browser smoke are being run before commit/push.
+
 - **Phase 2M-3 Frontend / Internal UI scope lock is created as a docs-only patch.**
   - Baseline verified before work: `main` at `24386ec`, `origin/main` at `24386ec`, tag `phase-2m-backend-data-model-foundation` present, and working tree clean.
   - Created `docs/requirements/phase-2m-frontend-ui-scope-lock.md`, `docs/plans/phase-2m-frontend-ui-plan.md`, and `docs/acceptance/phase-2m-frontend-ui-acceptance-criteria.md`.

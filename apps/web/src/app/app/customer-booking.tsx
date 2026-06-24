@@ -97,8 +97,16 @@ export function formatDate(value: string | null | undefined): string {
     return "-";
   }
 
-  return value.slice(0, 10);
+  const [year, month, day] = value.slice(0, 10).split("-");
+  if (!year || !month || !day) {
+    return value.slice(0, 10);
+  }
+
+  return `${day}-${month}-${year}`;
 }
+
+export const BOOKING_CONTROL_EXPLANATION =
+  "DRAFT allocation is pending only. POSTED receipt collection counts in collected totals after voucher posting through the existing voucher workflow.";
 
 export function toAmount(value: string | number | null | undefined): number {
   if (value === null || value === undefined || value === "") {

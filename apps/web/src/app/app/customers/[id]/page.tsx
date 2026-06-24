@@ -74,8 +74,8 @@ export default function CustomerDetailPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <PageIntro
-          title="Customer receivable/control view"
-          description="Read-only customer metadata for internal customer booking and receivable control. This screen is an internal accounting control view, not a customer portal."
+          title="Customers & Bookings - Customer Detail"
+          description="Read-only customer metadata for internal booking control. This screen is an internal accounting control view, not a public customer page."
         />
         <div className="flex flex-wrap gap-2">
           <Link href="/app/customers">
@@ -103,7 +103,8 @@ export default function CustomerDetailPage() {
           <Notice tone="info">
             Posted receipt vouchers are the accounting source of truth. Customer
             balances and collection effects are derived from backend booking
-            summaries, not editable customer fields.
+            summaries, not editable customer fields. Voucher posting remains in
+            the voucher workflow.
           </Notice>
 
           <Card>

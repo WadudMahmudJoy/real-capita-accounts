@@ -41,6 +41,7 @@ import {
   FieldErrorText,
   formatDate,
   formatMoney,
+  BOOKING_CONTROL_EXPLANATION,
   optionalString,
   parseMoneyInput,
   projectLabel,
@@ -256,7 +257,7 @@ export default function BookingDetailPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <PageIntro
-          title="Booking Control"
+          title="Customers & Bookings - Booking Control"
           description="Read-only booking details, installment schedule, derived financial summary, and receipt allocation panel."
         />
         <div className="flex flex-wrap gap-2">
@@ -285,8 +286,7 @@ export default function BookingDetailPage() {
           <Notice tone="info">
             Posted receipt vouchers are the accounting source of truth. Pending
             allocations linked to draft vouchers do not affect collected or due
-            totals. This screen is an internal accounting control view, not a
-            customer portal.
+            totals. Voucher posting remains in the voucher workflow.
           </Notice>
 
           <Card>
@@ -344,7 +344,7 @@ export default function BookingDetailPage() {
           <Card>
             <CardHeader
               title="Derived financial summary"
-              description="Read-only backend-derived receivable/control values."
+              description={BOOKING_CONTROL_EXPLANATION}
             />
             <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Detail
@@ -445,7 +445,7 @@ export default function BookingDetailPage() {
           <Card>
             <CardHeader
               title="Receipt allocation panel"
-              description="Existing RECEIPT voucher allocation display with pending and posted effects."
+              description="Existing RECEIPT voucher allocation display with pending and posted effects. Voucher posting remains in the voucher workflow."
               actions={
                 <Link href="/app/vouchers/new">
                   <Button variant="secondary">
@@ -462,9 +462,7 @@ export default function BookingDetailPage() {
                 booking.
               </Notice>
               <Notice tone="info">
-                DRAFT allocations show as Pending allocation. POSTED allocations
-                show as Posted receipt collection and count as voucher-backed
-                collection.
+                {BOOKING_CONTROL_EXPLANATION}
               </Notice>
 
               {voucherLoadError ? (
@@ -574,7 +572,7 @@ export default function BookingDetailPage() {
               {allocations.length === 0 ? (
                 <EmptyState
                   title="No receipt allocations"
-                  description="No existing RECEIPT voucher allocation rows are linked to this booking yet."
+                  description="Allocate an existing RECEIPT voucher after creating it in the voucher workflow. DRAFT allocation is pending until the voucher is posted."
                 />
               ) : (
                 <div className="overflow-x-auto">
@@ -637,18 +635,20 @@ export default function BookingDetailPage() {
                               {allocationEffect(allocation)}
                             </td>
                             <td className="py-3">
-                              <Button
-                                disabled={isDeleting}
-                                onClick={() => void removeAllocation(allocation)}
-                                variant={voucherStatus === "POSTED" ? "secondary" : "danger"}
-                              >
-                                <Trash2 aria-hidden="true" className="size-4" />
-                                {isDeleting
-                                  ? "Deleting..."
-                                  : voucherStatus === "POSTED"
-                                    ? "Test delete"
-                                    : "Delete"}
-                              </Button>
+                              {voucherStatus === "POSTED" ? (
+                                <span className="text-xs text-muted-foreground">
+                                  Posted allocation locked
+                                </span>
+                              ) : (
+                                <Button
+                                  disabled={isDeleting}
+                                  onClick={() => void removeAllocation(allocation)}
+                                  variant="danger"
+                                >
+                                  <Trash2 aria-hidden="true" className="size-4" />
+                                  {isDeleting ? "Deleting..." : "Delete"}
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         );

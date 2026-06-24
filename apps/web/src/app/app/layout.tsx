@@ -123,7 +123,7 @@ const customerBookingLinks: NavLink[] = [
   {
     href: "/app/bookings",
     icon: BookText,
-    label: "Bookings",
+    label: "Booking Control",
     match: (pathname) => pathname.startsWith("/app/bookings"),
   },
 ];

@@ -41,14 +41,14 @@ const sections = [
   },
   {
     description:
-      "Manage customers, bookable items, and bookings as internal accounting control records.",
+      "Open Customers & Bookings to maintain customer, item, and booking control records for the internal accounting workflow.",
     href: "/app/customers",
     icon: Users,
-    title: "Customer Booking",
+    title: "Customers & Bookings",
   },
   {
     description:
-      "Review booking control records, installment schedules, and derived receivable views.",
+      "Review booking summaries, installment schedules, pending allocations, and posted receipt collection effects.",
     href: "/app/bookings",
     icon: BookText,
     title: "Booking Control",
@@ -59,7 +59,7 @@ export default function AppOverviewPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageIntro
-        description="Set up the accounting foundation step by step. Start with the company profile, then define fiscal years, projects, and review the system account classes."
+        description="Set up accounting foundations and use Customers & Bookings for internal booking control. Voucher posting remains in the voucher workflow."
         title="Welcome"
       />
 

@@ -1,5 +1,26 @@
 # Current State
 
+## Phase 2M-3E AGM-Ready Polish And Final Hardening - this session
+
+Phase 2M-3E frontend polish is implemented on top of the already-smoked Phase 2M frontend booking UI. Scope stayed limited to allowed frontend/docs files only.
+
+**Baseline verified before work**: branch `main`, `HEAD` at `788f381`, `origin/main` at `788f381`, tag `phase-2m-frontend-booking-ui` present, and working tree clean.
+
+**UI polish implemented**:
+- Standardized Phase 2M page titles around `Customers & Bookings` / `Booking Control`.
+- Added clearer accounting-safe helper copy for DRAFT allocation pending status, POSTED receipt collection effect, and voucher posting remaining in the existing voucher workflow.
+- Updated booking list and booking detail copy so posted collection is clearly voucher-backed.
+- Hardened receipt allocation actions so posted allocations show as locked instead of exposing a delete/test-delete affordance.
+- Improved empty-state guidance for booking/installment/allocation flows.
+- Adjusted shared display date formatting to one `DD-MM-YYYY` display convention while keeping HTML date inputs ISO-compatible.
+
+**Docs added**:
+- `docs/demo/phase-2m-agm-demo-walkthrough.md` with pre-demo checks/reset commands, login route, exact AGM demonstration flow, talking points, known boundaries, and post-demo reset commands.
+
+**Boundaries preserved**: no `apps/api`, `prisma`, migration, package/dependency, report, dashboard, public portal, PDF/Excel export, SMS, payment gateway, voucher posting, Project Fund Movement, fake demo data, or backend API changes.
+
+**Verification status**: validation and browser smoke are being run in this session before commit/push.
+
 ## Phase 2M-3 Frontend / Internal UI Scope Lock - this session
 
 Phase 2M-3 frontend/internal UI scope lock is created as a docs-only patch. No frontend implementation was performed.

@@ -133,8 +133,8 @@ export default function BookableItemsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageIntro
-        title="Bookable Items"
-        description="Maintain project-linked bookable item references for customer booking. BOOKED status is reached through booking creation, not as a manual create shortcut."
+        title="Customers & Bookings - Bookable Items"
+        description="Maintain project-linked bookable item references for booking control. BOOKED status is reached through booking creation, not as a manual create shortcut."
       />
       {status === "loading" ? <LoadingPanel message="Loading bookable items..." /> : null}
       {status === "error" ? <Notice tone="error">{loadError}</Notice> : null}
