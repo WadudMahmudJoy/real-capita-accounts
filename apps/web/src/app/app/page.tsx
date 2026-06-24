@@ -1,10 +1,12 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BookText,
   Building2,
   CalendarRange,
   FolderKanban,
   Layers,
+  Users,
 } from "lucide-react";
 import { Card, PageIntro } from "./_components/ui";
 
@@ -36,6 +38,20 @@ const sections = [
     href: "/app/accounts/classes",
     icon: Layers,
     title: "Account Classes",
+  },
+  {
+    description:
+      "Manage customers, bookable items, and bookings as internal accounting control records.",
+    href: "/app/customers",
+    icon: Users,
+    title: "Customer Booking",
+  },
+  {
+    description:
+      "Review booking control records, installment schedules, and derived receivable views.",
+    href: "/app/bookings",
+    icon: BookText,
+    title: "Booking Control",
   },
 ];
 

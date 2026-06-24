@@ -155,6 +155,225 @@ export type CashBankAccount = {
   ledgerAccount?: LedgerAccount;
 };
 
+export type CustomerType = "INDIVIDUAL" | "COMPANY" | "OTHER";
+
+export type Customer = {
+  id: string;
+  customerCode: string;
+  customerType: CustomerType;
+  name: string;
+  phone: string;
+  email: string | null;
+  nidOrPassport: string | null;
+  address: string;
+  professionOrBusiness: string | null;
+  nomineeOrReference: string | null;
+  notes: string | null;
+  isActive: boolean;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    bookings: number;
+  };
+};
+
+export type BookableItemCategory =
+  | "LAND"
+  | "PLOT"
+  | "FLAT"
+  | "UNIT"
+  | "SHARE"
+  | "OTHER";
+
+export type BookableItemStatus =
+  | "AVAILABLE"
+  | "HOLD"
+  | "BOOKED"
+  | "SOLD"
+  | "CANCELLED";
+
+export type BookableItem = {
+  id: string;
+  itemCode: string;
+  projectId: string;
+  category: BookableItemCategory;
+  itemIdentifier: string;
+  block: string | null;
+  zone: string | null;
+  phase: string | null;
+  sizeOrArea: string | null;
+  shareQuantity: string | null;
+  basePrice: string;
+  status: BookableItemStatus;
+  notes: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  project?: Project;
+  bookings?: Booking[];
+  _count?: {
+    bookings: number;
+  };
+};
+
+export type BookingAdministrativeStatus =
+  | "DRAFT"
+  | "ACTIVE"
+  | "HOLD"
+  | "CANCELLED"
+  | "REFUNDED";
+
+export type BookingFinancialStatus =
+  | "UNPAID"
+  | "PARTIALLY_PAID"
+  | "FULLY_PAID"
+  | "OVERDUE";
+
+export type BookingInstallment = {
+  id: string;
+  bookingId: string;
+  installmentNo: number;
+  dueDate: string;
+  amount: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BookingSummary = {
+  totalReceivable: string;
+  totalCollected: string;
+  totalDue: string;
+  overdueAmount: string;
+  overdueInstallmentCount: number;
+  nextInstallmentDate: string | null;
+  financialStatus: BookingFinancialStatus;
+};
+
+export type BookingReceiptAllocation = {
+  id: string;
+  bookingId: string;
+  voucherId: string;
+  amount: string;
+  allocationDate: string;
+  allocationReference: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  voucher?: Voucher;
+};
+
+export type Booking = {
+  id: string;
+  bookingNumber: string;
+  customerId: string;
+  projectId: string;
+  bookableItemId: string;
+  bookingDate: string;
+  totalAgreedPrice: string;
+  discountAmount: string;
+  netBookingValue: string;
+  bookingMoney: string | null;
+  administrativeStatus: BookingAdministrativeStatus;
+  remarks: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer?: Customer;
+  project?: Project;
+  bookableItem?: BookableItem;
+  installments?: BookingInstallment[];
+  receiptAllocations?: BookingReceiptAllocation[];
+  summary?: BookingSummary;
+};
+
+export type CustomerInput = {
+  customerType?: CustomerType;
+  name: string;
+  phone: string;
+  email?: string | null;
+  nidOrPassport?: string | null;
+  address: string;
+  professionOrBusiness?: string | null;
+  nomineeOrReference?: string | null;
+  notes?: string | null;
+  isActive?: boolean;
+};
+
+export type BookableItemInput = {
+  projectId: string;
+  category: BookableItemCategory;
+  itemIdentifier: string;
+  block?: string | null;
+  zone?: string | null;
+  phase?: string | null;
+  sizeOrArea?: string | null;
+  shareQuantity?: number | null;
+  basePrice: number;
+  status?: BookableItemStatus;
+  notes?: string | null;
+};
+
+export type BookingInstallmentInput = {
+  installmentNo: number;
+  dueDate: string;
+  amount: number;
+  description?: string | null;
+};
+
+export type BookingInput = {
+  customerId: string;
+  projectId: string;
+  bookableItemId: string;
+  bookingDate: string;
+  totalAgreedPrice: number;
+  discountAmount?: number;
+  bookingMoney?: number | null;
+  administrativeStatus?: BookingAdministrativeStatus;
+  remarks?: string | null;
+  installments?: BookingInstallmentInput[];
+};
+
+export type CreateReceiptAllocationInput = {
+  voucherId: string;
+  amount: number;
+  allocationDate: string;
+  allocationReference?: string | null;
+  notes?: string | null;
+};
+
+export type CustomerListFilters = {
+  search?: string;
+  customerType?: CustomerType;
+  isActive?: boolean;
+};
+
+export type BookableItemListFilters = {
+  projectId?: string;
+  category?: BookableItemCategory;
+  status?: BookableItemStatus;
+  search?: string;
+  includeDeleted?: boolean;
+};
+
+export type BookingListFilters = {
+  customerId?: string;
+  projectId?: string;
+  bookableItemId?: string;
+  administrativeStatus?: BookingAdministrativeStatus;
+  search?: string;
+  includeDeleted?: boolean;
+};
+
+export type ReceiptAllocationDeleteResult = {
+  id: string;
+  deleted: true;
+};
+
 // ---------------------------------------------------------------------------
 // Voucher resource types (Phase 2C)
 // ---------------------------------------------------------------------------
@@ -667,6 +886,207 @@ export function updateCashBankAccount(
     body: input,
     method: "PATCH",
   });
+}
+
+function buildCustomerQuery(filters?: CustomerListFilters): string {
+  if (!filters) {
+    return "";
+  }
+
+  const params = new URLSearchParams();
+
+  if (filters.search) {
+    params.set("search", filters.search);
+  }
+  if (filters.customerType) {
+    params.set("customerType", filters.customerType);
+  }
+  if (typeof filters.isActive === "boolean") {
+    params.set("isActive", String(filters.isActive));
+  }
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+function buildBookableItemQuery(filters?: BookableItemListFilters): string {
+  if (!filters) {
+    return "";
+  }
+
+  const params = new URLSearchParams();
+
+  if (filters.projectId) {
+    params.set("projectId", filters.projectId);
+  }
+  if (filters.category) {
+    params.set("category", filters.category);
+  }
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+  if (filters.search) {
+    params.set("search", filters.search);
+  }
+  if (typeof filters.includeDeleted === "boolean") {
+    params.set("includeDeleted", String(filters.includeDeleted));
+  }
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+function buildBookingQuery(filters?: BookingListFilters): string {
+  if (!filters) {
+    return "";
+  }
+
+  const params = new URLSearchParams();
+
+  if (filters.customerId) {
+    params.set("customerId", filters.customerId);
+  }
+  if (filters.projectId) {
+    params.set("projectId", filters.projectId);
+  }
+  if (filters.bookableItemId) {
+    params.set("bookableItemId", filters.bookableItemId);
+  }
+  if (filters.administrativeStatus) {
+    params.set("administrativeStatus", filters.administrativeStatus);
+  }
+  if (filters.search) {
+    params.set("search", filters.search);
+  }
+  if (typeof filters.includeDeleted === "boolean") {
+    params.set("includeDeleted", String(filters.includeDeleted));
+  }
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+export function getCustomers(
+  filters?: CustomerListFilters,
+  signal?: AbortSignal,
+): Promise<Customer[]> {
+  return apiFetch<Customer[]>(`/customers${buildCustomerQuery(filters)}`, {
+    signal,
+  });
+}
+
+export function getCustomer(id: string, signal?: AbortSignal): Promise<Customer> {
+  return apiFetch<Customer>(`/customers/${id}`, { signal });
+}
+
+export function createCustomer(input: CustomerInput): Promise<Customer> {
+  return apiFetch<Customer>("/customers", { body: input, method: "POST" });
+}
+
+export function updateCustomer(
+  id: string,
+  input: Partial<CustomerInput>,
+): Promise<Customer> {
+  return apiFetch<Customer>(`/customers/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getBookableItems(
+  filters?: BookableItemListFilters,
+  signal?: AbortSignal,
+): Promise<BookableItem[]> {
+  return apiFetch<BookableItem[]>(
+    `/bookable-items${buildBookableItemQuery(filters)}`,
+    { signal },
+  );
+}
+
+export function getBookableItem(
+  id: string,
+  signal?: AbortSignal,
+): Promise<BookableItem> {
+  return apiFetch<BookableItem>(`/bookable-items/${id}`, { signal });
+}
+
+export function createBookableItem(
+  input: BookableItemInput,
+): Promise<BookableItem> {
+  return apiFetch<BookableItem>("/bookable-items", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateBookableItem(
+  id: string,
+  input: Partial<BookableItemInput>,
+): Promise<BookableItem> {
+  return apiFetch<BookableItem>(`/bookable-items/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getBookings(
+  filters?: BookingListFilters,
+  signal?: AbortSignal,
+): Promise<Booking[]> {
+  return apiFetch<Booking[]>(`/bookings${buildBookingQuery(filters)}`, {
+    signal,
+  });
+}
+
+export function getBooking(id: string, signal?: AbortSignal): Promise<Booking> {
+  return apiFetch<Booking>(`/bookings/${id}`, { signal });
+}
+
+export function createBooking(input: BookingInput): Promise<Booking> {
+  return apiFetch<Booking>("/bookings", { body: input, method: "POST" });
+}
+
+export function updateBooking(
+  id: string,
+  input: Partial<BookingInput>,
+): Promise<Booking> {
+  return apiFetch<Booking>(`/bookings/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getReceiptAllocations(
+  bookingId: string,
+  signal?: AbortSignal,
+): Promise<BookingReceiptAllocation[]> {
+  return apiFetch<BookingReceiptAllocation[]>(
+    `/bookings/${bookingId}/receipt-allocations`,
+    { signal },
+  );
+}
+
+export function createReceiptAllocation(
+  bookingId: string,
+  input: CreateReceiptAllocationInput,
+): Promise<BookingReceiptAllocation> {
+  return apiFetch<BookingReceiptAllocation>(
+    `/bookings/${bookingId}/receipt-allocations`,
+    {
+      body: input,
+      method: "POST",
+    },
+  );
+}
+
+export function deleteReceiptAllocation(
+  bookingId: string,
+  allocationId: string,
+): Promise<ReceiptAllocationDeleteResult> {
+  return apiFetch<ReceiptAllocationDeleteResult>(
+    `/bookings/${bookingId}/receipt-allocations/${allocationId}`,
+    { method: "DELETE" },
+  );
 }
 
 // ---------------------------------------------------------------------------

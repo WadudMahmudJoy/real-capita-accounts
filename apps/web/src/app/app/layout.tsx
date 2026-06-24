@@ -23,6 +23,7 @@ import {
   ScrollText,
   ShieldCheck,
   Smartphone,
+  Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -103,6 +104,27 @@ const primaryLinks: NavLink[] = [
     icon: ReceiptText,
     label: "Vouchers",
     match: (pathname) => pathname.startsWith("/app/vouchers"),
+  },
+];
+
+const customerBookingLinks: NavLink[] = [
+  {
+    href: "/app/customers",
+    icon: Users,
+    label: "Customers",
+    match: (pathname) => pathname.startsWith("/app/customers"),
+  },
+  {
+    href: "/app/bookable-items",
+    icon: Layers,
+    label: "Bookable Items",
+    match: (pathname) => pathname.startsWith("/app/bookable-items"),
+  },
+  {
+    href: "/app/bookings",
+    icon: BookText,
+    label: "Bookings",
+    match: (pathname) => pathname.startsWith("/app/bookings"),
   },
 ];
 
@@ -310,6 +332,33 @@ export default function AppLayout({
           >
             <div className="flex flex-col gap-1">
               {primaryLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.match(pathname);
+
+                return (
+                  <Link
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
+                      isActive
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                    href={link.href}
+                    key={link.href}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Customers &amp; Bookings
+              </p>
+              {customerBookingLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = link.match(pathname);
 
