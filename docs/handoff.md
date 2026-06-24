@@ -2,6 +2,16 @@
 
 ## Current Phase
 
+- **Phase 2M-3 Frontend / Internal UI scope lock is created as a docs-only patch.**
+  - Baseline verified before work: `main` at `24386ec`, `origin/main` at `24386ec`, tag `phase-2m-backend-data-model-foundation` present, and working tree clean.
+  - Created `docs/requirements/phase-2m-frontend-ui-scope-lock.md`, `docs/plans/phase-2m-frontend-ui-plan.md`, and `docs/acceptance/phase-2m-frontend-ui-acceptance-criteria.md`.
+  - Locked internal authenticated routes only: `/app/customers`, `/app/customers/new`, `/app/customers/[id]`, `/app/customers/[id]/edit`, `/app/bookable-items`, `/app/bookable-items/new`, `/app/bookable-items/[id]`, `/app/bookable-items/[id]/edit`, `/app/bookings`, `/app/bookings/new`, `/app/bookings/[id]`, and `/app/bookings/[id]/edit`.
+  - Locked screens: customer list/create/detail/edit, bookable item list/create/detail/edit, booking list/create/detail/edit, installment editor inside booking create/edit only where backend allows, receipt allocation panel inside booking detail, and read-only derived booking summary panel inside booking detail.
+  - Navigation is locked to authenticated internal sidebar only under Customer Booking / Customers & Bookings. Never add this module to the public navbar.
+  - Accounting-first wording and banned wording are locked. Posted receipt vouchers remain source of truth; DRAFT/pending allocations are visible but excluded from collected/due/overdue/financial status totals; Project Fund Movement Option A remains unchanged.
+  - Opus review blocker fixes are applied: BDT/date formatting rules, explicit loading/error/empty-state rules, tighter Phase 2M-3 versus 2M-4 receipt allocation boundary, conservative bookable-item status selectability, separate customer detail/edit route contracts, and `customer receivable/control view` wording.
+  - Later implementation chunks are defined as 2M-3A through 2M-3E: customer UI foundation; bookable item UI; booking UI with installments and derived summary; receipt allocation panel with smoke verification; polish/accessibility/responsive review and docs cleanup.
+  - No frontend implementation was performed. `apps/web`, `apps/api`, and `prisma` were not edited. No migrations were run. No database mutations, commit, tag, or push were performed.
 - **Phase 2M-2 Customer Booking & Receivable Control backend/data-model foundation is implemented as an uncommitted candidate WIP.**
   - Resumed from interrupted OpenCode WIP; no restart, commit, tag, push, frontend, or report work was performed.
   - Added Prisma models/enums for `Customer`, `BookableItem`, `Booking`, `BookingInstallment`, and `BookingReceiptAllocation` with migration `20260623000000_phase_2m_customer_booking_foundation`.

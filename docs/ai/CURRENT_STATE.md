@@ -1,5 +1,32 @@
 # Current State
 
+## Phase 2M-3 Frontend / Internal UI Scope Lock - this session
+
+Phase 2M-3 frontend/internal UI scope lock is created as a docs-only patch. No frontend implementation was performed.
+
+**Baseline verified before work**: branch `main`, `HEAD` at `24386ec`, `origin/main` at `24386ec`, tag `phase-2m-backend-data-model-foundation` present, and working tree clean.
+
+**Files created**:
+- `docs/requirements/phase-2m-frontend-ui-scope-lock.md`
+- `docs/plans/phase-2m-frontend-ui-plan.md`
+- `docs/acceptance/phase-2m-frontend-ui-acceptance-criteria.md`
+
+**Scope locked**: internal authenticated `/app` routes only for customers, bookable items, and bookings: `/app/customers`, `/app/customers/new`, `/app/customers/[id]`, `/app/customers/[id]/edit`, `/app/bookable-items`, `/app/bookable-items/new`, `/app/bookable-items/[id]`, `/app/bookable-items/[id]/edit`, `/app/bookings`, `/app/bookings/new`, `/app/bookings/[id]`, and `/app/bookings/[id]/edit`.
+
+**Screens locked**: customer list/create/detail/edit, bookable item list/create/detail/edit, booking list/create/detail/edit, installment editor inside booking create/edit only where backend allows, receipt allocation panel inside booking detail, and read-only derived booking summary panel inside booking detail.
+
+**Navigation locked**: authenticated internal sidebar only, under Customer Booking / Customers & Bookings. No public navbar or unauthenticated route is added.
+
+**Accounting-first rules locked**: posted receipt vouchers remain the accounting source of truth; DRAFT/pending allocations are visible but do not affect collected, due, overdue, or financial status totals; administrative booking status and derived financial status remain separate; receipt allocation rows must not change Project Fund Movement Option A or infer project movement.
+
+**Hard non-scope reaffirmed**: no client portal/customer login, public customer statement, reports, PDF/Excel export, dashboard analytics, payment gateway, reminders, auto-posting receipt vouchers, voucher posting changes, Project Fund Movement changes, revenue recognition, GL receivable control policy, legal ownership transfer/deed/registration/handover, approval workflow, new roles, mobile app, agent commission, or CRM/lead pipeline.
+
+**Implementation chunks locked for later user-approved work**: 2M-3A route/navigation skeleton, API client helpers/types, and customer screens; 2M-3B bookable item screens; 2M-3C booking screens, installment editor, and derived summary panel; 2M-3D receipt allocation panel with pending/posted allocation UI and browser/API smoke verification; 2M-3E polish, accessibility, responsive review, final smoke, and docs cleanup.
+
+**Opus review blocker fixes applied**: added explicit BDT/date formatting rules; added explicit loading/error/empty-state rules; tightened Phase 2M-3 receipt allocation panel scope so broader collection workflow, receipt voucher creation/posting, customer ledger/statement reports, and due reports remain deferred; clarified conservative bookable-item status selectability; clarified `/app/customers/[id]` read-only detail/control view versus `/app/customers/[id]/edit` editable form; added `customer receivable/control view` wording.
+
+**No runtime changes**: `apps/web`, `apps/api`, and `prisma` were not edited. No migrations were run. No database mutations, commit, tag, or push were performed.
+
 ## Phase 2M-2 Backend/Data-Model Foundation Candidate - this session
 
 Phase 2M-2 backend/data-model foundation has been resumed from interrupted WIP and brought to a verified candidate state. This is uncommitted WIP; no tag, push, or commit was made.
