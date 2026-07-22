@@ -291,7 +291,7 @@ export default function AppLayout({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full flex-col px-5 py-5 sm:px-8">
+      <div className="mx-auto flex min-h-screen w-full flex-col px-5 py-5 sm:px-8 lg:h-screen lg:min-h-0 lg:overflow-hidden">
         <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -325,10 +325,10 @@ export default function AppLayout({
           </div>
         </header>
 
-        <div className="grid flex-1 gap-8 py-6 lg:grid-cols-[240px_1fr]">
+        <div className="grid flex-1 gap-8 py-6 lg:min-h-0 lg:grid-cols-[240px_1fr]">
           <nav
             aria-label="Accounting navigation"
-            className="flex flex-col gap-6 border-b border-border pb-6 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6"
+            className="flex flex-col gap-6 border-b border-border pb-6 lg:overflow-y-auto lg:overscroll-contain lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6"
           >
             <div className="flex flex-col gap-1">
               {primaryLinks.map((link) => {
@@ -409,7 +409,7 @@ export default function AppLayout({
             </div>
           </nav>
 
-          <main className="min-w-0">{children}</main>
+          <main className="min-w-0 lg:overflow-y-auto">{children}</main>
         </div>
       </div>
     </div>
