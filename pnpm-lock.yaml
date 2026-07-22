@@ -97,6 +97,9 @@ importers:
       '@nestjs/schematics':
         specifier: ^11.0.9
         version: 11.1.0(chokidar@4.0.3)(typescript@5.9.3)
+      '@types/express':
+        specifier: 5.0.6
+        version: 5.0.6
 
   apps/web:
     dependencies:
