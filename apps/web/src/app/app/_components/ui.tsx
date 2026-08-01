@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
  */
 
 export const inputClassName =
-  "h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-60";
+  "h-11 w-full rounded-md border border-input bg-input-surface px-3 text-sm text-foreground outline-none transition duration-200 placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-brand-teal/20 disabled:cursor-not-allowed disabled:opacity-60";
 
 export function PageIntro({
   title,
@@ -49,7 +49,7 @@ export function Card({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-card p-6 shadow-sm",
+        "rounded-xl border border-border bg-card p-6 shadow-[0_8px_24px_rgba(24,92,103,0.07)]",
         className,
       )}
     >
@@ -204,7 +204,7 @@ export function Button({
     <button
       {...props}
       className={cn(
-        "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60",
         buttonVariants[variant],
         className,
       )}
@@ -216,8 +216,8 @@ export function Button({
 type BadgeTone = "active" | "inactive" | "closed" | "neutral";
 
 const badgeTones: Record<BadgeTone, string> = {
-  active: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  closed: "border-amber-200 bg-amber-50 text-amber-700",
+  active: "border-success-border bg-success-surface text-success",
+  closed: "border-warning-border bg-warning-surface text-warning",
   inactive: "border-border bg-secondary text-muted-foreground",
   neutral: "border-border bg-secondary text-secondary-foreground",
 };
@@ -257,7 +257,7 @@ const noticeStyles: Record<
   },
   success: {
     icon: CheckCircle2,
-    wrapper: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    wrapper: "border-success-border bg-success-surface text-success",
   },
 };
 
