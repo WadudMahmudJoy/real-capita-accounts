@@ -9,19 +9,25 @@ datasource db {
 }
 
 model User {
-  id              String        @id @default(cuid())
-  email           String        @unique
-  fullName        String
-  passwordHash    String
-  isActive        Boolean       @default(true)
-  lastLoginAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  roles           UserRole[]
-  sessions        AuthSession[]
-  auditEvents     AuditEvent[]
-  createdVouchers Voucher[]     @relation("VoucherCreatedBy")
-  postedVouchers  Voucher[]     @relation("VoucherPostedBy")
+  id                        String                     @id @default(cuid())
+  email                     String                     @unique
+  fullName                  String
+  passwordHash              String
+  isActive                  Boolean                    @default(true)
+  lastLoginAt               DateTime?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  roles                     UserRole[]
+  sessions                  AuthSession[]
+  auditEvents               AuditEvent[]
+  createdVouchers           Voucher[]                  @relation("VoucherCreatedBy")
+  postedVouchers            Voucher[]                  @relation("VoucherPostedBy")
+  createdSalaryStructures   SalaryStructure[]          @relation("SalaryStructureCreatedBy")
+  approvedSalaryStructures  SalaryStructure[]          @relation("SalaryStructureApprovedBy")
+  createdSalaryAssignments  EmployeeSalaryAssignment[] @relation("SalaryAssignmentCreatedBy")
+  approvedSalaryAssignments EmployeeSalaryAssignment[] @relation("SalaryAssignmentApprovedBy")
+  createdPaymentProfiles    EmployeePaymentProfile[]   @relation("PaymentProfileCreatedBy")
+  approvedPaymentProfiles   EmployeePaymentProfile[]   @relation("PaymentProfileApprovedBy")
 
   @@map("users")
 }
@@ -173,6 +179,123 @@ enum BookingAdministrativeStatus {
   HOLD
   CANCELLED
   REFUNDED
+}
+
+enum SalaryConfigurationStatus {
+  DRAFT
+  APPROVED
+  INACTIVE
+}
+
+model Employee {
+  id                String                     @id @default(cuid())
+  employeeCode      String                     @unique
+  fullName          String
+  designation       String
+  joiningDate       DateTime
+  isActive          Boolean                    @default(true)
+  isDeleted         Boolean                    @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  salaryAssignments EmployeeSalaryAssignment[]
+  paymentProfiles   EmployeePaymentProfile[]
+
+  @@index([isActive])
+  @@index([isDeleted])
+  @@map("employees")
+}
+
+model SalaryStructure {
+  id                String                     @id @default(cuid())
+  code              String
+  version           Int
+  name              String
+  description       String?
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  status            SalaryConfigurationStatus  @default(DRAFT)
+  createdById       String
+  approvedById      String?
+  approvedAt        DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  createdBy         User                       @relation("SalaryStructureCreatedBy", fields: [createdById], references: [id])
+  approvedBy        User?                      @relation("SalaryStructureApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  components        SalaryStructureComponent[]
+  salaryAssignments EmployeeSalaryAssignment[]
+
+  @@unique([code, version])
+  @@index([status])
+  @@index([effectiveFrom, effectiveTo])
+  @@map("salary_structures")
+}
+
+model SalaryStructureComponent {
+  id                String          @id @default(cuid())
+  salaryStructureId String
+  code              String
+  name              String
+  percentage        Decimal         @db.Decimal(7, 4)
+  displayOrder      Int
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  salaryStructure   SalaryStructure @relation(fields: [salaryStructureId], references: [id], onDelete: Cascade)
+
+  @@unique([salaryStructureId, code])
+  @@unique([salaryStructureId, displayOrder])
+  @@map("salary_structure_components")
+}
+
+model EmployeeSalaryAssignment {
+  id                String                    @id @default(cuid())
+  employeeId        String
+  salaryStructureId String
+  grossSalary       Decimal                   @db.Decimal(18, 2)
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  status            SalaryConfigurationStatus @default(DRAFT)
+  changeReason      String?
+  createdById       String
+  approvedById      String?
+  approvedAt        DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  employee          Employee                  @relation(fields: [employeeId], references: [id])
+  salaryStructure   SalaryStructure           @relation(fields: [salaryStructureId], references: [id])
+  createdBy         User                      @relation("SalaryAssignmentCreatedBy", fields: [createdById], references: [id])
+  approvedBy        User?                     @relation("SalaryAssignmentApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, effectiveFrom])
+  @@index([employeeId, status])
+  @@index([salaryStructureId])
+  @@map("employee_salary_assignments")
+}
+
+model EmployeePaymentProfile {
+  id                     String                    @id @default(cuid())
+  employeeId             String
+  selectedBankPercentage Decimal                   @default(60) @db.Decimal(9, 6)
+  bankName               String?
+  accountName            String?
+  accountNumber          String?
+  branchName             String?
+  effectiveFrom          DateTime
+  effectiveTo            DateTime?
+  status                 SalaryConfigurationStatus @default(DRAFT)
+  changeReason           String?
+  createdById            String
+  approvedById           String?
+  approvedAt             DateTime?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  employee               Employee                  @relation(fields: [employeeId], references: [id])
+  createdBy              User                      @relation("PaymentProfileCreatedBy", fields: [createdById], references: [id])
+  approvedBy             User?                     @relation("PaymentProfileApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, effectiveFrom])
+  @@index([employeeId, status])
+  @@map("employee_payment_profiles")
 }
 
 model Company {

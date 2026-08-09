@@ -9,10 +9,12 @@ import { CompanyModule } from "./company/company.module";
 import { CostCenterModule } from "./cost-center/cost-center.module";
 import { CustomerModule } from "./customer/customer.module";
 import { FiscalYearModule } from "./fiscal-year/fiscal-year.module";
+import { EmployeeModule } from "./employee/employee.module";
 import { HealthController } from "./health.controller";
 import { ProjectModule } from "./project/project.module";
 import { ReportModule } from "./report/report.module";
 import { VoucherModule } from "./voucher/voucher.module";
+import { SalaryModule } from "./salary/salary.module";
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { VoucherModule } from "./voucher/voucher.module";
     CustomerModule,
     BookableItemModule,
     BookingModule,
+    EmployeeModule,
+    SalaryModule,
   ],
   controllers: [HealthController],
 })
