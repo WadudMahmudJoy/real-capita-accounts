@@ -194,6 +194,20 @@ const buttonVariants: Record<ButtonVariant, string> = {
   secondary: "border border-border bg-card text-foreground hover:bg-secondary",
 };
 
+export function buttonClassName({
+  variant = "primary",
+  className,
+}: {
+  variant?: ButtonVariant;
+  className?: string;
+} = {}) {
+  return cn(
+    "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60",
+    buttonVariants[variant],
+    className,
+  );
+}
+
 export function Button({
   variant = "primary",
   className,
@@ -203,11 +217,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={cn(
-        "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60",
-        buttonVariants[variant],
-        className,
-      )}
+      className={buttonClassName({ className, variant })}
       type={type}
     />
   );

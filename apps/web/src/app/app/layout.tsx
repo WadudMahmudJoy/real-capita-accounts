@@ -9,6 +9,7 @@ import {
   BarChart3,
   BookText,
   Building2,
+  Calculator,
   CalendarClock,
   CalendarRange,
   Coins,
@@ -125,6 +126,27 @@ const customerBookingLinks: NavLink[] = [
     icon: BookText,
     label: "Booking Control",
     match: (pathname) => pathname.startsWith("/app/bookings"),
+  },
+];
+
+const hrSalaryLinks: NavLink[] = [
+  {
+    href: "/app/employees",
+    icon: Users,
+    label: "Employees",
+    match: (pathname) => pathname.startsWith("/app/employees"),
+  },
+  {
+    href: "/app/salary-structures",
+    icon: Coins,
+    label: "Salary Structures",
+    match: (pathname) => pathname.startsWith("/app/salary-structures"),
+  },
+  {
+    href: "/app/salary-preview",
+    icon: Calculator,
+    label: "Salary Preview",
+    match: (pathname) => pathname.startsWith("/app/salary-preview"),
   },
 ];
 
@@ -365,6 +387,33 @@ export default function AppLayout({
                 Customers &amp; Bookings
               </p>
               {customerBookingLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.match(pathname);
+
+                return (
+                  <Link
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 focus-visible:outline-none lg:focus-visible:ring-2 lg:focus-visible:ring-brand-light/70 lg:focus-visible:ring-inset motion-reduce:transform-none motion-reduce:transition-none",
+                      isActive
+                        ? "bg-secondary text-foreground lg:bg-white/15 lg:text-brand-light lg:shadow-[inset_3px_0_0_var(--brand-green),0_6px_18px_rgba(8,67,75,0.14)]"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground lg:text-brand-light/90 lg:hover:translate-x-0.5 lg:hover:bg-white/10 lg:hover:text-white lg:hover:shadow-[0_5px_14px_rgba(8,67,75,0.12)]",
+                    )}
+                    href={link.href}
+                    key={link.href}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:text-sidebar-muted">
+                HR &amp; Salary
+              </p>
+              {hrSalaryLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = link.match(pathname);
 

@@ -375,6 +375,191 @@ export type ReceiptAllocationDeleteResult = {
 };
 
 // ---------------------------------------------------------------------------
+// Salary Foundation resource types (Phase 1)
+// ---------------------------------------------------------------------------
+
+export type SalaryConfigurationStatus = "DRAFT" | "APPROVED" | "INACTIVE";
+
+export type Employee = {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  joiningDate: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    salaryAssignments: number;
+    paymentProfiles: number;
+  };
+};
+
+export type EmployeeInput = {
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  joiningDate: string;
+};
+
+export type EmployeeUpdateInput = Partial<EmployeeInput> & {
+  isActive?: boolean;
+};
+
+export type EmployeeListFilters = {
+  includeInactive?: boolean;
+  includeDeleted?: boolean;
+};
+
+export type SalaryStructureComponent = {
+  id?: string;
+  salaryStructureId?: string;
+  code: string;
+  name: string;
+  percentage: string;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SalaryStructure = {
+  id: string;
+  code: string;
+  version: number;
+  name: string;
+  description: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  status: SalaryConfigurationStatus;
+  createdById: string;
+  approvedById: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  components?: SalaryStructureComponent[];
+};
+
+export type SalaryStructureInput = {
+  code: string;
+  name: string;
+  description?: string | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  components: Array<Pick<SalaryStructureComponent, "code" | "name" | "percentage" | "displayOrder">>;
+};
+
+export type SalaryStructureUpdateInput = Omit<
+  Partial<SalaryStructureInput>,
+  "code"
+>;
+
+export type EmployeeSalaryAssignment = {
+  id: string;
+  employeeId: string;
+  salaryStructureId: string;
+  grossSalary: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  status: SalaryConfigurationStatus;
+  changeReason: string | null;
+  createdById: string;
+  approvedById: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  salaryStructure?: SalaryStructure;
+};
+
+export type SalaryAssignmentInput = {
+  salaryStructureId: string;
+  grossSalary: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  changeReason?: string | null;
+};
+
+export type EmployeePaymentProfile = {
+  id: string;
+  employeeId: string;
+  selectedBankPercentage: string;
+  policyCashShare?: string;
+  bankName: string | null;
+  accountName: string | null;
+  accountNumber: string | null;
+  branchName: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  status: SalaryConfigurationStatus;
+  changeReason: string | null;
+  createdById: string;
+  approvedById: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaymentProfileInput = {
+  selectedBankPercentage?: string;
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumber?: string | null;
+  branchName?: string | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  changeReason?: string | null;
+};
+
+export type OtherApprovedDeductionInput = {
+  amount: string;
+  description: string;
+  approvalReference?: string;
+};
+
+export type SalaryPreviewInput = {
+  grossSalary: string;
+  salaryStructureId?: string;
+  components?: Array<Pick<SalaryStructureComponent, "code" | "name" | "percentage" | "displayOrder">>;
+  attendanceDeduction?: string;
+  providentFundDeduction?: string;
+  loanOrSalaryAdvanceDeduction?: string;
+  aitDeduction?: string;
+  otherApprovedDeductions?: OtherApprovedDeductionInput[];
+  selectedBankPercentage: string;
+};
+
+export type SalaryPreviewResult = {
+  grossSalary: string;
+  earningComponents: Array<{
+    code: string;
+    name: string;
+    percentage: string;
+    displayOrder: number;
+    amount: string;
+  }>;
+  basic?: string;
+  houseRent?: string;
+  conveyance?: string;
+  totalEarnings: string;
+  attendanceDeduction: string;
+  providentFundDeduction: string;
+  loanOrSalaryAdvanceDeduction: string;
+  aitDeduction: string;
+  otherApprovedDeductions: OtherApprovedDeductionInput[];
+  totalDeductions: string;
+  netPay: string;
+  selectedBankPercentage: string;
+  policyCashShare: string;
+  maximumAllowedBankPercentage: string;
+  bankPay: string;
+  cashPay: string;
+  reconciliationDifference: string;
+  warnings: string[];
+  roundingPolicy: string;
+};
+
+// ---------------------------------------------------------------------------
 // Voucher resource types (Phase 2C)
 // ---------------------------------------------------------------------------
 
@@ -1087,6 +1272,182 @@ export function deleteReceiptAllocation(
     `/bookings/${bookingId}/receipt-allocations/${allocationId}`,
     { method: "DELETE" },
   );
+}
+
+// ---------------------------------------------------------------------------
+// Salary Foundation resource helpers (Phase 1)
+// ---------------------------------------------------------------------------
+
+function buildEmployeeQuery(filters?: EmployeeListFilters): string {
+  if (!filters) return "";
+  const params = new URLSearchParams();
+  if (typeof filters.includeInactive === "boolean") {
+    params.set("includeInactive", String(filters.includeInactive));
+  }
+  if (typeof filters.includeDeleted === "boolean") {
+    params.set("includeDeleted", String(filters.includeDeleted));
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+export function getEmployees(
+  filters?: EmployeeListFilters,
+  signal?: AbortSignal,
+): Promise<Employee[]> {
+  return apiFetch<Employee[]>(`/employees${buildEmployeeQuery(filters)}`, {
+    signal,
+  });
+}
+
+export function getEmployee(
+  id: string,
+  signal?: AbortSignal,
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${id}`, { signal });
+}
+
+export function createEmployee(input: EmployeeInput): Promise<Employee> {
+  return apiFetch<Employee>("/employees", { body: input, method: "POST" });
+}
+
+export function updateEmployee(
+  id: string,
+  input: EmployeeUpdateInput,
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getSalaryStructures(
+  signal?: AbortSignal,
+): Promise<SalaryStructure[]> {
+  return apiFetch<SalaryStructure[]>("/salary-structures", { signal });
+}
+
+export function getSalaryStructure(
+  id: string,
+  signal?: AbortSignal,
+): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}`, { signal });
+}
+
+export function createSalaryStructure(
+  input: SalaryStructureInput,
+): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>("/salary-structures", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateSalaryStructure(
+  id: string,
+  input: SalaryStructureUpdateInput,
+): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function approveSalaryStructure(id: string): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}/approve`, {
+    method: "POST",
+  });
+}
+
+export function inactivateSalaryStructure(id: string): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}/inactivate`, {
+    method: "POST",
+  });
+}
+
+export function getSalaryAssignments(
+  employeeId: string,
+  signal?: AbortSignal,
+): Promise<EmployeeSalaryAssignment[]> {
+  return apiFetch<EmployeeSalaryAssignment[]>(
+    `/employees/${employeeId}/salary-assignments`,
+    { signal },
+  );
+}
+
+export function createSalaryAssignment(
+  employeeId: string,
+  input: SalaryAssignmentInput,
+): Promise<EmployeeSalaryAssignment> {
+  return apiFetch<EmployeeSalaryAssignment>(
+    `/employees/${employeeId}/salary-assignments`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function updateSalaryAssignment(
+  id: string,
+  input: Partial<SalaryAssignmentInput>,
+): Promise<EmployeeSalaryAssignment> {
+  return apiFetch<EmployeeSalaryAssignment>(`/salary-assignments/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function approveSalaryAssignment(
+  id: string,
+): Promise<EmployeeSalaryAssignment> {
+  return apiFetch<EmployeeSalaryAssignment>(`/salary-assignments/${id}/approve`, {
+    method: "POST",
+  });
+}
+
+export function getPaymentProfiles(
+  employeeId: string,
+  signal?: AbortSignal,
+): Promise<EmployeePaymentProfile[]> {
+  return apiFetch<EmployeePaymentProfile[]>(
+    `/employees/${employeeId}/payment-profiles`,
+    { signal },
+  );
+}
+
+export function createPaymentProfile(
+  employeeId: string,
+  input: PaymentProfileInput,
+): Promise<EmployeePaymentProfile> {
+  return apiFetch<EmployeePaymentProfile>(
+    `/employees/${employeeId}/payment-profiles`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function updatePaymentProfile(
+  id: string,
+  input: Partial<PaymentProfileInput>,
+): Promise<EmployeePaymentProfile> {
+  return apiFetch<EmployeePaymentProfile>(`/payment-profiles/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function approvePaymentProfile(
+  id: string,
+): Promise<EmployeePaymentProfile> {
+  return apiFetch<EmployeePaymentProfile>(`/payment-profiles/${id}/approve`, {
+    method: "POST",
+  });
+}
+
+export function previewSalary(
+  input: SalaryPreviewInput,
+): Promise<SalaryPreviewResult> {
+  return apiFetch<SalaryPreviewResult>("/salary-calculations/preview", {
+    body: input,
+    method: "POST",
+  });
 }
 
 // ---------------------------------------------------------------------------
