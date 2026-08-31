@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ACCOUNTANT_ROLE } from "../auth/auth.constants";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -14,7 +14,9 @@ import { EmployeeService } from "./employee.service";
 export class EmployeeController {
   constructor(private readonly service: EmployeeService) {}
   @Get() findAll(@Query() query: ListEmployeesQueryDto) { return this.service.findAll(query); }
-  @Get(":id") findOne(@Param("id") id: string) { return this.service.findOne(id); }
+  @Get(":id")
+  @Header("Cache-Control", "no-store")
+  findOne(@Param("id") id: string) { return this.service.findOne(id); }
   @Post() create(@Body() dto: CreateEmployeeDto, @CurrentUser() user: AuthenticatedUser) { return this.service.create(dto, user); }
   @Patch(":id") update(@Param("id") id: string, @Body() dto: UpdateEmployeeDto, @CurrentUser() user: AuthenticatedUser) { return this.service.update(id, dto, user); }
 }

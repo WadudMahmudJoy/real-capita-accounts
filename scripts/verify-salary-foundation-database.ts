@@ -16,7 +16,7 @@ assertSalaryVerificationDatabase(process.env.DATABASE_URL);
 const prisma = new PrismaService();
 const salary = new SalaryService(prisma, new SalaryCalculator());
 const employees = new EmployeeService(prisma);
-const prefix = `SALARY_PHASE1_VERIFY_${Date.now()}`;
+const prefix = `SALP1V_${Date.now()}`;
 let passed = 0;
 let failed = 0;
 const entityIds: string[] = [];
@@ -101,8 +101,16 @@ async function main() {
 
   let employeeId: string | undefined;
   let approvedStructureId: string | undefined;
+  let departmentId: string | undefined;
   try {
-    const employee = await employees.create({ employeeCode: `${prefix}_E1`, fullName: "Fictional Verification Employee", designation: "Verification Analyst", joiningDate: "2026-01-01" }, actor);
+    const department = await prisma.department.create({
+      data: {
+        code: `${prefix}_DEPT`,
+        name: `${prefix} Department`,
+      },
+    });
+    departmentId = department.id;
+    const employee = await employees.create({ employeeCode: `${prefix}_E1`, fullName: "Fictional Verification Employee", designation: "Verification Analyst", departmentId, joiningDate: "2026-01-01", mobileNumber: "01700000101" }, actor);
     employeeId = employee.id;
     entityIds.push(employee.id);
     await check("employee create and default active list", async () => (await employees.findAll({})).some((row) => row.id === employee.id));
@@ -132,7 +140,7 @@ async function main() {
     await rejects("approved structure immutable", () => salary.updateStructure(structure.id, { name: "Changed" }, actor), /immutable/i);
     await rejects("duplicate code version database constraint", () => prisma.salaryStructure.create({ data: { code: structure.code, version: structure.version, name: "Duplicate", effectiveFrom: new Date("2026-01-01"), createdById: actor.id } }), /unique constraint/i);
 
-    const exclusionEmployee = await employees.create({ employeeCode: `${prefix}_23P01`, fullName: "Fictional Exclusion Verification", designation: "Verification Analyst", joiningDate: "2026-01-01" }, actor);
+    const exclusionEmployee = await employees.create({ employeeCode: `${prefix}_23P01`, fullName: "Fictional Exclusion Verification", designation: "Verification Analyst", departmentId, joiningDate: "2026-01-01", mobileNumber: "01700000102" }, actor);
     entityIds.push(exclusionEmployee.id);
     const assignmentDrafts = await Promise.all([
       prisma.employeeSalaryAssignment.create({ data: { employeeId: exclusionEmployee.id, salaryStructureId: structure.id, grossSalary: "1.00", effectiveFrom: new Date("2026-01-01"), status: "DRAFT", createdById: actor.id } }),
@@ -250,7 +258,14 @@ async function main() {
     if (approvedStructureId) await prisma.salaryStructureComponent.deleteMany({ where: { salaryStructure: { code: { startsWith: prefix } } } });
     await prisma.salaryStructure.deleteMany({ where: { code: { startsWith: prefix } } });
     await prisma.employee.deleteMany({ where: { employeeCode: { startsWith: prefix } } });
-    await prisma.auditEvent.deleteMany({ where: { OR: [{ entityId: { in: entityIds } }, { metadata: { path: ["employeeId"], equals: employeeId } }] } });
+    if (departmentId) await prisma.department.delete({ where: { id: departmentId } });
+    const auditFilters: Parameters<typeof prisma.auditEvent.deleteMany>[0]["where"][] = [
+      { entityId: { in: entityIds } },
+    ];
+    if (employeeId) {
+      auditFilters.push({ metadata: { path: ["employeeId"], equals: employeeId } });
+    }
+    await prisma.auditEvent.deleteMany({ where: { OR: auditFilters } });
   }
   console.log(`Salary database verification: ${passed} PASS, ${failed} FAIL`);
   if (failed) process.exitCode = 1;

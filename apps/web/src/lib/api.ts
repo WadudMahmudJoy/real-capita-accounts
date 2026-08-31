@@ -380,18 +380,81 @@ export type ReceiptAllocationDeleteResult = {
 
 export type SalaryConfigurationStatus = "DRAFT" | "APPROVED" | "INACTIVE";
 
-export type Employee = {
+export type BloodGroup =
+  | "A_POSITIVE"
+  | "A_NEGATIVE"
+  | "B_POSITIVE"
+  | "B_NEGATIVE"
+  | "AB_POSITIVE"
+  | "AB_NEGATIVE"
+  | "O_POSITIVE"
+  | "O_NEGATIVE";
+
+export type DepartmentSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type Department = DepartmentSummary & {
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count: { employees: number };
+};
+
+export type DepartmentInput = {
+  code: string;
+  name: string;
+  description?: string | null;
+};
+
+export type DepartmentUpdateInput = {
+  name?: string;
+  description?: string | null;
+  isActive?: boolean;
+};
+
+export type EmployeeListItem = {
   id: string;
   employeeCode: string;
   fullName: string;
   designation: string;
+  department: DepartmentSummary | null;
+  mobileNumberMasked: string | null;
   joiningDate: string;
   isActive: boolean;
-  isDeleted: boolean;
-  deletedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  _count?: {
+};
+
+export type Employee = {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  bengaliName: string | null;
+  dateOfBirth: string | null;
+  hasNationalId: boolean;
+  nationalIdMasked: string | null;
+  bloodGroup: BloodGroup | null;
+  mobileNumber: string | null;
+  alternateMobileNumber: string | null;
+  personalEmail: string | null;
+  officialEmail: string | null;
+  presentAddress: string | null;
+  permanentAddress: string | null;
+  designation: string;
+  departmentId: string | null;
+  department: (DepartmentSummary & { isActive: boolean }) | null;
+  joiningDate: string;
+  confirmationDate: string | null;
+  separationDate: string | null;
+  separationReason: string | null;
+  emergencyContactName: string | null;
+  emergencyContactRelationship: string | null;
+  emergencyContactMobile: string | null;
+  emergencyContactAddress: string | null;
+  isActive: boolean;
+  _count: {
     salaryAssignments: number;
     paymentProfiles: number;
   };
@@ -401,16 +464,36 @@ export type EmployeeInput = {
   employeeCode: string;
   fullName: string;
   designation: string;
+  departmentId: string;
   joiningDate: string;
-};
-
-export type EmployeeUpdateInput = Partial<EmployeeInput> & {
+  mobileNumber: string;
+  bengaliName?: string | null;
+  dateOfBirth?: string | null;
+  nationalId?: string | null;
+  bloodGroup?: BloodGroup | null;
+  alternateMobileNumber?: string | null;
+  personalEmail?: string | null;
+  officialEmail?: string | null;
+  presentAddress?: string | null;
+  permanentAddress?: string | null;
+  confirmationDate?: string | null;
+  separationDate?: string | null;
+  separationReason?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactRelationship?: string | null;
+  emergencyContactMobile?: string | null;
+  emergencyContactAddress?: string | null;
   isActive?: boolean;
 };
+
+export type EmployeeUpdateInput = Partial<Omit<EmployeeInput, "employeeCode">>;
 
 export type EmployeeListFilters = {
   includeInactive?: boolean;
   includeDeleted?: boolean;
+  search?: string;
+  departmentId?: string;
+  status?: "ACTIVE" | "INACTIVE" | "ALL";
 };
 
 export type SalaryStructureComponent = {
@@ -1287,6 +1370,9 @@ function buildEmployeeQuery(filters?: EmployeeListFilters): string {
   if (typeof filters.includeDeleted === "boolean") {
     params.set("includeDeleted", String(filters.includeDeleted));
   }
+  if (filters.search) params.set("search", filters.search);
+  if (filters.departmentId) params.set("departmentId", filters.departmentId);
+  if (filters.status) params.set("status", filters.status);
   const query = params.toString();
   return query ? `?${query}` : "";
 }
@@ -1294,8 +1380,8 @@ function buildEmployeeQuery(filters?: EmployeeListFilters): string {
 export function getEmployees(
   filters?: EmployeeListFilters,
   signal?: AbortSignal,
-): Promise<Employee[]> {
-  return apiFetch<Employee[]>(`/employees${buildEmployeeQuery(filters)}`, {
+): Promise<EmployeeListItem[]> {
+  return apiFetch<EmployeeListItem[]>(`/employees${buildEmployeeQuery(filters)}`, {
     signal,
   });
 }
@@ -1316,6 +1402,26 @@ export function updateEmployee(
   input: EmployeeUpdateInput,
 ): Promise<Employee> {
   return apiFetch<Employee>(`/employees/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getDepartments(signal?: AbortSignal): Promise<Department[]> {
+  return apiFetch<Department[]>("/departments", { signal });
+}
+
+export function createDepartment(
+  input: DepartmentInput,
+): Promise<Department> {
+  return apiFetch<Department>("/departments", { body: input, method: "POST" });
+}
+
+export function updateDepartment(
+  id: string,
+  input: DepartmentUpdateInput,
+): Promise<Department> {
+  return apiFetch<Department>(`/departments/${id}`, {
     body: input,
     method: "PATCH",
   });

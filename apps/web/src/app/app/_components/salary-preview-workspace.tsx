@@ -10,7 +10,7 @@ import {
   getSalaryAssignments,
   getSalaryStructures,
   previewSalary,
-  type Employee,
+  type EmployeeListItem,
   type EmployeePaymentProfile,
   type EmployeeSalaryAssignment,
   type OtherApprovedDeductionInput,
@@ -75,7 +75,7 @@ let deductionKey = 1;
 
 export function SalaryPreviewWorkspace() {
   const router = useRouter();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
   const [structures, setStructures] = useState<SalaryStructure[]>([]);
   const [assignments, setAssignments] = useState<EmployeeSalaryAssignment[]>([]);
   const [profiles, setProfiles] = useState<EmployeePaymentProfile[]>([]);

@@ -8,6 +8,7 @@ import { CashBankModule } from "./cash-bank/cash-bank.module";
 import { CompanyModule } from "./company/company.module";
 import { CostCenterModule } from "./cost-center/cost-center.module";
 import { CustomerModule } from "./customer/customer.module";
+import { DepartmentModule } from "./department/department.module";
 import { FiscalYearModule } from "./fiscal-year/fiscal-year.module";
 import { EmployeeModule } from "./employee/employee.module";
 import { HealthController } from "./health.controller";
@@ -29,6 +30,7 @@ import { SalaryModule } from "./salary/salary.module";
     VoucherModule,
     ReportModule,
     CustomerModule,
+    DepartmentModule,
     BookableItemModule,
     BookingModule,
     EmployeeModule,

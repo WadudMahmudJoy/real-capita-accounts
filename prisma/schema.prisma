@@ -187,20 +187,65 @@ enum SalaryConfigurationStatus {
   INACTIVE
 }
 
-model Employee {
-  id                String                     @id @default(cuid())
-  employeeCode      String                     @unique
-  fullName          String
-  designation       String
-  joiningDate       DateTime
-  isActive          Boolean                    @default(true)
-  isDeleted         Boolean                    @default(false)
-  deletedAt         DateTime?
-  createdAt         DateTime                   @default(now())
-  updatedAt         DateTime                   @updatedAt
-  salaryAssignments EmployeeSalaryAssignment[]
-  paymentProfiles   EmployeePaymentProfile[]
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
 
+model Department {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  name        String
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  employees   Employee[]
+
+  @@index([isActive])
+  @@map("departments")
+}
+
+model Employee {
+  id                           String                     @id @default(cuid())
+  employeeCode                 String                     @unique
+  fullName                     String
+  bengaliName                  String?
+  dateOfBirth                  DateTime?
+  nationalId                   String?                    @unique
+  bloodGroup                   BloodGroup?
+  mobileNumber                 String?
+  alternateMobileNumber        String?
+  personalEmail                String?
+  officialEmail                String?                    @unique
+  presentAddress               String?
+  permanentAddress             String?
+  designation                  String
+  departmentId                 String?
+  joiningDate                  DateTime
+  confirmationDate             DateTime?
+  separationDate               DateTime?
+  separationReason             String?
+  emergencyContactName         String?
+  emergencyContactRelationship String?
+  emergencyContactMobile       String?
+  emergencyContactAddress      String?
+  isActive                     Boolean                    @default(true)
+  isDeleted                    Boolean                    @default(false)
+  deletedAt                    DateTime?
+  createdAt                    DateTime                   @default(now())
+  updatedAt                    DateTime                   @updatedAt
+  department                   Department?                @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  salaryAssignments            EmployeeSalaryAssignment[]
+  paymentProfiles              EmployeePaymentProfile[]
+
+  @@index([departmentId])
   @@index([isActive])
   @@index([isDeleted])
   @@map("employees")
