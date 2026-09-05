@@ -27,7 +27,10 @@
     "demo:reset": "tsx prisma/demo-reset.ts",
     "demo:verify": "tsx prisma/demo-verify.ts",
     "verify:employee-records": "tsx --tsconfig apps/api/tsconfig.json scripts/verify-employee-records.ts",
-    "verify:employee-records:database": "tsx --tsconfig apps/api/tsconfig.json scripts/verify-employee-records-database.ts"
+    "verify:employee-records:database": "tsx --tsconfig apps/api/tsconfig.json scripts/verify-employee-records-database.ts",
+    "verify:work-schedules": "tsx --tsconfig apps/api/tsconfig.json scripts/verify-work-schedules.ts",
+    "verify:work-schedules:database": "tsx --tsconfig apps/api/tsconfig.json scripts/verify-work-schedules-database.ts",
+    "verify:work-schedules:runtime": "tsx --tsconfig apps/api/tsconfig.json scripts/verify-work-schedules-runtime.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

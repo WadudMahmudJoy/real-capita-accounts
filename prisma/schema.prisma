@@ -29,6 +29,9 @@ model User {
   createdPaymentProfiles    EmployeePaymentProfile[]   @relation("PaymentProfileCreatedBy")
   approvedPaymentProfiles   EmployeePaymentProfile[]   @relation("PaymentProfileApprovedBy")
 
+  createdWorkSchedules       WorkSchedule[]           @relation("WorkScheduleCreatedBy")
+  createdScheduleAssignments WorkScheduleAssignment[] @relation("WorkScheduleAssignmentCreatedBy")
+
   @@map("users")
 }
 
@@ -198,6 +201,21 @@ enum BloodGroup {
   O_NEGATIVE
 }
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum WorkScheduleAssignmentScope {
+  COMPANY_DEFAULT
+  EMPLOYEE_OVERRIDE
+}
+
 model Department {
   id          String     @id @default(cuid())
   code        String     @unique
@@ -244,6 +262,8 @@ model Employee {
   department                   Department?                @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   salaryAssignments            EmployeeSalaryAssignment[]
   paymentProfiles              EmployeePaymentProfile[]
+
+  workScheduleAssignments WorkScheduleAssignment[]
 
   @@index([departmentId])
   @@index([isActive])
@@ -358,7 +378,76 @@ model Company {
   vouchers               Voucher[]
   voucherNumberSequences VoucherNumberSequence[]
 
+  workSchedules           WorkSchedule[]
+  workScheduleAssignments WorkScheduleAssignment[]
+
   @@map("companies")
+}
+
+model WorkSchedule {
+  id          String                   @id @default(cuid())
+  companyId   String
+  code        String                   @db.VarChar(32)
+  name        String
+  description String?
+  isActive    Boolean                  @default(true)
+  createdById String
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  company     Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdBy   User                     @relation("WorkScheduleCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  days        WorkScheduleDay[]
+  assignments WorkScheduleAssignment[]
+
+  @@unique([companyId, code])
+  @@unique([id, companyId])
+  @@map("work_schedules")
+}
+
+model WorkScheduleDay {
+  id                 String       @id @default(cuid())
+  workScheduleId     String
+  dayOfWeek          DayOfWeek
+  isWorkingDay       Boolean
+  startMinuteOfDay   Int?
+  endMinuteOfDay     Int?
+  unpaidBreakMinutes Int          @default(0)
+  crossesMidnight    Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  workSchedule       WorkSchedule @relation(fields: [workScheduleId], references: [id], onDelete: Restrict)
+
+  @@unique([workScheduleId, dayOfWeek])
+  @@map("work_schedule_days")
+}
+
+model WorkScheduleAssignment {
+  id                     String                      @id @default(cuid())
+  companyId              String
+  scope                  WorkScheduleAssignmentScope
+  workScheduleId         String
+  employeeId             String?
+  effectiveFrom          DateTime                    @db.Date
+  effectiveTo            DateTime?                   @db.Date
+  changeReason           String?
+  createdById            String
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+  cancelledAt            DateTime?
+  replacesAssignmentId   String?
+  company                Company                     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  workSchedule           WorkSchedule                @relation(fields: [workScheduleId, companyId], references: [id, companyId], onDelete: Restrict)
+  employee               Employee?                   @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  createdBy              User                        @relation("WorkScheduleAssignmentCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  replacesAssignment     WorkScheduleAssignment?     @relation("WorkScheduleAssignmentReplacement", fields: [replacesAssignmentId], references: [id], onDelete: Restrict)
+  replacementAssignments WorkScheduleAssignment[]    @relation("WorkScheduleAssignmentReplacement")
+
+  @@index([companyId, effectiveFrom])
+  @@index([employeeId, effectiveFrom])
+  @@index([workScheduleId])
+  @@index([createdById])
+  @@index([replacesAssignmentId])
+  @@map("work_schedule_assignments")
 }
 
 model FiscalYear {

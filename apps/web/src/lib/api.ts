@@ -427,6 +427,102 @@ export type EmployeeListItem = {
   isActive: boolean;
 };
 
+export type WorkScheduleDayOfWeek =
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY"
+  | "SUNDAY";
+
+export type WorkScheduleDay = {
+  dayOfWeek: WorkScheduleDayOfWeek;
+  isWorkingDay: boolean;
+  startMinuteOfDay: number | null;
+  endMinuteOfDay: number | null;
+  unpaidBreakMinutes: number;
+  crossesMidnight: boolean;
+};
+
+export type WorkScheduleDefinition = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  days: WorkScheduleDay[];
+  everAssigned: boolean;
+};
+
+export type WorkScheduleAssignment = {
+  id: string;
+  scope: "COMPANY_DEFAULT" | "EMPLOYEE_OVERRIDE";
+  employeeId: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  changeReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  cancelledAt: string | null;
+  replacesAssignmentId: string | null;
+  workSchedule: Omit<
+    WorkScheduleDefinition,
+    "createdAt" | "updatedAt" | "everAssigned"
+  >;
+};
+
+export type EffectiveWorkSchedule =
+  | {
+      kind: "NOT_CONFIGURED";
+      code: "WORK_SCHEDULE_NOT_CONFIGURED";
+      businessDate: string;
+    }
+  | {
+      kind: "RESOLVED";
+      businessDate: string;
+      assignmentId: string;
+      source: "COMPANY_DEFAULT" | "EMPLOYEE_OVERRIDE";
+      workScheduleId: string;
+      code: string;
+      name: string;
+      dayOfWeek: WorkScheduleDayOfWeek;
+      isWorkingDay: boolean;
+      startMinuteOfDay: number | null;
+      endMinuteOfDay: number | null;
+      crossesMidnight: boolean;
+      unpaidBreakMinutes: number;
+      grossScheduledMinutes: number;
+      expectedWorkMinutes: number;
+      timeZone: "Asia/Dhaka";
+    };
+
+export type WorkScheduleDefinitionInput = {
+  code?: string;
+  name: string;
+  description?: string | null;
+  days: WorkScheduleDay[];
+};
+
+export type UpdateWorkScheduleInput = {
+  name?: string;
+  description?: string | null;
+  isActive?: boolean;
+  days?: WorkScheduleDay[];
+};
+
+export type CreateWorkScheduleAssignmentInput = {
+  scope: "COMPANY_DEFAULT" | "EMPLOYEE_OVERRIDE";
+  employeeId?: string | null;
+  workScheduleId?: string;
+  newSchedule?: WorkScheduleDefinitionInput;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  changeReason?: string | null;
+};
+
 export type Employee = {
   id: string;
   employeeCode: string;
@@ -1384,6 +1480,112 @@ export function getEmployees(
   return apiFetch<EmployeeListItem[]>(`/employees${buildEmployeeQuery(filters)}`, {
     signal,
   });
+}
+
+export function getWorkSchedules(
+  includeInactive = false,
+  signal?: AbortSignal,
+) {
+  return apiFetch<WorkScheduleDefinition[]>(
+    `/work-schedules?includeInactive=${includeInactive}`,
+    { signal },
+  );
+}
+
+export function getWorkSchedule(id: string, signal?: AbortSignal) {
+  return apiFetch<WorkScheduleDefinition>(
+    `/work-schedules/${encodeURIComponent(id)}`,
+    { signal },
+  );
+}
+
+export function createWorkSchedule(input: WorkScheduleDefinitionInput) {
+  return apiFetch<WorkScheduleDefinition>("/work-schedules", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function getEffectiveWorkSchedule(
+  businessDate: string,
+  employeeId?: string,
+  signal?: AbortSignal,
+) {
+  const query = new URLSearchParams({ businessDate });
+  if (employeeId) query.set("employeeId", employeeId);
+  return apiFetch<EffectiveWorkSchedule>(`/work-schedules/effective?${query}`, {
+    signal,
+  });
+}
+
+export function getWorkScheduleAssignments(
+  employeeId?: string,
+  signal?: AbortSignal,
+) {
+  const query = employeeId ? `?employeeId=${encodeURIComponent(employeeId)}` : "";
+  return apiFetch<WorkScheduleAssignment[]>(
+    `/work-schedules/assignments${query}`,
+    { signal },
+  );
+}
+
+export function createWorkScheduleAssignment(
+  input: CreateWorkScheduleAssignmentInput,
+) {
+  return apiFetch<WorkScheduleAssignment>("/work-schedules/assignments", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateWorkSchedule(
+  id: string,
+  input: UpdateWorkScheduleInput,
+) {
+  return apiFetch<WorkScheduleDefinition>(
+    `/work-schedules/${encodeURIComponent(id)}`,
+    { body: input, method: "PATCH" },
+  );
+}
+
+export function replaceWorkScheduleAssignment(
+  id: string,
+  input: {
+    effectiveFrom: string;
+    workScheduleId?: string;
+    newSchedule?: WorkScheduleDefinitionInput;
+    changeReason: string;
+    expectedUpdatedAt: string;
+  },
+) {
+  return apiFetch<WorkScheduleAssignment>(
+    `/work-schedules/assignments/${encodeURIComponent(id)}/replace`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function endWorkScheduleAssignment(
+  id: string,
+  input: {
+    effectiveTo: string;
+    changeReason: string;
+    expectedUpdatedAt: string;
+  },
+) {
+  return apiFetch<WorkScheduleAssignment>(
+    `/work-schedules/assignments/${encodeURIComponent(id)}/end`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function cancelWorkScheduleAssignment(
+  id: string,
+  input: { changeReason: string; expectedUpdatedAt: string },
+) {
+  return apiFetch<WorkScheduleAssignment>(
+    `/work-schedules/assignments/${encodeURIComponent(id)}/cancel`,
+    { body: input, method: "POST" },
+  );
 }
 
 export function getEmployee(

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Building2, Eye, Plus, RefreshCw, Search, X } from "lucide-react";
+import { Building2, CalendarClock, Eye, Plus, RefreshCw, Search, X } from "lucide-react";
 import {
   ApiError,
   createEmployee,
@@ -240,6 +240,10 @@ export default function EmployeesPage() {
               description="Search and filters are applied by the server. Deleted records remain outside the normal UI."
               actions={
                 <div className="flex flex-wrap gap-2">
+                  <Link className={buttonClassName({ variant: "secondary" })} href="/app/employees/work-schedules">
+                    <CalendarClock aria-hidden="true" className="size-4" />
+                    Work Schedule Settings
+                  </Link>
                   <Button
                     onClick={() => setDepartmentsOpen((current) => !current)}
                     variant="secondary"

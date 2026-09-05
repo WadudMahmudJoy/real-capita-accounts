@@ -1,7 +1,8 @@
 import { BadRequestException } from "@nestjs/common";
+import { bangladeshTodayDateOnly } from "../common/business-date";
+export { DATE_ONLY_PATTERN, parseDateOnly, parseOptionalDateOnly, bangladeshTodayDateOnly } from "../common/business-date";
 
 export const EMPLOYEE_CODE_PATTERN = /^[A-Z0-9][A-Z0-9/_-]{0,31}$/;
-export const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export const BANGLADESH_MOBILE_PATTERN = /^\+8801[3-9]\d{8}$/;
 
 export type EmployeeRuleState = {
@@ -54,38 +55,6 @@ export function nullableTrimmed(
   if (value == null) return null;
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
-}
-
-export function parseDateOnly(value: string, fieldName: string): Date {
-  if (!DATE_ONLY_PATTERN.test(value)) {
-    throw new BadRequestException(`${fieldName} must use YYYY-MM-DD format.`);
-  }
-
-  const parsed = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
-    throw new BadRequestException(`${fieldName} must be a valid date.`);
-  }
-
-  return parsed;
-}
-
-export function parseOptionalDateOnly(
-  value: string | null | undefined,
-  fieldName: string,
-): Date | null {
-  return value == null ? null : parseDateOnly(value, fieldName);
-}
-
-export function bangladeshTodayDateOnly(now = new Date()): Date {
-  const parts = new Intl.DateTimeFormat("en", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Asia/Dhaka",
-    year: "numeric",
-  }).formatToParts(now);
-  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-
-  return new Date(Date.UTC(Number(value.year), Number(value.month) - 1, Number(value.day)));
 }
 
 export function assertEmployeeRules(state: EmployeeRuleState): void {

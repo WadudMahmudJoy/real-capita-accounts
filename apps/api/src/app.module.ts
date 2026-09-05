@@ -16,6 +16,7 @@ import { ProjectModule } from "./project/project.module";
 import { ReportModule } from "./report/report.module";
 import { VoucherModule } from "./voucher/voucher.module";
 import { SalaryModule } from "./salary/salary.module";
+import { WorkScheduleModule } from "./work-schedule/work-schedule.module";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SalaryModule } from "./salary/salary.module";
     BookingModule,
     EmployeeModule,
     SalaryModule,
+    WorkScheduleModule,
   ],
   controllers: [HealthController],
 })
