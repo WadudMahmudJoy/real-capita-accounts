@@ -73,8 +73,18 @@ export class WorkScheduleService {
   async resolveWorkSchedule(employeeId: string | undefined, businessDate: string) {
     const companyId = await this.currentCompanyId();
     if (employeeId) await this.requireEmployee(this.prisma, employeeId);
-    const rows = await this.prisma.workScheduleAssignment.findMany({ where: { companyId, cancelledAt: null, OR: [{ scope: WorkScheduleAssignmentScope.COMPANY_DEFAULT }, ...(employeeId ? [{ scope: WorkScheduleAssignmentScope.EMPLOYEE_OVERRIDE, employeeId }] : [])], effectiveFrom: { lte: parseDateOnly(businessDate, 'businessDate') }, AND: [{ OR: [{ effectiveTo: null }, { effectiveTo: { gt: parseDateOnly(businessDate, 'businessDate') } }] }] }, include: assignmentInclude });
+    const rows = await this.assignmentCandidates(this.prisma, companyId, employeeId, businessDate);
     return resolveCandidates(rows.map(candidateView), companyId, employeeId ?? null, businessDate);
+  }
+
+  async resolveWorkScheduleWithTx(tx: Tx, companyId: string, employeeId: string | undefined, businessDate: string) {
+    if (employeeId) await requireEmployee(tx, employeeId);
+    const rows = await this.assignmentCandidates(tx, companyId, employeeId, businessDate);
+    return resolveCandidates(rows.map(candidateView), companyId, employeeId ?? null, businessDate);
+  }
+
+  private async assignmentCandidates(client: Pick<Tx, 'workScheduleAssignment'>, companyId: string, employeeId: string | undefined, businessDate: string) {
+    return client.workScheduleAssignment.findMany({ where: { companyId, cancelledAt: null, OR: [{ scope: WorkScheduleAssignmentScope.COMPANY_DEFAULT }, ...(employeeId ? [{ scope: WorkScheduleAssignmentScope.EMPLOYEE_OVERRIDE, employeeId }] : [])], effectiveFrom: { lte: parseDateOnly(businessDate, 'businessDate') }, AND: [{ OR: [{ effectiveTo: null }, { effectiveTo: { gt: parseDateOnly(businessDate, 'businessDate') } }] }] }, include: assignmentInclude });
   }
 
   async createAssignment(dto: CreateWorkScheduleAssignmentDto, user: AuthenticatedUser) {

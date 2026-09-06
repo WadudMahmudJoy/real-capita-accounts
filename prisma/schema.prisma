@@ -32,6 +32,15 @@ model User {
   createdWorkSchedules       WorkSchedule[]           @relation("WorkScheduleCreatedBy")
   createdScheduleAssignments WorkScheduleAssignment[] @relation("WorkScheduleAssignmentCreatedBy")
 
+  createdAttendanceRevisions    AttendanceRevision[]        @relation("AttendanceRevisionCreatedBy")
+  finalizedAttendanceRevisions  AttendanceRevision[]        @relation("AttendanceRevisionFinalizedBy")
+  finalizedAttendanceDays       AttendanceDayFinalization[] @relation("AttendanceDayFinalizationFinalizedBy")
+  createdAttendancePolicies     AttendancePolicy[]          @relation("AttendancePolicyCreatedBy")
+  cancelledAttendancePolicies   AttendancePolicy[]          @relation("AttendancePolicyCancelledBy")
+  createdCalendarExceptions     CompanyCalendarException[]  @relation("CalendarExceptionCreatedBy")
+  supersededCalendarExceptions  CompanyCalendarException[]  @relation("CalendarExceptionSupersededBy")
+  cancelledCalendarExceptions   CompanyCalendarException[]  @relation("CalendarExceptionCancelledBy")
+
   @@map("users")
 }
 
@@ -216,6 +225,31 @@ enum WorkScheduleAssignmentScope {
   EMPLOYEE_OVERRIDE
 }
 
+enum AttendancePresenceState {
+  PRESENT
+  ABSENT
+  INCOMPLETE
+  NOT_REQUIRED
+}
+
+enum AttendanceOrigin {
+  MANUAL_ENTRY
+  MANUAL_CORRECTION
+  SYSTEM_FINALIZATION
+}
+
+enum AttendanceExpectedDayKind {
+  WORKING_DAY
+  WEEKLY_REST
+  HOLIDAY
+  SPECIAL_WORKING_DAY
+}
+
+enum CompanyCalendarExceptionType {
+  HOLIDAY
+  SPECIAL_WORKING_DAY
+}
+
 model Department {
   id          String     @id @default(cuid())
   code        String     @unique
@@ -264,6 +298,8 @@ model Employee {
   paymentProfiles              EmployeePaymentProfile[]
 
   workScheduleAssignments WorkScheduleAssignment[]
+
+  attendanceRecords AttendanceRecord[]
 
   @@index([departmentId])
   @@index([isActive])
@@ -381,6 +417,11 @@ model Company {
   workSchedules           WorkSchedule[]
   workScheduleAssignments WorkScheduleAssignment[]
 
+  attendanceRecords          AttendanceRecord[]
+  attendanceDayFinalizations AttendanceDayFinalization[]
+  attendancePolicies         AttendancePolicy[]
+  companyCalendarExceptions  CompanyCalendarException[]
+
   @@map("companies")
 }
 
@@ -441,6 +482,7 @@ model WorkScheduleAssignment {
   createdBy              User                        @relation("WorkScheduleAssignmentCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   replacesAssignment     WorkScheduleAssignment?     @relation("WorkScheduleAssignmentReplacement", fields: [replacesAssignmentId], references: [id], onDelete: Restrict)
   replacementAssignments WorkScheduleAssignment[]    @relation("WorkScheduleAssignmentReplacement")
+  attendanceRevisions    AttendanceRevision[]
 
   @@index([companyId, effectiveFrom])
   @@index([employeeId, effectiveFrom])
@@ -448,6 +490,153 @@ model WorkScheduleAssignment {
   @@index([createdById])
   @@index([replacesAssignmentId])
   @@map("work_schedule_assignments")
+}
+
+model AttendanceRecord {
+  id           String   @id @default(cuid())
+  companyId    String
+  employeeId   String
+  businessDate DateTime @db.Date
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  revisions    AttendanceRevision[]
+
+  @@unique([employeeId, businessDate])
+  @@index([companyId, businessDate])
+  @@map("attendance_records")
+}
+
+model AttendanceRevision {
+  id                        String                    @id @default(cuid())
+  attendanceRecordId        String
+  revisionNo                Int
+  origin                    AttendanceOrigin
+  isAttendanceApplicable    Boolean?
+  checkInAt                 DateTime?
+  checkOutAt                DateTime?
+  note                      String?                   @db.VarChar(500)
+  expectedDayKind           AttendanceExpectedDayKind?
+  workScheduleAssignmentId  String?
+  workScheduleSource        WorkScheduleAssignmentScope?
+  calendarExceptionId       String?
+  attendancePolicyId        String?
+  scheduledStartMinute      Int?
+  scheduledEndMinute        Int?
+  crossesMidnight           Boolean?
+  unpaidBreakMinutes        Int?
+  expectedWorkMinutes       Int?
+  lateGraceMinutes          Int?
+  earlyLeaveGraceMinutes    Int?
+  timeZone                  String?                   @db.VarChar(64)
+  presenceState             AttendancePresenceState?
+  isLate                    Boolean?
+  isEarlyLeave              Boolean?
+  isNonWorkingDayAttendance Boolean?
+  arrivalDelayMinutes       Int?
+  earlyDepartureMinutes     Int?
+  changeReason              String?                   @db.VarChar(500)
+  createdById               String
+  finalizedById             String?
+  finalizedAt               DateTime?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  attendanceRecord          AttendanceRecord          @relation(fields: [attendanceRecordId], references: [id], onDelete: Restrict)
+  workScheduleAssignment    WorkScheduleAssignment?   @relation(fields: [workScheduleAssignmentId], references: [id], onDelete: Restrict)
+  calendarException         CompanyCalendarException? @relation(fields: [calendarExceptionId], references: [id], onDelete: Restrict)
+  attendancePolicy          AttendancePolicy?         @relation(fields: [attendancePolicyId], references: [id], onDelete: Restrict)
+  createdBy                 User                      @relation("AttendanceRevisionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  finalizedBy               User?                     @relation("AttendanceRevisionFinalizedBy", fields: [finalizedById], references: [id], onDelete: Restrict)
+
+  @@unique([attendanceRecordId, revisionNo])
+  @@index([attendanceRecordId, finalizedAt])
+  @@index([createdById])
+  @@index([finalizedById])
+  @@index([attendancePolicyId])
+  @@index([calendarExceptionId])
+  @@index([workScheduleAssignmentId])
+  @@map("attendance_revisions")
+}
+
+model AttendanceDayFinalization {
+  id            String   @id @default(cuid())
+  companyId     String
+  businessDate  DateTime @db.Date
+  finalizedAt   DateTime
+  finalizedById String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  finalizedBy   User     @relation("AttendanceDayFinalizationFinalizedBy", fields: [finalizedById], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, businessDate])
+  @@index([finalizedById])
+  @@map("attendance_day_finalizations")
+}
+
+model AttendancePolicy {
+  id                    String    @id @default(cuid())
+  companyId             String
+  effectiveFrom         DateTime  @db.Date
+  effectiveTo           DateTime? @db.Date
+  lateGraceMinutes      Int
+  earlyLeaveGraceMinutes Int
+  changeReason          String?   @db.VarChar(500)
+  replacesPolicyId      String?
+  cancelledAt           DateTime?
+  cancelledById         String?
+  cancellationReason    String?   @db.VarChar(500)
+  createdById           String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdBy             User      @relation("AttendancePolicyCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  cancelledBy           User?     @relation("AttendancePolicyCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  replacesPolicy        AttendancePolicy?  @relation("AttendancePolicyReplacement", fields: [replacesPolicyId], references: [id], onDelete: Restrict)
+  replacementPolicies   AttendancePolicy[] @relation("AttendancePolicyReplacement")
+  revisions             AttendanceRevision[]
+
+  @@index([companyId, effectiveFrom])
+  @@index([replacesPolicyId])
+  @@index([createdById])
+  @@index([cancelledById])
+  @@map("attendance_policies")
+}
+
+model CompanyCalendarException {
+  id                  String                     @id @default(cuid())
+  companyId           String
+  businessDate        DateTime                   @db.Date
+  exceptionType       CompanyCalendarExceptionType
+  name                String                     @db.VarChar(150)
+  startMinuteOfDay    Int?
+  endMinuteOfDay      Int?
+  unpaidBreakMinutes  Int                        @default(0)
+  crossesMidnight     Boolean                    @default(false)
+  changeReason        String?                    @db.VarChar(500)
+  replacesExceptionId String?
+  supersededAt        DateTime?
+  supersededById      String?
+  cancelledAt         DateTime?
+  cancelledById       String?
+  cancellationReason  String?                    @db.VarChar(500)
+  createdById         String
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  company             Company                    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdBy           User                       @relation("CalendarExceptionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  supersededBy        User?                      @relation("CalendarExceptionSupersededBy", fields: [supersededById], references: [id], onDelete: Restrict)
+  cancelledBy         User?                      @relation("CalendarExceptionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  replacesException   CompanyCalendarException?  @relation("CalendarExceptionReplacement", fields: [replacesExceptionId, companyId, businessDate], references: [id, companyId, businessDate], onDelete: Restrict)
+  replacementExceptions CompanyCalendarException[] @relation("CalendarExceptionReplacement")
+  revisions           AttendanceRevision[]
+
+  @@unique([id, companyId, businessDate])
+  @@index([companyId, businessDate])
+  @@index([replacesExceptionId])
+  @@index([supersededById])
+  @@index([cancelledById])
+  @@index([createdById])
+  @@map("company_calendar_exceptions")
 }
 
 model FiscalYear {

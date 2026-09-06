@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Building2, CalendarClock, Eye, Plus, RefreshCw, Search, X } from "lucide-react";
+import { Building2, CalendarClock, ClipboardCheck, Eye, Plus, RefreshCw, Search, X } from "lucide-react";
 import {
   ApiError,
   createEmployee,
@@ -243,6 +243,10 @@ export default function EmployeesPage() {
                   <Link className={buttonClassName({ variant: "secondary" })} href="/app/employees/work-schedules">
                     <CalendarClock aria-hidden="true" className="size-4" />
                     Work Schedule Settings
+                  </Link>
+                  <Link className={buttonClassName({ variant: "secondary" })} href="/app/employees/attendance">
+                    <ClipboardCheck aria-hidden="true" className="size-4" />
+                    Attendance
                   </Link>
                   <Button
                     onClick={() => setDepartmentsOpen((current) => !current)}

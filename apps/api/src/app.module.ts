@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AccountingPeriodModule } from "./accounting-period/accounting-period.module";
 import { AccountingModule } from "./accounting/accounting.module";
+import { AttendanceModule } from "./attendance/attendance.module";
 import { AuthModule } from "./auth/auth.module";
 import { BookableItemModule } from "./bookable-item/bookable-item.module";
 import { BookingModule } from "./booking/booking.module";
@@ -37,6 +38,7 @@ import { WorkScheduleModule } from "./work-schedule/work-schedule.module";
     EmployeeModule,
     SalaryModule,
     WorkScheduleModule,
+    AttendanceModule,
   ],
   controllers: [HealthController],
 })
