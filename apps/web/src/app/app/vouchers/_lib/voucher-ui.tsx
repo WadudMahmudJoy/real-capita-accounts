@@ -34,6 +34,10 @@ export function voucherTypeLabel(type: VoucherType): string {
   return VOUCHER_TYPE_LABELS[type];
 }
 
+export function voucherTypeTitle(type: VoucherType): string {
+  return `${voucherTypeLabel(type)} Voucher`;
+}
+
 export function voucherStatusBadge(status: VoucherStatus): ReactNode {
   if (status === "POSTED") {
     return <StatusBadge tone="active">Posted</StatusBadge>;
