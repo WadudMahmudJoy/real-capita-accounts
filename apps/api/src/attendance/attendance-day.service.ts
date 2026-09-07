@@ -5,7 +5,7 @@ import type { AuthenticatedUser } from "../auth/auth.types";
 import { parseDateOnly } from "../common/business-date";
 import { audit } from "./attendance-audit";
 import { normalizeAttendancePrismaError } from "./attendance-errors";
-import { acquireAttendanceDateLock, currentCompanyId } from "./attendance-lock";
+import { acquireAttendanceDateLock } from "./attendance-lock";
 import {
   addDaysDateOnly,
   buildDhakaInstant,
@@ -217,11 +217,11 @@ export class AttendanceDayService {
   ) {}
 
   async getDay(
+    companyId: string,
     businessDate: string,
     filters: { departmentId?: string; search?: string } = {},
   ): Promise<AttendanceDayView> {
     parseDateOnly(businessDate, "businessDate");
-    const companyId = await currentCompanyId(this.prisma);
     const marker = await this.prisma.attendanceDayFinalization.findFirst({
       where: { companyId, businessDate: parseDateOnly(businessDate, "businessDate") },
       select: { id: true },
@@ -244,7 +244,7 @@ export class AttendanceDayService {
     const expectationResults = await Promise.all(
       roster.map(async employee => ({
         employee,
-        resolved: await this.expectations.resolveExpectationForView(employee.id, businessDate),
+        resolved: await this.expectations.resolveExpectationForView(companyId, employee.id, businessDate),
       })),
     );
     const drafts = await this.prisma.attendanceRecord.findMany({
@@ -326,9 +326,8 @@ export class AttendanceDayService {
     };
   }
 
-  async saveEntries(input: BulkAttendanceSaveInput, user: AuthenticatedUser): Promise<AttendanceDayView> {
+  async saveEntries(companyId: string, input: BulkAttendanceSaveInput, user: AuthenticatedUser): Promise<AttendanceDayView> {
     parseDateOnly(input.businessDate, "businessDate");
-    const companyId = await currentCompanyId(this.prisma);
     const today = dhakaBusinessDate();
     if (input.businessDate > today) {
       throw new BadRequestException("Attendance cannot be entered for a future date.");
@@ -417,12 +416,11 @@ export class AttendanceDayService {
     } catch (error) {
       normalizeAttendancePrismaError(error);
     }
-    return this.getDay(input.businessDate);
+    return this.getDay(companyId, input.businessDate);
   }
 
-  async discardEntry(input: DiscardAttendanceEntryInput, user: AuthenticatedUser): Promise<AttendanceDayView> {
+  async discardEntry(companyId: string, input: DiscardAttendanceEntryInput, user: AuthenticatedUser): Promise<AttendanceDayView> {
     parseDateOnly(input.businessDate, "businessDate");
-    const companyId = await currentCompanyId(this.prisma);
     try {
       await this.prisma.$transaction(
         async tx => {
@@ -465,16 +463,15 @@ export class AttendanceDayService {
     } catch (error) {
       normalizeAttendancePrismaError(error);
     }
-    return this.getDay(input.businessDate);
+    return this.getDay(companyId, input.businessDate);
   }
 
-  async listHistory(query: ListAttendanceHistoryQuery): Promise<AttendanceHistoryRowView[]> {
+  async listHistory(companyId: string, query: ListAttendanceHistoryQuery): Promise<AttendanceHistoryRowView[]> {
     const from = parseDateOnly(query.from, "from");
     const to = parseDateOnly(query.to, "to");
     if (from.getTime() > to.getTime()) {
       throw new BadRequestException("The from date must not be after the to date.");
     }
-    const companyId = await currentCompanyId(this.prisma);
     const records = await this.prisma.attendanceRecord.findMany({
       where: {
         companyId,
@@ -545,9 +542,8 @@ export class AttendanceDayService {
     return rows;
   }
 
-  async getHistoryDetail(employeeId: string, businessDate: string): Promise<AttendanceHistoryDetailView> {
+  async getHistoryDetail(companyId: string, employeeId: string, businessDate: string): Promise<AttendanceHistoryDetailView> {
     const businessDateValue = parseDateOnly(businessDate, "businessDate");
-    const companyId = await currentCompanyId(this.prisma);
     const record = await this.prisma.attendanceRecord.findFirst({
       where: { companyId, employeeId, businessDate: businessDateValue },
       include: {

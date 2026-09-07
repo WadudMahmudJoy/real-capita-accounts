@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import type { AuthenticatedUser } from '../auth/auth.types';
+import type { ActiveCompanyContext, AuthenticatedUser } from '../auth/auth.types';
 import { bangladeshTodayDateOnly, parseDateOnly } from '../common/business-date';
 import { Prisma, WorkScheduleAssignmentScope } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,27 +13,31 @@ type Tx = Prisma.TransactionClient;
 const scheduleInclude = { days: { orderBy: { dayOfWeek: 'asc' as const } }, _count: { select: { assignments: true } } };
 const assignmentInclude = { workSchedule: { include: { days: { orderBy: { dayOfWeek: 'asc' as const } } } } };
 
+export function requireActiveCompanyId(activeCompany: ActiveCompanyContext | null): string {
+  if (activeCompany === null) throw new ConflictException('No office is selected for this session. Select an office first.');
+  if (!activeCompany.isActive) throw new ConflictException('The selected office is inactive. Switch to an active office to continue.');
+  return activeCompany.id;
+}
+
 @Injectable()
 export class WorkScheduleService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listSchedules(includeInactive = false) {
-    const companyId = await this.currentCompanyId();
+  async listSchedules(companyId: string, includeInactive = false) {
     const rows = await this.prisma.workSchedule.findMany({ where: { companyId, ...(includeInactive ? {} : { isActive: true }) }, include: scheduleInclude, orderBy: [{ name: 'asc' }, { id: 'asc' }] });
     return rows.map(scheduleView);
   }
 
-  async getSchedule(id: string) {
-    const companyId = await this.currentCompanyId();
+  async getSchedule(companyId: string, id: string) {
     const row = await this.prisma.workSchedule.findFirst({ where: { id, companyId }, include: scheduleInclude });
     if (!row) throw new NotFoundException('Work Schedule was not found.');
     return scheduleView(row);
   }
 
-  async createSchedule(dto: CreateWorkScheduleDto, user: AuthenticatedUser) {
+  async createSchedule(companyId: string, dto: CreateWorkScheduleDto, user: AuthenticatedUser) {
     try {
       return await this.serializable(async tx => {
-        const companyId = await companyContext(tx);
+        await lockCompanyRow(tx, companyId);
         const row = await createDefinition(tx, companyId, dto, user.id);
         await audit(tx, user.id, 'WORK_SCHEDULE_CREATED', 'WorkSchedule', row.id, { workScheduleId: row.id });
         return scheduleView(row);
@@ -41,10 +45,10 @@ export class WorkScheduleService {
     } catch (error) { normalizeWorkSchedulePrismaError(error); }
   }
 
-  async updateSchedule(id: string, dto: UpdateWorkScheduleDto, user: AuthenticatedUser) {
+  async updateSchedule(companyId: string, id: string, dto: UpdateWorkScheduleDto, user: AuthenticatedUser) {
     try {
       return await this.serializable(async tx => {
-        const companyId = await companyContext(tx);
+        await lockCompanyRow(tx, companyId);
         await lockSchedule(tx, id);
         const existing = await tx.workSchedule.findFirst({ where: { id, companyId }, include: scheduleInclude });
         if (!existing) throw new NotFoundException('Work Schedule was not found.');
@@ -64,14 +68,12 @@ export class WorkScheduleService {
     } catch (error) { normalizeWorkSchedulePrismaError(error); }
   }
 
-  async listAssignments(employeeId?: string) {
-    const companyId = await this.currentCompanyId();
+  async listAssignments(companyId: string, employeeId?: string) {
     const rows = await this.prisma.workScheduleAssignment.findMany({ where: { companyId, ...(employeeId ? { employeeId } : {}) }, include: assignmentInclude, orderBy: [{ effectiveFrom: 'desc' }, { id: 'asc' }] });
     return rows.map(assignmentView);
   }
 
-  async resolveWorkSchedule(employeeId: string | undefined, businessDate: string) {
-    const companyId = await this.currentCompanyId();
+  async resolveWorkSchedule(companyId: string, employeeId: string | undefined, businessDate: string) {
     if (employeeId) await this.requireEmployee(this.prisma, employeeId);
     const rows = await this.assignmentCandidates(this.prisma, companyId, employeeId, businessDate);
     return resolveCandidates(rows.map(candidateView), companyId, employeeId ?? null, businessDate);
@@ -87,10 +89,10 @@ export class WorkScheduleService {
     return client.workScheduleAssignment.findMany({ where: { companyId, cancelledAt: null, OR: [{ scope: WorkScheduleAssignmentScope.COMPANY_DEFAULT }, ...(employeeId ? [{ scope: WorkScheduleAssignmentScope.EMPLOYEE_OVERRIDE, employeeId }] : [])], effectiveFrom: { lte: parseDateOnly(businessDate, 'businessDate') }, AND: [{ OR: [{ effectiveTo: null }, { effectiveTo: { gt: parseDateOnly(businessDate, 'businessDate') } }] }] }, include: assignmentInclude });
   }
 
-  async createAssignment(dto: CreateWorkScheduleAssignmentDto, user: AuthenticatedUser) {
+  async createAssignment(companyId: string, dto: CreateWorkScheduleAssignmentDto, user: AuthenticatedUser) {
     try {
       return await this.serializable(async tx => {
-        const companyId = await companyContext(tx);
+        await lockCompanyRow(tx, companyId);
         assertScopeEmployee(dto.scope, dto.employeeId);
         assertScheduleSource(dto.workScheduleId, dto.newSchedule);
         assertEffectiveRange(dto.effectiveFrom, dto.effectiveTo);
@@ -107,10 +109,10 @@ export class WorkScheduleService {
     } catch (error) { normalizeWorkSchedulePrismaError(error); }
   }
 
-  async replaceAssignment(id: string, dto: ReplaceWorkScheduleAssignmentDto, user: AuthenticatedUser) {
+  async replaceAssignment(companyId: string, id: string, dto: ReplaceWorkScheduleAssignmentDto, user: AuthenticatedUser) {
     try {
       return await this.serializable(async tx => {
-        const companyId = await companyContext(tx);
+        await lockCompanyRow(tx, companyId);
         const before = await tx.workScheduleAssignment.findFirst({ where: { id, companyId } });
         if (!before) throw new NotFoundException('Work Schedule assignment was not found.');
         if (before.employeeId) await requireEmployeeLocked(tx, before.employeeId, true);
@@ -131,10 +133,10 @@ export class WorkScheduleService {
     } catch (error) { normalizeWorkSchedulePrismaError(error); }
   }
 
-  async endAssignment(id: string, dto: EndWorkScheduleAssignmentDto, user: AuthenticatedUser) {
+  async endAssignment(companyId: string, id: string, dto: EndWorkScheduleAssignmentDto, user: AuthenticatedUser) {
     try {
       return await this.serializable(async tx => {
-        const companyId = await companyContext(tx);
+        await lockCompanyRow(tx, companyId);
         const before = await tx.workScheduleAssignment.findFirst({ where: { id, companyId } });
         if (!before) throw new NotFoundException('Work Schedule assignment was not found.');
         if (before.employeeId) await requireEmployeeLocked(tx, before.employeeId);
@@ -151,10 +153,10 @@ export class WorkScheduleService {
     } catch (error) { normalizeWorkSchedulePrismaError(error); }
   }
 
-  async cancelAssignment(id: string, dto: CancelWorkScheduleAssignmentDto, user: AuthenticatedUser) {
+  async cancelAssignment(companyId: string, id: string, dto: CancelWorkScheduleAssignmentDto, user: AuthenticatedUser) {
     try {
       return await this.serializable(async tx => {
-        const companyId = await companyContext(tx);
+        await lockCompanyRow(tx, companyId);
         const before = await tx.workScheduleAssignment.findFirst({ where: { id, companyId } });
         if (!before) throw new NotFoundException('Work Schedule assignment was not found.');
         if (before.employeeId) await requireEmployeeLocked(tx, before.employeeId);
@@ -177,11 +179,10 @@ export class WorkScheduleService {
   }
 
   private serializable<T>(work: (tx: Tx) => Promise<T>) { return this.prisma.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }); }
-  private async currentCompanyId() { const company = await this.prisma.company.findUnique({ where: { singletonKey: 'PRIMARY' }, select: { id: true } }); if (!company) throw new ConflictException('Current company context is not configured.'); return company.id; }
   private requireEmployee(client: PrismaService, id: string) { return requireEmployee(client, id); }
 }
 
-async function companyContext(tx: Tx): Promise<string> { const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM companies WHERE "singletonKey" = 'PRIMARY' FOR UPDATE`; if (rows.length !== 1) throw new ConflictException('Current company context is not configured.'); return rows[0].id; }
+async function lockCompanyRow(tx: Tx, companyId: string): Promise<void> { const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM companies WHERE id = ${companyId} FOR UPDATE`; if (rows.length !== 1) throw new ConflictException('Current company context is not configured.'); }
 async function lockSchedule(tx: Tx, id: string) { await tx.$queryRaw`SELECT id FROM work_schedules WHERE id = ${id} FOR UPDATE`; }
 async function lockAssignments(tx: Tx, ids: string[]) { if (ids.length) await tx.$queryRaw`SELECT id FROM work_schedule_assignments WHERE id IN (${Prisma.join([...new Set(ids)].sort())}) ORDER BY id FOR UPDATE`; }
 async function requireEmployee(client: Pick<Tx, 'employee'> | PrismaService, id: string) { const employee = await client.employee.findUnique({ where: { id }, select: { id: true } }); if (!employee) throw new NotFoundException('Employee was not found.'); return employee; }

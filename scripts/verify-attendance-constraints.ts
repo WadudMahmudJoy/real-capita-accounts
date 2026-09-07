@@ -623,7 +623,9 @@ function buildProbes(): Probe[] {
     "calendar replacement crossing dates rejected",
     [seedException("exc1"), seedException("exc2", { businessDate: "2026-10-16", replacesExceptionId: "exc1", changeReason: "replacement" })],
     "23503",
-    ["company_calendar_exceptions_replacesExceptionId_companyId_busin"],
+    // The D3 multi-office migration normalized this FK's truncated name
+    // (..._busin) to the canonical (..._companyId__fkey).
+    ["company_calendar_exceptions_replacesExceptionId_companyId__fkey"],
   );
 
   violation(

@@ -1,17 +1,60 @@
+import type { VoucherCompanySummary } from "@/lib/api";
+import { FALLBACK_LOGO_SRC } from "./print-brand";
 import type { PrintBrand } from "./print-brand";
 
-export function VoucherPrintHeader({ brand }: { brand: PrintBrand }) {
+type VoucherPrintHeaderProps = {
+  brand: PrintBrand;
+  company: VoucherCompanySummary | null;
+};
+
+/**
+ * Premium voucher print header. The left branding slot resolves from the
+ * VOUCHER-OWNING company: an uploaded print logo (public media endpoint,
+ * with a graceful fallback to the application wordmark if it fails to load),
+ * otherwise the configured print header name, otherwise the legacy Real
+ * Capita premium wordmark. The center skyline/slogan and the right contact
+ * column remain the approved design.
+ */
+export function VoucherPrintHeader({ brand, company }: VoucherPrintHeaderProps) {
+  const hasPrintLogo = company != null && company.printLogoPath != null;
+  const headerName = company?.printHeaderName ?? null;
+
   return (
     <header className="grid grid-cols-[3fr_4fr_3fr] items-center gap-4 border-b-2 border-[#16324f] pb-3 break-inside-avoid">
       <div className="h-[76px] w-full">
-        {/* Plain <img> for print reliability: optimized images can stay
-            unloaded inside containers that are display:none on screen. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="h-[76px] w-full object-contain object-left"
-          src={brand.logoSrc}
-        />
+        {hasPrintLogo ? (
+          /* Plain <img> for print reliability: optimized images can stay
+              unloaded inside containers that are display:none on screen. */
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            alt=""
+            className="h-[76px] w-full object-contain object-left"
+            onError={(event) => {
+              // A broken/missing uploaded logo must never break the print:
+              // swap to the legacy premium wordmark instead.
+              const image = event.currentTarget;
+              if (image.src !== FALLBACK_LOGO_SRC) {
+                image.src = FALLBACK_LOGO_SRC;
+              }
+            }}
+            src={brand.logoSrc}
+          />
+        ) : headerName ? (
+          <div className="flex h-[76px] w-full flex-col justify-center">
+            <p className="text-left text-xl font-bold uppercase leading-tight tracking-wide break-words text-[#16324f]">
+              {headerName}
+            </p>
+          </div>
+        ) : (
+          /* Plain <img> for print reliability: optimized images can stay
+              unloaded inside containers that are display:none on screen. */
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            alt=""
+            className="h-[76px] w-full object-contain object-left"
+            src={FALLBACK_LOGO_SRC}
+          />
+        )}
       </div>
 
       <div className="flex min-w-0 flex-col items-center justify-center text-center">

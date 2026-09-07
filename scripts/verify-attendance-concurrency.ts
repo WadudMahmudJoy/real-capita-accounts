@@ -298,7 +298,7 @@ function week() {
 }
 
 async function seedBase(h: Harness): Promise<void> {
-  await h.admin.prisma.company.create({ data: { id: COMPANY_ID, singletonKey: "PRIMARY", name: "HR2C Concurrency Verification Company" } });
+  await h.admin.prisma.company.create({ data: { id: COMPANY_ID, name: "HR2C Concurrency Verification Company" } });
   await h.admin.prisma.user.create({ data: { id: USER_ID, email: "hr2c-conc@example.invalid", fullName: "HR2C Concurrency Verifier", passwordHash: "not-a-real-hash" } });
   const employees = [
     { id: E.a1, employeeCode: "HR2CC01", fullName: "R1 Employee" },
@@ -337,8 +337,8 @@ async function race1(): Promise<void> {
   const h = requireHarness("R1");
   await assertIndependentBackends("R1");
   const { a, b } = await runRace("R1", RACE_TIMEOUT_MS,
-    () => h.actorA.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a1, checkInLocalTime: "10:00", checkOutLocalTime: "18:00", note: "r1-a" }] }, USER),
-    () => h.actorB.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a1, checkInLocalTime: "11:00", checkOutLocalTime: "19:00", note: "r1-b" }] }, USER),
+    () => h.actorA.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a1, checkInLocalTime: "10:00", checkOutLocalTime: "18:00", note: "r1-a" }] }, USER),
+    () => h.actorB.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a1, checkInLocalTime: "11:00", checkOutLocalTime: "19:00", note: "r1-b" }] }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R1 exactly one first-draft create wins", outcome === "a" || outcome === "b");
@@ -362,12 +362,12 @@ async function race1(): Promise<void> {
 async function race2(): Promise<void> {
   const h = requireHarness("R2");
   await assertIndependentBackends("R2");
-  const setup = await attempt(() => h.admin.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a2, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
+  const setup = await attempt(() => h.admin.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a2, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
   if (!check("R2 setup draft created", setup.ok)) return;
   const token = await draftToken(h, E.a2, D.d02);
   const { a, b } = await runRace("R2", RACE_TIMEOUT_MS,
-    () => h.actorA.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a2, checkInLocalTime: "09:30", checkOutLocalTime: "17:30", expectedUpdatedAt: token }] }, USER),
-    () => h.actorB.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a2, checkInLocalTime: "09:45", checkOutLocalTime: "17:45", expectedUpdatedAt: token }] }, USER),
+    () => h.actorA.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a2, checkInLocalTime: "09:30", checkOutLocalTime: "17:30", expectedUpdatedAt: token }] }, USER),
+    () => h.actorB.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a2, checkInLocalTime: "09:45", checkOutLocalTime: "17:45", expectedUpdatedAt: token }] }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R2 exactly one bulk save wins the shared freshness token", outcome === "a" || outcome === "b");
@@ -387,19 +387,19 @@ async function race2(): Promise<void> {
 async function race3(): Promise<void> {
   const h = requireHarness("R3");
   await assertIndependentBackends("R3");
-  const setup = await attempt(() => h.admin.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a3, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
+  const setup = await attempt(() => h.admin.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a3, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
   if (!check("R3 setup draft created", setup.ok)) return;
   const token = await draftToken(h, E.a3, D.d02);
   const committed = deferred();
   const { a, b } = await runRace("R3", RACE_TIMEOUT_MS,
     async () => {
-      const value = await h.actorA.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a3, checkInLocalTime: "09:20", checkOutLocalTime: "17:20", expectedUpdatedAt: token }] }, USER);
+      const value = await h.actorA.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a3, checkInLocalTime: "09:20", checkOutLocalTime: "17:20", expectedUpdatedAt: token }] }, USER);
       committed.resolve();
       return value;
     },
     async () => {
       await committed.promise;
-      return h.actorB.days.saveEntries({ businessDate: D.d02, entries: [{ employeeId: E.a3, checkInLocalTime: "09:50", checkOutLocalTime: "17:50", expectedUpdatedAt: token }] }, USER);
+      return h.actorB.days.saveEntries(COMPANY_ID, { businessDate: D.d02, entries: [{ employeeId: E.a3, checkInLocalTime: "09:50", checkOutLocalTime: "17:50", expectedUpdatedAt: token }] }, USER);
     },
   );
   check("R3 committed update succeeds", a.ok, a.ok ? "" : `status=${a.status} message="${a.message}"`);
@@ -418,12 +418,12 @@ async function race3(): Promise<void> {
 async function race4(): Promise<void> {
   const h = requireHarness("R4");
   await assertIndependentBackends("R4");
-  const setup = await attempt(() => h.admin.days.saveEntries({ businessDate: D.d03, entries: [{ employeeId: E.a4, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
+  const setup = await attempt(() => h.admin.days.saveEntries(COMPANY_ID, { businessDate: D.d03, entries: [{ employeeId: E.a4, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
   if (!check("R4 setup draft created", setup.ok)) return;
   const token = await draftToken(h, E.a4, D.d03);
   const { a, b } = await runRace("R4", RACE_TIMEOUT_MS,
-    () => h.actorA.days.saveEntries({ businessDate: D.d03, entries: [{ employeeId: E.a4, checkInLocalTime: "10:05", checkOutLocalTime: "17:55", expectedUpdatedAt: token }] }, USER),
-    () => h.actorB.finalize.finalizeDay({ businessDate: D.d03 }, USER),
+    () => h.actorA.days.saveEntries(COMPANY_ID, { businessDate: D.d03, entries: [{ employeeId: E.a4, checkInLocalTime: "10:05", checkOutLocalTime: "17:55", expectedUpdatedAt: token }] }, USER),
+    () => h.actorB.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d03 }, USER),
   );
   check("R4 at least one actor commits under the attendance date lock", a.ok || b.ok);
   if (!a.ok) {
@@ -433,7 +433,7 @@ async function race4(): Promise<void> {
   if (!b.ok) {
     check("R4 save-first ordering rejects the finalization as a controlled conflict", b.status === 409 && /already finalized|changed after this page loaded|changed concurrently/.test(b.message));
     checkNoLeak("R4 finalization rejection", b);
-    const retry = await attempt(() => h.admin.finalize.finalizeDay({ businessDate: D.d03 }, USER));
+    const retry = await attempt(() => h.admin.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d03 }, USER));
     check("R4 finalization succeeds on retry after a lost race", retry.ok, retry.ok ? "" : `status=${retry.status} message="${retry.message}"`);
   }
   check("R4 exactly one finalization marker", (await countMarkers(h, D.d03)) === 1);
@@ -449,12 +449,12 @@ async function race4(): Promise<void> {
 async function race5(): Promise<void> {
   const h = requireHarness("R5");
   await assertIndependentBackends("R5");
-  const setup = await attempt(() => h.admin.days.saveEntries({ businessDate: D.d04, entries: [{ employeeId: E.a5, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
+  const setup = await attempt(() => h.admin.days.saveEntries(COMPANY_ID, { businessDate: D.d04, entries: [{ employeeId: E.a5, checkInLocalTime: "10:00", checkOutLocalTime: "18:00" }] }, USER));
   if (!check("R5 setup draft created", setup.ok)) return;
   const token = await draftToken(h, E.a5, D.d04);
   const { a, b } = await runRace("R5", RACE_TIMEOUT_MS,
-    () => h.actorA.days.discardEntry({ businessDate: D.d04, employeeId: E.a5, expectedUpdatedAt: token }, USER),
-    () => h.actorB.finalize.finalizeDay({ businessDate: D.d04 }, USER),
+    () => h.actorA.days.discardEntry(COMPANY_ID, { businessDate: D.d04, employeeId: E.a5, expectedUpdatedAt: token }, USER),
+    () => h.actorB.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d04 }, USER),
   );
   check("R5 at least one actor commits under the attendance date lock", a.ok || b.ok);
   if (!a.ok) {
@@ -464,7 +464,7 @@ async function race5(): Promise<void> {
   if (!b.ok) {
     check("R5 discard-first ordering rejects the finalization as a controlled conflict", b.status === 409 && /already finalized|changed after this page loaded|changed concurrently/.test(b.message));
     checkNoLeak("R5 finalization rejection", b);
-    const retry = await attempt(() => h.admin.finalize.finalizeDay({ businessDate: D.d04 }, USER));
+    const retry = await attempt(() => h.admin.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d04 }, USER));
     check("R5 finalization succeeds on retry after a lost race", retry.ok, retry.ok ? "" : `status=${retry.status} message="${retry.message}"`);
   }
   check("R5 exactly one finalization marker", (await countMarkers(h, D.d04)) === 1);
@@ -483,8 +483,8 @@ async function race6(): Promise<void> {
   const h = requireHarness("R6");
   await assertIndependentBackends("R6");
   const { a, b } = await runRace("R6", RACE_TIMEOUT_MS,
-    () => h.actorA.finalize.finalizeDay({ businessDate: D.d05 }, USER),
-    () => h.actorB.finalize.finalizeDay({ businessDate: D.d05 }, USER),
+    () => h.actorA.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d05 }, USER),
+    () => h.actorB.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d05 }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R6 exactly one finalization wins", outcome === "a" || outcome === "b");
@@ -507,7 +507,7 @@ async function race7(): Promise<void> {
   await assertIndependentBackends("R7");
   let baseline = await latestRevision(h, E.a4, D.d03);
   if (baseline === null || baseline.finalizedAt === null) {
-    const finalizeRetry = await attempt(() => h.admin.finalize.finalizeDay({ businessDate: D.d03 }, USER));
+    const finalizeRetry = await attempt(() => h.admin.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d03 }, USER));
     if (finalizeRetry.ok) baseline = await latestRevision(h, E.a4, D.d03);
   }
   if (baseline === null || baseline.finalizedAt === null) {
@@ -517,8 +517,8 @@ async function race7(): Promise<void> {
   check("R7 baseline finalized revision exists", true);
   const expectedRevisionNo = baseline.revisionNo;
   const { a, b } = await runRace("R7", RACE_TIMEOUT_MS,
-    () => h.actorA.corrections.correctAttendance(E.a4, D.d03, { expectedRevisionNo, changeReason: "r7-a", checkInLocalTime: "10:10", checkOutLocalTime: "18:00" }, USER),
-    () => h.actorB.corrections.correctAttendance(E.a4, D.d03, { expectedRevisionNo, changeReason: "r7-b", checkInLocalTime: "10:40", checkOutLocalTime: "18:00" }, USER),
+    () => h.actorA.corrections.correctAttendance(COMPANY_ID, E.a4, D.d03, { expectedRevisionNo, changeReason: "r7-a", checkInLocalTime: "10:10", checkOutLocalTime: "18:00" }, USER),
+    () => h.actorB.corrections.correctAttendance(COMPANY_ID, E.a4, D.d03, { expectedRevisionNo, changeReason: "r7-b", checkInLocalTime: "10:40", checkOutLocalTime: "18:00" }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R7 exactly one correction wins the shared revision token", outcome === "a" || outcome === "b");
@@ -546,8 +546,8 @@ async function race8(): Promise<void> {
   });
   await assertIndependentBackends("R8");
   const { a, b } = await runRace("R8", RACE_TIMEOUT_MS,
-    () => h.actorA.corrections.correctAttendance(E.e8, D.d05, { expectedRevisionNo: null, changeReason: "r8-a", checkInLocalTime: "10:00", checkOutLocalTime: "16:00" }, USER),
-    () => h.actorB.corrections.correctAttendance(E.e8, D.d05, { expectedRevisionNo: null, changeReason: "r8-b", checkInLocalTime: "11:00", checkOutLocalTime: "17:00" }, USER),
+    () => h.actorA.corrections.correctAttendance(COMPANY_ID, E.e8, D.d05, { expectedRevisionNo: null, changeReason: "r8-a", checkInLocalTime: "10:00", checkOutLocalTime: "16:00" }, USER),
+    () => h.actorB.corrections.correctAttendance(COMPANY_ID, E.e8, D.d05, { expectedRevisionNo: null, changeReason: "r8-b", checkInLocalTime: "11:00", checkOutLocalTime: "17:00" }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R8 exactly one missing-record creation wins", outcome === "a" || outcome === "b");
@@ -577,8 +577,8 @@ async function race9(): Promise<void> {
   const expectedRevisionNo = baseline.revisionNo;
   await assertIndependentBackends("R9");
   const { a, b } = await runRace("R9", RACE_TIMEOUT_MS,
-    () => h.actorA.corrections.markNotApplicable(E.a4, D.d03, { expectedRevisionNo, changeReason: "r9-void" }, USER),
-    () => h.actorB.corrections.correctAttendance(E.a4, D.d03, { expectedRevisionNo, changeReason: "r9-correct", checkInLocalTime: "10:15", checkOutLocalTime: "18:15" }, USER),
+    () => h.actorA.corrections.markNotApplicable(COMPANY_ID, E.a4, D.d03, { expectedRevisionNo, changeReason: "r9-void" }, USER),
+    () => h.actorB.corrections.correctAttendance(COMPANY_ID, E.a4, D.d03, { expectedRevisionNo, changeReason: "r9-correct", checkInLocalTime: "10:15", checkOutLocalTime: "18:15" }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R9 exactly one winner", outcome === "a" || outcome === "b");
@@ -602,15 +602,15 @@ async function race9(): Promise<void> {
 async function race10(): Promise<void> {
   const h = requireHarness("R10");
   await h.admin.prisma.employee.update({ where: { id: E.a10 }, data: { separationDate: day("2026-09-04"), separationReason: "HR2C concurrency verification separation", isActive: false } });
-  const voidSetup = await attempt(() => h.admin.corrections.markNotApplicable(E.a10, D.d05, { expectedRevisionNo: 1, changeReason: "r10-void-setup" }, USER));
+  const voidSetup = await attempt(() => h.admin.corrections.markNotApplicable(COMPANY_ID, E.a10, D.d05, { expectedRevisionNo: 1, changeReason: "r10-void-setup" }, USER));
   const voidOk = voidSetup.ok && voidSetup.value.revisionNo === 2 && voidSetup.value.isAttendanceApplicable === false;
   check("R10 setup void created at revision 2", voidOk, voidSetup.ok ? `revisionNo=${voidSetup.value.revisionNo}` : `status=${voidSetup.status} message="${voidSetup.message}"`);
   if (!voidOk) return;
   await h.admin.prisma.employee.update({ where: { id: E.a10 }, data: { separationDate: null, separationReason: null, isActive: true } });
   await assertIndependentBackends("R10");
   const { a, b } = await runRace("R10", RACE_TIMEOUT_MS,
-    () => h.actorA.corrections.correctAttendance(E.a10, D.d05, { expectedRevisionNo: 2, changeReason: "r10-a", checkInLocalTime: "10:00", checkOutLocalTime: "15:00" }, USER),
-    () => h.actorB.corrections.correctAttendance(E.a10, D.d05, { expectedRevisionNo: 2, changeReason: "r10-b", checkInLocalTime: "11:00", checkOutLocalTime: "16:00" }, USER),
+    () => h.actorA.corrections.correctAttendance(COMPANY_ID, E.a10, D.d05, { expectedRevisionNo: 2, changeReason: "r10-a", checkInLocalTime: "10:00", checkOutLocalTime: "15:00" }, USER),
+    () => h.actorB.corrections.correctAttendance(COMPANY_ID, E.a10, D.d05, { expectedRevisionNo: 2, changeReason: "r10-b", checkInLocalTime: "11:00", checkOutLocalTime: "16:00" }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R10 exactly one restore wins", outcome === "a" || outcome === "b");
@@ -633,11 +633,11 @@ async function race10(): Promise<void> {
 
 async function race11(): Promise<void> {
   const h = requireHarness("R11");
-  const exceptionSetup = await attempt(() => h.admin.calendar.createException({ businessDate: D.d02, exceptionType: "HOLIDAY", name: "R11 Holiday" }, USER));
+  const exceptionSetup = await attempt(() => h.admin.calendar.createException(COMPANY_ID, { businessDate: D.d02, exceptionType: "HOLIDAY", name: "R11 Holiday" }, USER));
   check("R11 setup live holiday exception created", exceptionSetup.ok, exceptionSetup.ok ? "" : `status=${exceptionSetup.status} message="${exceptionSetup.message}"`);
   if (!exceptionSetup.ok) return;
   const holidayId = exceptionSetup.value.id;
-  const finalizeSetup = await attempt(() => h.admin.finalize.finalizeDay({ businessDate: D.d02 }, USER));
+  const finalizeSetup = await attempt(() => h.admin.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d02 }, USER));
   check(
     "R11 setup finalizes the date with the live holiday",
     finalizeSetup.ok && (await countMarkers(h, D.d02)) === 1,
@@ -646,8 +646,8 @@ async function race11(): Promise<void> {
   if (!finalizeSetup.ok) return;
   await assertIndependentBackends("R11");
   const { a, b } = await runRace("R11", RACE_TIMEOUT_MS,
-    () => h.actorA.calendar.updateException(holidayId, { name: "R11 Edited Holiday" }, USER),
-    () => h.actorB.calendar.historicalCorrect({
+    () => h.actorA.calendar.updateException(COMPANY_ID, holidayId, { name: "R11 Edited Holiday" }, USER),
+    () => h.actorB.calendar.historicalCorrect(COMPANY_ID, {
       businessDate: D.d02,
       target: "SPECIAL_WORKING_DAY",
       name: "R11 Special Working Day",
@@ -689,8 +689,8 @@ async function race12(): Promise<void> {
   const h = requireHarness("R12");
   await assertIndependentBackends("R12");
   const { a, b } = await runRace("R12", RACE_TIMEOUT_MS,
-    () => h.actorA.policies.replacePolicy(POLICY_BASE, { effectiveFrom: "2026-11-01", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "r12-a" }, USER),
-    () => h.actorB.policies.replacePolicy(POLICY_BASE, { effectiveFrom: "2026-12-01", lateGraceMinutes: 25, earlyLeaveGraceMinutes: 8, changeReason: "r12-b" }, USER),
+    () => h.actorA.policies.replacePolicy(COMPANY_ID, POLICY_BASE, { effectiveFrom: "2026-11-01", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "r12-a" }, USER),
+    () => h.actorB.policies.replacePolicy(COMPANY_ID, POLICY_BASE, { effectiveFrom: "2026-12-01", lateGraceMinutes: 25, earlyLeaveGraceMinutes: 8, changeReason: "r12-b" }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R12 exactly one replacement wins", outcome === "a" || outcome === "b");
@@ -724,8 +724,8 @@ async function race13(): Promise<void> {
   }
   check("R13 future replacement policy exists", true);
   const { a, b } = await runRace("R13", RACE_TIMEOUT_MS,
-    () => h.actorA.policies.cancelFuturePolicy(replacement.id, { cancellationReason: "r13-a" }, USER),
-    () => h.actorB.policies.cancelFuturePolicy(replacement.id, { cancellationReason: "r13-b" }, USER),
+    () => h.actorA.policies.cancelFuturePolicy(COMPANY_ID, replacement.id, { cancellationReason: "r13-a" }, USER),
+    () => h.actorB.policies.cancelFuturePolicy(COMPANY_ID, replacement.id, { cancellationReason: "r13-b" }, USER),
   );
   const outcome = oneWinner(a, b);
   check("R13 exactly one cancellation wins", outcome === "a" || outcome === "b");
@@ -793,7 +793,7 @@ async function differentDateIndependence(): Promise<void> {
   const watchdog = new Promise<void>(resolve => {
     watchdogTimer = setTimeout(() => { watchdogFired = true; resolve(); }, 30_000);
   });
-  const production = attempt(() => h.actorB.finalize.finalizeDay({ businessDate: D.d11 }, USER, new Date("2026-09-12T00:00:00.000Z")));
+  const production = attempt(() => h.actorB.finalize.finalizeDay(COMPANY_ID, { businessDate: D.d11 }, USER, new Date("2026-09-12T00:00:00.000Z")));
   await Promise.race([production, watchdog]);
   if (watchdogTimer !== undefined) clearTimeout(watchdogTimer);
   if (watchdogFired) {
@@ -932,9 +932,10 @@ async function main(): Promise<void> {
 
   migrateDeploy();
   const migrationRows = (await monitor.query("SELECT migration_name, checksum, finished_at FROM _prisma_migrations")).rows;
+  // The D3 multi_office_company_foundation migration raised the total from 11 to 12.
   check(
-    "all 11 migrations applied to the disposable database",
-    migrationRows.length === 11 && migrationRows.every(row => row.finished_at !== null),
+    "all 12 migrations applied to the disposable database",
+    migrationRows.length === 12 && migrationRows.every(row => row.finished_at !== null),
     `${migrationRows.length} migrations`,
   );
   const hr2cRow = migrationRows.find(row => row.migration_name === "20260906000000_hr_2c_attendance_foundation");

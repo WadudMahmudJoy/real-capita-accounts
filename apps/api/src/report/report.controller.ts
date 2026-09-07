@@ -1,10 +1,42 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import {
+  ConflictException,
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ACCOUNTANT_ROLE } from "../auth/auth.constants";
+import type { ActiveCompanyContext } from "../auth/auth.types";
+import { ActiveCompany } from "../auth/decorators/active-company.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { ReportQueryDto } from "./dto/report-query.dto";
 import { ReportService } from "./report.service";
+
+/**
+ * Every report is owned by its required Fiscal Year, and that Fiscal Year
+ * must belong to the authenticated session's active Company. The trusted
+ * activeCompany.id from the D4 AuthGuard is the only Company authority —
+ * query parameters never carry Company identity.
+ */
+function requireActiveCompanyId(
+  activeCompany: ActiveCompanyContext | null,
+): string {
+  if (activeCompany === null) {
+    throw new ConflictException(
+      "No active company is selected for this session.",
+    );
+  }
+
+  if (!activeCompany.isActive) {
+    throw new ConflictException(
+      "The active company is inactive and cannot run reports.",
+    );
+  }
+
+  return activeCompany.id;
+}
 
 @Controller("reports")
 @Roles(ACCOUNTANT_ROLE)
@@ -13,62 +45,134 @@ export class ReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Get("ledger")
-  getLedger(@Query() query: ReportQueryDto) {
-    return this.reportService.getLedger(query);
+  getLedger(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getLedger(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("cash-book")
-  getCashBook(@Query() query: ReportQueryDto) {
-    return this.reportService.getCashBook(query);
+  getCashBook(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getCashBook(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("bank-book")
-  getBankBook(@Query() query: ReportQueryDto) {
-    return this.reportService.getBankBook(query);
+  getBankBook(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getBankBook(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("mfs-book")
-  getMfsBook(@Query() query: ReportQueryDto) {
-    return this.reportService.getMfsBook(query);
+  getMfsBook(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getMfsBook(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("trial-balance")
-  getTrialBalance(@Query() query: ReportQueryDto) {
-    return this.reportService.getTrialBalance(query);
+  getTrialBalance(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getTrialBalance(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("income-statement")
-  getIncomeStatement(@Query() query: ReportQueryDto) {
-    return this.reportService.getIncomeStatement(query);
+  getIncomeStatement(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getIncomeStatement(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("balance-sheet")
-  getBalanceSheet(@Query() query: ReportQueryDto) {
-    return this.reportService.getBalanceSheet(query);
+  getBalanceSheet(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getBalanceSheet(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("project-ledger")
-  getProjectLedger(@Query() query: ReportQueryDto) {
-    return this.reportService.getProjectLedger(query);
+  getProjectLedger(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getProjectLedger(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("project-cost")
-  getProjectCost(@Query() query: ReportQueryDto) {
-    return this.reportService.getProjectCost(query);
+  getProjectCost(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getProjectCost(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("cost-center-summary")
-  getCostCenterSummary(@Query() query: ReportQueryDto) {
-    return this.reportService.getCostCenterSummary(query);
+  getCostCenterSummary(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getCostCenterSummary(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("project-financial-summary")
-  getProjectFinancialSummary(@Query() query: ReportQueryDto) {
-    return this.reportService.getProjectFinancialSummary(query);
+  getProjectFinancialSummary(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getProjectFinancialSummary(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 
   @Get("project-fund-movement")
-  getProjectFundMovement(@Query() query: ReportQueryDto) {
-    return this.reportService.getProjectFundMovement(query);
+  getProjectFundMovement(
+    @ActiveCompany() activeCompany: ActiveCompanyContext | null,
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportService.getProjectFundMovement(
+      requireActiveCompanyId(activeCompany),
+      query,
+    );
   }
 }

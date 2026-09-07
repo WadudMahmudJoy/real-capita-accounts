@@ -32,17 +32,50 @@ export type AccountClassCode =
   | "INCOME"
   | "EXPENSE";
 
+export type CompanyBackgroundMode = "DEFAULT_PREMIUM" | "CUSTOM";
+
+export type CompanyMediaKind =
+  | "office-logo"
+  | "custom-background"
+  | "print-logo";
+
 export type Company = {
   id: string;
-  singletonKey: string;
+  singletonKey: string | null;
   name: string;
   legalName: string | null;
   address: string | null;
   phone: string | null;
   email: string | null;
   currency: string;
+  isActive: boolean;
+  officeLogoPath: string | null;
+  brandAccentColor: string | null;
+  backgroundMode: CompanyBackgroundMode;
+  customBackgroundPath: string | null;
+  printLogoPath: string | null;
+  printHeaderName: string | null;
+  printFooterText: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** GET /company/list — every office plus the caller's session selection. */
+export type CompanyListResponse = {
+  activeCompanyId: string | null;
+  companies: Company[];
+};
+
+export type CompanySwitchResponse = {
+  status: "ok";
+  activeCompanyId: string;
+  company: Company;
+};
+
+export type CompanyMediaResponse = {
+  status: "ok";
+  kind: CompanyMediaKind;
+  company: Company;
 };
 
 export type FiscalYear = {
@@ -781,9 +814,30 @@ export type VoucherLine = {
   cashBankAccount?: CashBankAccount | null;
 };
 
+/**
+ * Narrow document-company summary embedded on voucher detail responses.
+ * Mirrors the backend voucher-relation select: only the fields the premium
+ * print template consumes. `printLogoPath` is a presence signal for the
+ * public company media endpoint — never a browser URL.
+ */
+export type VoucherCompanySummary = {
+  id: string;
+  name: string;
+  legalName: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  currency: string;
+  printLogoPath: string | null;
+  printHeaderName: string | null;
+  printFooterText: string | null;
+  updatedAt: string;
+};
+
 export type Voucher = {
   id: string;
   companyId: string;
+  company?: VoucherCompanySummary;
   fiscalYearId: string;
   accountingPeriodId: string;
   voucherType: VoucherType;
@@ -842,6 +896,17 @@ export type CompanyInput = {
   phone?: string;
   email?: string;
   currency?: string;
+};
+
+/**
+ * PATCH /company/:id payload: the Basic Info fields plus the D7A/D7B
+ * branding fields. `null` explicitly clears the nullable branding values.
+ */
+export type UpdateCompanyInput = Partial<CompanyInput> & {
+  brandAccentColor?: string | null;
+  backgroundMode?: CompanyBackgroundMode;
+  printHeaderName?: string | null;
+  printFooterText?: string | null;
 };
 
 export type CreateFiscalYearInput = {
@@ -1020,6 +1085,9 @@ type ApiFetchOptions = {
  *
  * - Always sends `credentials: "include"` so the HttpOnly session cookie flows.
  * - Never reads or writes auth tokens in localStorage.
+ * - Serialises plain objects as JSON with an explicit Content-Type, but passes
+ *   `FormData` bodies through untouched: the browser must derive the multipart
+ *   boundary itself, so no Content-Type header is set for multipart requests.
  * - Throws a typed {@link ApiError} on connection failure or non-2xx response so
  *   callers can present clear auth/connection messages.
  */
@@ -1029,14 +1097,19 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { method = "GET", body, signal } = options;
   const hasBody = body !== undefined;
+  const isFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
 
   let response: Response;
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      body: hasBody ? JSON.stringify(body) : undefined,
+      body: hasBody ? (isFormData ? body : JSON.stringify(body)) : undefined,
       credentials: "include",
-      headers: hasBody ? { "Content-Type": "application/json" } : undefined,
+      headers:
+        hasBody && !isFormData
+          ? { "Content-Type": "application/json" }
+          : undefined,
       method,
       signal,
     });
@@ -1086,9 +1159,69 @@ export function createCompany(input: CompanyInput): Promise<Company> {
 
 export function updateCompany(
   id: string,
-  input: Partial<CompanyInput>,
+  input: UpdateCompanyInput,
 ): Promise<Company> {
   return apiFetch<Company>(`/company/${id}`, { body: input, method: "PATCH" });
+}
+
+/**
+ * Every office plus the caller's current session selection
+ * (`GET /company/list`).
+ */
+export function getCompanies(
+  signal?: AbortSignal,
+): Promise<CompanyListResponse> {
+  return apiFetch<CompanyListResponse>("/company/list", { signal });
+}
+
+/** Explicit session switch to another office (`POST /company/:id/switch`). */
+export function switchCompany(companyId: string): Promise<CompanySwitchResponse> {
+  return apiFetch<CompanySwitchResponse>(`/company/${companyId}/switch`, {
+    method: "POST",
+  });
+}
+
+/**
+ * Uploads a branding image for one of the closed media kinds through the
+ * D7B multipart endpoint. The FormData body is transported without a manual
+ * Content-Type so the browser sets the multipart boundary itself.
+ */
+export function uploadCompanyMedia(
+  companyId: string,
+  kind: CompanyMediaKind,
+  file: File,
+): Promise<CompanyMediaResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<CompanyMediaResponse>(
+    `/company/${companyId}/media/${kind}`,
+    { body: formData, method: "POST" },
+  );
+}
+
+/** Removes a previously uploaded branding image (`DELETE /company/:id/media/:kind`). */
+export function removeCompanyMedia(
+  companyId: string,
+  kind: CompanyMediaKind,
+): Promise<CompanyMediaResponse> {
+  return apiFetch<CompanyMediaResponse>(
+    `/company/${companyId}/media/${kind}`,
+    { method: "DELETE" },
+  );
+}
+
+/**
+ * Public read URL for a company media asset. The optional `revision` appends
+ * a cache-busting query so replaced images (publicly cached for a short
+ * window) are re-fetched immediately after upload/remove mutations.
+ */
+export function companyMediaUrl(
+  companyId: string,
+  kind: CompanyMediaKind,
+  revision?: number,
+): string {
+  const base = `${API_BASE_URL}/company-media/${companyId}/${kind}`;
+  return revision === undefined ? base : `${base}?v=${revision}`;
 }
 
 export function getFiscalYears(signal?: AbortSignal): Promise<FiscalYear[]> {
@@ -1855,12 +1988,25 @@ export type ReportType =
   | "PROJECT_FINANCIAL_SUMMARY"
   | "COST_CENTER_SUMMARY";
 
-/** Company summary embedded on the report fiscal year. */
+/**
+ * Company summary embedded on the report fiscal year. Carries the owner
+ * company's document-branding fields so report printing derives branding
+ * from the fiscal year's owning company — never the active office.
+ * `printLogoPath` is a presence signal for the public company media
+ * endpoint — never a browser URL.
+ */
 export type ReportCompanySummary = {
   id: string;
   name: string;
   legalName: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
   currency: string;
+  printLogoPath: string | null;
+  printHeaderName: string | null;
+  printFooterText: string | null;
+  updatedAt: string;
 };
 
 export type ReportFiscalYearSummary = {

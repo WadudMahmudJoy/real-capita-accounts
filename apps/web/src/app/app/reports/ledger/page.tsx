@@ -255,6 +255,7 @@ function LedgerResult({ report }: { report: LedgerReport }) {
       </Card>
 
       <ReportPrintFrame
+          ownerCompany={report.fiscalYear.company}
         meta={[
           { label: "Company", value: report.fiscalYear.company.name },
           { label: "Fiscal year", value: report.fiscalYear.name },

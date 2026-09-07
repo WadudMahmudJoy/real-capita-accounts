@@ -3,7 +3,6 @@ import type { Prisma } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { WorkScheduleService } from "../work-schedule/work-schedule.service";
 import { parseDateOnly } from "../common/business-date";
-import { currentCompanyId } from "./attendance-lock";
 import { dhakaBusinessDate } from "./attendance-time";
 import type {
   ResolvedAttendanceExpectation,
@@ -34,13 +33,11 @@ export class AttendanceExpectationService {
     private readonly workSchedules: WorkScheduleService,
   ) {}
 
-  async resolveExpectation(employeeId: string, businessDate: string): Promise<ExpectationWithPolicy | null> {
-    const companyId = await currentCompanyId(this.prisma);
+  async resolveExpectation(companyId: string, employeeId: string, businessDate: string): Promise<ExpectationWithPolicy | null> {
     return this.resolveExpectationWithClient(this.prisma, companyId, employeeId, businessDate);
   }
 
-  async resolveExpectationForView(employeeId: string, businessDate: string): Promise<ExpectationWithPolicy | null> {
-    const companyId = await currentCompanyId(this.prisma);
+  async resolveExpectationForView(companyId: string, employeeId: string, businessDate: string): Promise<ExpectationWithPolicy | null> {
     return this.resolveExpectationWithClient(this.prisma, companyId, employeeId, businessDate, true);
   }
 

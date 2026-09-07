@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { assertEndDateAfterStartDate, parseIsoDate } from "../common/date-rules";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateFiscalYearDto } from "./dto/create-fiscal-year.dto";
@@ -8,15 +8,24 @@ import { UpdateFiscalYearDto } from "./dto/update-fiscal-year.dto";
 export class FiscalYearService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(companyId: string) {
     return this.prisma.fiscalYear.findMany({
       include: { company: true },
       orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+      where: { companyId },
     });
   }
 
-  async create(dto: CreateFiscalYearDto) {
-    await this.ensureCompanyExists(dto.companyId);
+  async create(companyId: string, dto: CreateFiscalYearDto) {
+    // Transitional contract: the legacy DTO still carries companyId. It is
+    // never the write authority — the trusted session company is. A matching
+    // value is accepted for backward compatibility; a mismatch is rejected
+    // rather than silently creating the fiscal year under another company.
+    if (dto.companyId !== companyId) {
+      throw new ConflictException(
+        "The selected office does not match the supplied company.",
+      );
+    }
 
     const startDate = parseIsoDate(dto.startDate, "startDate");
     const endDate = parseIsoDate(dto.endDate, "endDate");
@@ -24,7 +33,7 @@ export class FiscalYearService {
 
     return this.prisma.fiscalYear.create({
       data: {
-        companyId: dto.companyId,
+        companyId,
         endDate,
         name: dto.name,
         startDate,
@@ -33,8 +42,9 @@ export class FiscalYearService {
     });
   }
 
-  async update(id: string, dto: UpdateFiscalYearDto) {
-    const fiscalYear = await this.findExisting(id);
+  async update(companyId: string, id: string, dto: UpdateFiscalYearDto) {
+    const fiscalYear = await this.findExisting(companyId, id);
+
     const startDate = dto.startDate
       ? parseIsoDate(dto.startDate, "startDate")
       : fiscalYear.startDate;
@@ -44,7 +54,9 @@ export class FiscalYearService {
 
     assertEndDateAfterStartDate(startDate, endDate);
 
-    return this.prisma.fiscalYear.update({
+    // The write itself stays company-scoped: ownership lives in the where
+    // filter, not only in the preceding read.
+    const updated = await this.prisma.fiscalYear.updateMany({
       data: {
         endDate,
         isActive: dto.isClosed ? false : undefined,
@@ -52,13 +64,21 @@ export class FiscalYearService {
         name: dto.name,
         startDate,
       },
+      where: { id, companyId },
+    });
+
+    if (updated.count !== 1) {
+      throw new NotFoundException("Fiscal year was not found.");
+    }
+
+    return this.prisma.fiscalYear.findFirst({
       include: { company: true },
-      where: { id },
+      where: { id, companyId },
     });
   }
 
-  async activate(id: string) {
-    const fiscalYear = await this.findExisting(id);
+  async activate(companyId: string, id: string) {
+    const fiscalYear = await this.findExisting(companyId, id);
 
     if (fiscalYear.isClosed) {
       throw new BadRequestException("Closed fiscal years cannot be activated.");
@@ -70,17 +90,25 @@ export class FiscalYearService {
         where: { companyId: fiscalYear.companyId },
       });
 
-      return tx.fiscalYear.update({
+      const activated = await tx.fiscalYear.updateMany({
         data: { isActive: true },
+        where: { id, companyId: fiscalYear.companyId },
+      });
+
+      if (activated.count !== 1) {
+        throw new NotFoundException("Fiscal year was not found.");
+      }
+
+      return tx.fiscalYear.findFirst({
         include: { company: true },
-        where: { id },
+        where: { id, companyId: fiscalYear.companyId },
       });
     });
   }
 
-  private async findExisting(id: string) {
-    const fiscalYear = await this.prisma.fiscalYear.findUnique({
-      where: { id },
+  private async findExisting(companyId: string, id: string) {
+    const fiscalYear = await this.prisma.fiscalYear.findFirst({
+      where: { id, companyId },
     });
 
     if (!fiscalYear) {
@@ -88,16 +116,5 @@ export class FiscalYearService {
     }
 
     return fiscalYear;
-  }
-
-  private async ensureCompanyExists(companyId: string) {
-    const company = await this.prisma.company.findUnique({
-      select: { id: true },
-      where: { id: companyId },
-    });
-
-    if (!company) {
-      throw new NotFoundException("Company was not found.");
-    }
   }
 }

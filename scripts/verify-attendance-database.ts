@@ -42,7 +42,7 @@ async function seedResolverFixture(tx: Prisma.TransactionClient) {
   const employeeId = `${prefix}_E`;
   const scheduleId = `${prefix}_WS`;
   await tx.company.create({
-    data: { id: companyId, singletonKey: companyId, name: "HR2C Verification Company" },
+    data: { id: companyId, name: "HR2C Verification Company" },
   });
   await tx.user.create({
     data: {
@@ -129,19 +129,21 @@ async function main() {
           assert.equal(nonTxResult.kind, "NOT_CONFIGURED");
         });
 
-        const primary = await prisma.company.findUnique({
-          where: { singletonKey: "PRIMARY" },
+        // The public resolver previously inferred the current company from the
+        // PRIMARY singleton. It now requires the trusted companyId, so the
+        // parity probe uses the real committed company's actual id: its data
+        // is committed, so the public and tx-aware resolvers must agree.
+        const realCompany = await tx.company.findFirst({
+          orderBy: { createdAt: "asc" },
           select: { id: true },
+          where: { isActive: true },
         });
-        await check("primary company context exists", () => {
-          assert.ok(primary);
-        });
-        if (primary) {
+        if (realCompany) {
           for (const businessDate of ["2026-09-10", "2026-09-11", "2026-08-31"]) {
-            const publicResult = await service.resolveWorkSchedule(undefined, businessDate);
+            const publicResult = await service.resolveWorkSchedule(realCompany.id, undefined, businessDate);
             const txAwareResult = await service.resolveWorkScheduleWithTx(
               tx,
-              primary.id,
+              realCompany.id,
               undefined,
               businessDate,
             );
@@ -360,12 +362,8 @@ async function main() {
           assert.equal(inactivePast, null);
         });
 
-        await tx.company.update({
-          where: { singletonKey: "PRIMARY" },
-          data: { singletonKey: `${prefix}_OLD_PRIMARY` },
-        });
         const policyCompanyId = await tx.company.create({
-          data: { id: `${prefix}_PRI`, singletonKey: "PRIMARY", name: "HR2C Policy Verification Company" },
+          data: { id: `${prefix}_PRI`, name: "HR2C Policy Verification Company" },
         });
 
         const scoped = scopedPrismaFacade(tx as unknown as Record<PropertyKey, unknown>) as unknown as PrismaService;
@@ -388,6 +386,7 @@ async function main() {
         });
 
         const futureInitial = await policyService.createInitialPolicy(
+          policyCompanyId.id,
           { effectiveFrom: "2026-10-01", lateGraceMinutes: 15, earlyLeaveGraceMinutes: 10 },
           actor,
         );
@@ -397,6 +396,7 @@ async function main() {
         });
 
         const cancelledInitial = await policyService.cancelFuturePolicy(
+          policyCompanyId.id,
           futureInitial.id,
           { cancellationReason: "wrong values" },
           actor,
@@ -407,6 +407,7 @@ async function main() {
         });
 
         const initial = await policyService.createInitialPolicy(
+          policyCompanyId.id,
           { effectiveFrom: "2026-09-01", lateGraceMinutes: 15, earlyLeaveGraceMinutes: 10 },
           actor,
         );
@@ -419,6 +420,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.createInitialPolicy(
+                policyCompanyId.id,
                 { effectiveFrom: "2026-09-02", lateGraceMinutes: 15, earlyLeaveGraceMinutes: 10 },
                 actor,
               ),
@@ -427,6 +429,7 @@ async function main() {
         });
 
         const replacement = await policyService.replacePolicy(
+          policyCompanyId.id,
           initial.id,
           { effectiveFrom: "2026-10-01", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "shifted hours" },
           actor,
@@ -444,6 +447,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.replacePolicy(
+          policyCompanyId.id,
                 initial.id,
                 { effectiveFrom: "2026-10-01", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "boundary" },
                 actor,
@@ -453,6 +457,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.replacePolicy(
+          policyCompanyId.id,
                 replacement.id,
                 { effectiveFrom: "2026-10-01", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "boundary" },
                 actor,
@@ -465,6 +470,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.replacePolicy(
+          policyCompanyId.id,
                 initial.id,
                 { effectiveFrom: "2026-09-05", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "past" },
                 actor,
@@ -477,6 +483,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.replacePolicy(
+          policyCompanyId.id,
                 initial.id,
                 { effectiveFrom: "2026-09-15", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "branch" },
                 actor,
@@ -486,6 +493,7 @@ async function main() {
         });
 
         const secondReplacement = await policyService.replacePolicy(
+          policyCompanyId.id,
           replacement.id,
           { effectiveFrom: "2027-01-01", lateGraceMinutes: 25, earlyLeaveGraceMinutes: 5, changeReason: "second shift" },
           actor,
@@ -518,6 +526,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.cancelFuturePolicy(
+                policyCompanyId.id,
                 secondReplacement.id,
                 { cancellationReason: "blocked" },
                 actor,
@@ -527,6 +536,7 @@ async function main() {
         });
 
         const cancelledDependent = await policyService.cancelFuturePolicy(
+          policyCompanyId.id,
           dependent.id,
           { cancellationReason: "not needed" },
           actor,
@@ -539,6 +549,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.cancelFuturePolicy(
+                policyCompanyId.id,
                 secondReplacement.id,
                 { cancellationReason: "   " },
                 actor,
@@ -548,6 +559,7 @@ async function main() {
         });
 
         const cancelledReplacement = await policyService.cancelFuturePolicy(
+          policyCompanyId.id,
           secondReplacement.id,
           { cancellationReason: "no longer needed" },
           actor,
@@ -563,6 +575,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.cancelFuturePolicy(
+                policyCompanyId.id,
                 initial.id,
                 { cancellationReason: "too late" },
                 actor,
@@ -575,6 +588,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.cancelFuturePolicy(
+                policyCompanyId.id,
                 secondReplacement.id,
                 { cancellationReason: "again" },
                 actor,
@@ -598,6 +612,7 @@ async function main() {
           await assert.rejects(
             () =>
               policyService.replacePolicy(
+          policyCompanyId.id,
                 `${prefix}_CO_POL`,
                 { effectiveFrom: "2026-10-01", lateGraceMinutes: 20, earlyLeaveGraceMinutes: 5, changeReason: "cross" },
                 actor,
@@ -633,6 +648,7 @@ async function main() {
         );
 
         const calendarHoliday = await calendarService.createException(
+          policyCompanyId.id,
           { businessDate: "2026-11-02", exceptionType: "HOLIDAY", name: "Verification Holiday" },
           actor,
         );
@@ -651,6 +667,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.createException(
+                policyCompanyId.id,
                 { businessDate: "2026-11-04", exceptionType: "HOLIDAY", name: "Bad", startMinuteOfDay: 600, endMinuteOfDay: 1080 },
                 actor,
               ),
@@ -659,6 +676,7 @@ async function main() {
         });
 
         const calendarSpecial = await calendarService.createException(
+          policyCompanyId.id,
           {
             businessDate: "2026-11-03",
             exceptionType: "SPECIAL_WORKING_DAY",
@@ -681,6 +699,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.createException(
+                policyCompanyId.id,
                 { businessDate: "2026-11-05", exceptionType: "SPECIAL_WORKING_DAY", name: "Bad", startMinuteOfDay: 600, endMinuteOfDay: 600 },
                 actor,
               ),
@@ -692,6 +711,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.createException(
+                policyCompanyId.id,
                 { businessDate: "2026-11-02", exceptionType: "HOLIDAY", name: "Duplicate" },
                 actor,
               ),
@@ -700,6 +720,7 @@ async function main() {
         });
 
         const renamed = await calendarService.updateException(
+          policyCompanyId.id,
           calendarHoliday.id,
           { name: "Renamed Holiday" },
           actor,
@@ -712,6 +733,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.updateException(
+                policyCompanyId.id,
                 calendarSpecial.id,
                 { endMinuteOfDay: 540, unpaidBreakMinutes: 30 },
                 actor,
@@ -744,6 +766,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.createException(
+                policyCompanyId.id,
                 { businessDate: "2026-09-07", exceptionType: "HOLIDAY", name: "Late" },
                 actor,
               ),
@@ -755,6 +778,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.updateException(
+                policyCompanyId.id,
                 `${prefix}_FIN_EXC`,
                 { name: "Late Edit" },
                 actor,
@@ -764,6 +788,7 @@ async function main() {
         });
 
         const cancelledException = await calendarService.cancelException(
+          policyCompanyId.id,
           calendarSpecial.id,
           { cancellationReason: "no longer needed" },
           actor,
@@ -777,6 +802,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.cancelException(
+                policyCompanyId.id,
                 calendarHoliday.id,
                 { cancellationReason: "   " },
                 actor,
@@ -789,6 +815,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.cancelException(
+                policyCompanyId.id,
                 calendarSpecial.id,
                 { cancellationReason: "again" },
                 actor,
@@ -813,6 +840,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.updateException(
+                policyCompanyId.id,
                 `${prefix}_SUP_EXC`,
                 { name: "Late Edit" },
                 actor,
@@ -835,6 +863,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarService.cancelException(
+                policyCompanyId.id,
                 `${prefix}_CO_EXC`,
                 { cancellationReason: "cross" },
                 actor,
@@ -843,7 +872,7 @@ async function main() {
           );
         });
 
-        const listed = await calendarService.listExceptions("2026-11-01", "2026-11-30");
+        const listed = await calendarService.listExceptions(policyCompanyId.id, "2026-11-01", "2026-11-30");
         await check("calendar listing returns live and historical rows", () => {
           assert.ok(listed.length >= 3);
           assert.ok(listed.some(row => row.id === calendarHoliday.id));
@@ -1004,7 +1033,7 @@ async function main() {
           },
         });
 
-        const dayView = await dayService.getDay("2026-09-05");
+        const dayView = await dayService.getDay(policyCompanyId.id, "2026-09-05");
         await check("day roster lists eligible employees only", () => {
           const ids = dayView.rows.map(row => row.employee.employeeId);
           for (const expectedId of [dayEmployeeA.id, dayEmployeeB.id, fixture.employeeId, separatedToday.id]) {
@@ -1037,13 +1066,14 @@ async function main() {
           assert.equal(row.checkInAt, null);
           assert.equal(row.checkOutAt, null);
         });
-        const restDayView = await dayService.getDay("2026-09-04");
+        const restDayView = await dayService.getDay(policyCompanyId.id, "2026-09-04");
         await check("ordinary Friday has zero expected attendance", () => {
           assert.equal(restDayView.summary.expected, 0);
           assert.ok(restDayView.rows.every(row => row.expectedDayKind === "WEEKLY_REST"));
         });
 
         await dayService.saveEntries(
+          policyCompanyId.id,
           { businessDate: "2026-09-05", entries: [{ employeeId: dayEmployeeA.id, checkInLocalTime: "10:20", checkOutLocalTime: "18:10", note: "verified entry" }] },
           actor,
         );
@@ -1068,7 +1098,7 @@ async function main() {
           assert.equal(draft.createdById, fixture.userId);
         });
 
-        const savedDay = await dayService.getDay("2026-09-05");
+        const savedDay = await dayService.getDay(policyCompanyId.id, "2026-09-05");
         const savedRow = savedDay.rows.find(row => row.employee.employeeId === dayEmployeeA.id)!;
         await check("day view derives provisional present with late flag", () => {
           assert.equal(savedRow.status.kind, "PRESENT");
@@ -1079,6 +1109,7 @@ async function main() {
         });
 
         await dayService.saveEntries(
+          policyCompanyId.id,
           { businessDate: "2026-09-05", entries: [{ employeeId: dayEmployeeA.id, checkInLocalTime: "10:00", checkOutLocalTime: "18:00", expectedUpdatedAt: savedRow.expectedUpdatedAt }] },
           actor,
         );
@@ -1095,6 +1126,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.saveEntries(
+                policyCompanyId.id,
                 { businessDate: "2026-09-05", entries: [{ employeeId: dayEmployeeA.id, checkInLocalTime: "10:30", expectedUpdatedAt: "2000-01-01T00:00:00.000Z" }] },
                 actor,
               ),
@@ -1106,6 +1138,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.saveEntries(
+                policyCompanyId.id,
                 { businessDate: "2026-09-05", entries: [{ employeeId: dayEmployeeB.id, checkInLocalTime: "10:30", expectedUpdatedAt: "2000-01-01T00:00:00.000Z" }] },
                 actor,
               ),
@@ -1114,10 +1147,17 @@ async function main() {
         });
 
         await check("future punch instants are rejected", async () => {
+          // Use a date one day after today so the future-punch path is exercised
+          // regardless of when the verifier runs (the seeded 2026-09-07 marker
+          // collides with "today" when the suite runs on that calendar date).
+          const nextDay = new Date(`${today}T00:00:00.000Z`);
+          nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+          const nextDayDate = nextDay.toISOString().slice(0, 10);
           await assert.rejects(
             () =>
               dayService.saveEntries(
-                { businessDate: today, entries: [{ employeeId: dayEmployeeA.id, checkInLocalTime: "23:59" }] },
+                policyCompanyId.id,
+                { businessDate: nextDayDate, entries: [{ employeeId: dayEmployeeA.id, checkInLocalTime: "23:59" }] },
                 actor,
               ),
             /future/i,
@@ -1128,6 +1168,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.saveEntries(
+                policyCompanyId.id,
                 { businessDate: "2026-09-05", entries: [{ employeeId: dayEmployeeB.id, checkInLocalTime: "10:00", checkOutLocalTime: "10:00" }] },
                 actor,
               ),
@@ -1136,6 +1177,7 @@ async function main() {
         });
 
         await dayService.saveEntries(
+          policyCompanyId.id,
           { businessDate: "2026-09-03", entries: [{ employeeId: dayEmployeeB.id, checkInLocalTime: "22:00", checkOutLocalTime: "06:00" }] },
           actor,
         );
@@ -1151,6 +1193,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.saveEntries(
+                policyCompanyId.id,
                 { businessDate: "2026-09-05", entries: [{ employeeId: fixture.employeeId, checkOutLocalTime: "18:00" }] },
                 actor,
               ),
@@ -1162,6 +1205,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.saveEntries(
+                policyCompanyId.id,
                 { businessDate: "2026-09-05", entries: [{ employeeId: futureJoin.id, checkInLocalTime: "10:00" }] },
                 actor,
               ),
@@ -1173,6 +1217,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.saveEntries(
+                policyCompanyId.id,
                 { businessDate: "2026-09-02", entries: [{ employeeId: dayEmployeeA.id, checkInLocalTime: "10:00" }] },
                 actor,
               ),
@@ -1184,6 +1229,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.saveEntries(
+                policyCompanyId.id,
                 { businessDate: "2026-09-08", entries: [{ employeeId: dayEmployeeA.id, checkInLocalTime: "10:00" }] },
                 actor,
               ),
@@ -1209,16 +1255,17 @@ async function main() {
             createdById: fixture.userId,
           },
         });
-        const needsReviewView = await dayService.getDay("2026-09-01");
+        const needsReviewView = await dayService.getDay(policyCompanyId.id, "2026-09-01");
         await check("ineligible draft entries surface as needs review", () => {
           assert.equal(needsReviewView.needsReview.length, 1);
           assert.equal(needsReviewView.needsReview[0].employee.employeeId, futureJoin.id);
           assert.ok(needsReviewView.needsReview[0].expectedUpdatedAt);
         });
 
-        const discardDay = await dayService.getDay("2026-09-05");
+        const discardDay = await dayService.getDay(policyCompanyId.id, "2026-09-05");
         const discardRow = discardDay.rows.find(row => row.employee.employeeId === dayEmployeeA.id)!;
         await dayService.discardEntry(
+          policyCompanyId.id,
           { businessDate: "2026-09-05", employeeId: dayEmployeeA.id, expectedUpdatedAt: discardRow.expectedUpdatedAt },
           actor,
         );
@@ -1237,6 +1284,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.discardEntry(
+                policyCompanyId.id,
                 { businessDate: "2026-09-03", employeeId: dayEmployeeB.id, expectedUpdatedAt: "2000-01-01T00:00:00.000Z" },
                 actor,
               ),
@@ -1248,6 +1296,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.discardEntry(
+                policyCompanyId.id,
                 { businessDate: "2026-09-02", employeeId: dayEmployeeA.id, expectedUpdatedAt: null },
                 actor,
               ),
@@ -1259,6 +1308,7 @@ async function main() {
           await assert.rejects(
             () =>
               dayService.discardEntry(
+                policyCompanyId.id,
                 { businessDate: "2026-09-05", employeeId: dayEmployeeA.id, expectedUpdatedAt: null },
                 actor,
               ),
@@ -1266,7 +1316,7 @@ async function main() {
           );
         });
 
-        const finalizedView = await dayService.getDay("2026-09-02");
+        const finalizedView = await dayService.getDay(policyCompanyId.id, "2026-09-02");
         await check("finalized day view shows materialized records only", () => {
           assert.equal(finalizedView.finalized, true);
           const ids = finalizedView.rows.map(row => row.employee.employeeId).sort();
@@ -1298,7 +1348,7 @@ async function main() {
 
         await check("future business date cannot be finalized", async () => {
           await assert.rejects(
-            () => finalizationService.finalizeDay({ businessDate: "2026-09-30" }, actor),
+            () => finalizationService.finalizeDay(policyCompanyId.id, { businessDate: "2026-09-30" }, actor),
             /future/i,
           );
         });
@@ -1307,6 +1357,7 @@ async function main() {
           await assert.rejects(
             () =>
               finalizationService.finalizeDay(
+                policyCompanyId.id,
                 { businessDate: "2026-09-09" },
                 actor,
                 new Date("2026-09-09T11:59:00.000Z"),
@@ -1321,6 +1372,7 @@ async function main() {
 
         await check("normal day finalization at the expected end is allowed", async () => {
           const result = await finalizationService.finalizeDay(
+            policyCompanyId.id,
             { businessDate: "2026-09-09" },
             actor,
             new Date("2026-09-09T12:00:00.000Z"),
@@ -1331,7 +1383,7 @@ async function main() {
 
         await check("double finalization is a controlled conflict", async () => {
           await assert.rejects(
-            () => finalizationService.finalizeDay({ businessDate: "2026-09-09" }, actor, new Date("2026-09-10T00:00:00.000Z")),
+            () => finalizationService.finalizeDay(policyCompanyId.id, { businessDate: "2026-09-09" }, actor, new Date("2026-09-10T00:00:00.000Z")),
             /already finalized/i,
           );
         });
@@ -1416,6 +1468,7 @@ async function main() {
           await assert.rejects(
             () =>
               finalizationService.finalizeDay(
+                policyCompanyId.id,
                 { businessDate: "2026-09-05" },
                 actor,
                 new Date("2026-09-05T18:30:00.000Z"),
@@ -1430,6 +1483,7 @@ async function main() {
 
         await check("overnight day finalizes at the next-day shift end", async () => {
           const result = await finalizationService.finalizeDay(
+            policyCompanyId.id,
             { businessDate: "2026-09-05" },
             actor,
             new Date("2026-09-06T00:00:00.000Z"),
@@ -1451,6 +1505,7 @@ async function main() {
 
         await check("existing draft transitions to finalized in place", async () => {
           const result = await finalizationService.finalizeDay(
+            policyCompanyId.id,
             { businessDate: "2026-09-03" },
             actor,
             new Date("2026-09-04T06:00:00.000Z"),
@@ -1482,6 +1537,7 @@ async function main() {
 
         await check("non-required days produce not required rows", async () => {
           const result = await finalizationService.finalizeDay(
+            policyCompanyId.id,
             { businessDate: "2026-09-04" },
             actor,
             new Date("2026-09-04T18:30:00.000Z"),
@@ -1505,6 +1561,7 @@ async function main() {
           await assert.rejects(
             () =>
               finalizationService.finalizeDay(
+                policyCompanyId.id,
                 { businessDate: "2026-09-11" },
                 actor,
                 new Date("2026-09-11T17:59:00.000Z"),
@@ -1519,6 +1576,7 @@ async function main() {
 
         await check("zero required windows finalize at the next Dhaka midnight", async () => {
           const result = await finalizationService.finalizeDay(
+            policyCompanyId.id,
             { businessDate: "2026-09-11" },
             actor,
             new Date("2026-09-11T18:00:00.000Z"),
@@ -1552,6 +1610,7 @@ async function main() {
           await assert.rejects(
             () =>
               finalizationService.finalizeDay(
+                policyCompanyId.id,
                 { businessDate: "2026-08-31" },
                 actor,
                 new Date("2026-09-01T12:00:00.000Z"),
@@ -1576,6 +1635,7 @@ async function main() {
           await assert.rejects(
             () =>
               finalizationService.finalizeDay(
+                policyCompanyId.id,
                 { businessDate: "2026-09-01" },
                 actor,
                 new Date("2026-09-02T12:00:00.000Z"),
@@ -1602,7 +1662,7 @@ async function main() {
         await check("correction on an unfinalized date is rejected", async () => {
           await assert.rejects(
             () =>
-              correctionService.correctAttendance(dayEmployeeA.id, "2026-09-01", {
+              correctionService.correctAttendance(policyCompanyId.id, dayEmployeeA.id, "2026-09-01", {
                 changeReason: "no marker",
                 expectedRevisionNo: null,
               }, actor),
@@ -1610,7 +1670,7 @@ async function main() {
           );
           await assert.rejects(
             () =>
-              correctionService.markNotApplicable(dayEmployeeA.id, "2026-09-01", {
+              correctionService.markNotApplicable(policyCompanyId.id, dayEmployeeA.id, "2026-09-01", {
                 changeReason: "no marker",
                 expectedRevisionNo: 1,
               }, actor),
@@ -1651,6 +1711,7 @@ async function main() {
         });
 
         const pathAResult = await correctionService.correctAttendance(
+          policyCompanyId.id,
           dayEmployeeB.id,
           "2026-09-02",
           {
@@ -1731,6 +1792,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 dayEmployeeB.id,
                 "2026-09-02",
                 { checkInLocalTime: "10:00", changeReason: "stale attempt", expectedRevisionNo: 1 },
@@ -1763,6 +1825,7 @@ async function main() {
           },
         });
         const pathBResult = await correctionService.correctAttendance(
+          policyCompanyId.id,
           omittedEmployee.id,
           "2026-09-02",
           {
@@ -1809,6 +1872,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 dayEmployeeA.id,
                 "2026-09-02",
                 { changeReason: "meanwhile created", expectedRevisionNo: null },
@@ -1822,6 +1886,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 futureJoin.id,
                 "2026-09-02",
                 { changeReason: "not eligible", expectedRevisionNo: null },
@@ -1851,6 +1916,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 deletedEmployee.id,
                 "2026-09-02",
                 { changeReason: "deleted", expectedRevisionNo: null },
@@ -1871,6 +1937,7 @@ async function main() {
           },
         });
         const inactiveResult = await correctionService.correctAttendance(
+          policyCompanyId.id,
           inactiveOmitted.id,
           "2026-09-02",
           { changeReason: "inactive but historically eligible", expectedRevisionNo: null },
@@ -1883,6 +1950,7 @@ async function main() {
         });
 
         await finalizationService.finalizeDay(
+          policyCompanyId.id,
           { businessDate: "2025-12-16" },
           actor,
           new Date("2026-01-01T00:00:00.000Z"),
@@ -1900,6 +1968,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 lateHire.id,
                 "2025-12-16",
                 { changeReason: "no schedule back then", expectedRevisionNo: null },
@@ -1950,6 +2019,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 r5Employee.id,
                 "2025-12-16",
                 { changeReason: "cannot restore", expectedRevisionNo: 1 },
@@ -1970,6 +2040,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.markNotApplicable(
+                policyCompanyId.id,
                 dayEmployeeA.id,
                 "2026-09-02",
                 { changeReason: "no proof", expectedRevisionNo: 1 },
@@ -1984,6 +2055,7 @@ async function main() {
           data: { joiningDate: new Date("2026-09-05T00:00:00.000Z") },
         });
         const voidResult = await correctionService.markNotApplicable(
+          policyCompanyId.id,
           dayEmployeeA.id,
           "2026-09-02",
           { changeReason: "joined after this date", expectedRevisionNo: 1 },
@@ -2031,6 +2103,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.markNotApplicable(
+                policyCompanyId.id,
                 dayEmployeeA.id,
                 "2026-09-02",
                 { changeReason: "again", expectedRevisionNo: 2 },
@@ -2040,7 +2113,7 @@ async function main() {
           );
         });
 
-        const voidedDayView = await dayService.getDay("2026-09-02");
+        const voidedDayView = await dayService.getDay(policyCompanyId.id, "2026-09-02");
         await check("latest void is excluded from current interpretation", async () => {
           const rowA = voidedDayView.rows.find(row => row.employee.employeeId === dayEmployeeA.id);
           assert.ok(rowA);
@@ -2055,6 +2128,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 dayEmployeeA.id,
                 "2026-09-02",
                 { changeReason: "still ineligible", expectedRevisionNo: 2 },
@@ -2100,6 +2174,7 @@ async function main() {
           },
         });
         const restoreResult = await correctionService.correctAttendance(
+          policyCompanyId.id,
           dayEmployeeA.id,
           "2026-09-02",
           { changeReason: "restored employee", expectedRevisionNo: 2 },
@@ -2136,6 +2211,7 @@ async function main() {
           data: { separationDate: new Date("2026-09-01T00:00:00.000Z"), separationReason: "Verification separation", isActive: false },
         });
         const voidBResult = await correctionService.markNotApplicable(
+          policyCompanyId.id,
           dayEmployeeB.id,
           "2026-09-02",
           { changeReason: "separated before this date", expectedRevisionNo: 2 },
@@ -2165,6 +2241,7 @@ async function main() {
           data: { separationDate: null, separationReason: null },
         });
         const restoreBResult = await correctionService.correctAttendance(
+          policyCompanyId.id,
           dayEmployeeB.id,
           "2026-09-02",
           { changeReason: "restored employee B", expectedRevisionNo: 3 },
@@ -2198,6 +2275,7 @@ async function main() {
           data: { joiningDate: new Date("2026-09-05T00:00:00.000Z") },
         });
         await correctionService.markNotApplicable(
+          policyCompanyId.id,
           dayEmployeeA.id,
           "2026-09-02",
           { changeReason: "void again for provided punches", expectedRevisionNo: 3 },
@@ -2208,6 +2286,7 @@ async function main() {
           data: { joiningDate: new Date("2026-01-01T00:00:00.000Z") },
         });
         const providedPunchesResult = await correctionService.correctAttendance(
+          policyCompanyId.id,
           dayEmployeeA.id,
           "2026-09-02",
           {
@@ -2297,6 +2376,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 futurePunchEmployee.id,
                 "2026-09-10",
                 { checkInLocalTime: "10:00", checkOutLocalTime: "18:00", changeReason: "future", expectedRevisionNo: 1 },
@@ -2315,6 +2395,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 dayEmployeeA.id,
                 "2026-09-02",
                 { checkInLocalTime: "10:00", checkOutLocalTime: "10:00", changeReason: "equal", expectedRevisionNo: 5 },
@@ -2328,6 +2409,7 @@ async function main() {
           await assert.rejects(
             () =>
               correctionService.correctAttendance(
+                policyCompanyId.id,
                 futurePunchEmployee.id,
                 "2026-09-10",
                 { checkOutLocalTime: "17:00", changeReason: "out only", expectedRevisionNo: 1 },
@@ -2406,6 +2488,7 @@ async function main() {
           await assert.rejects(
             () =>
               auditFailingCorrections.correctAttendance(
+                policyCompanyId.id,
                 dayEmployeeB.id,
                 "2026-09-02",
                 { changeReason: "audit failure", expectedRevisionNo: 4 },
@@ -2425,6 +2508,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarCorrectionService.historicalCorrect(
+                policyCompanyId.id,
                 { businessDate: "2026-09-06", target: "HOLIDAY", name: "Unfinalized Holiday", changeReason: "not finalized" },
                 actor,
               ),
@@ -2436,6 +2520,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarCorrectionService.historicalCorrect(
+                policyCompanyId.id,
                 { businessDate: "2026-09-09", target: "NONE", changeReason: "nothing to remove" },
                 actor,
               ),
@@ -2454,6 +2539,7 @@ async function main() {
           },
         });
         await finalizationService.finalizeDay(
+          policyCompanyId.id,
           { businessDate: "2026-09-14" },
           actor,
           new Date("2026-09-15T00:00:00.000Z"),
@@ -2471,6 +2557,7 @@ async function main() {
         });
 
         const nameOnlyResult = await calendarCorrectionService.historicalCorrect(
+          policyCompanyId.id,
           { businessDate: "2026-09-14", target: "HOLIDAY", name: "Renamed Verification Holiday", changeReason: "spelling fix" },
           actor,
         );
@@ -2516,6 +2603,7 @@ async function main() {
 
         await check("id-only change with equal semantics creates zero attendance revisions", async () => {
           const result = await calendarCorrectionService.historicalCorrect(
+            policyCompanyId.id,
             { businessDate: "2026-09-14", target: "HOLIDAY", name: "Renamed Verification Holiday", changeReason: "id only refresh" },
             actor,
           );
@@ -2563,6 +2651,7 @@ async function main() {
         });
 
         const specialResult = await calendarCorrectionService.historicalCorrect(
+          policyCompanyId.id,
           {
             businessDate: "2026-09-02",
             target: "SPECIAL_WORKING_DAY",
@@ -2679,6 +2768,7 @@ async function main() {
         });
 
         const noneResult = await calendarCorrectionService.historicalCorrect(
+          policyCompanyId.id,
           { businessDate: "2026-09-02", target: "NONE", changeReason: "back to schedule" },
           actor,
         );
@@ -2740,6 +2830,7 @@ async function main() {
         });
         await check("target NONE on a rest-resolving date requires no policy", async () => {
           const result = await calendarCorrectionService.historicalCorrect(
+            policyCompanyId.id,
             { businessDate: "2026-09-11", target: "NONE", changeReason: "restore weekly rest" },
             actor,
           );
@@ -2773,6 +2864,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarCorrectionService.historicalCorrect(
+                policyCompanyId.id,
                 {
                   businessDate: "2026-09-09",
                   target: "SPECIAL_WORKING_DAY",
@@ -2888,6 +2980,7 @@ async function main() {
           await assert.rejects(
             () =>
               calendarAuditFailingCalendar.historicalCorrect(
+                policyCompanyId.id,
                 { businessDate: "2026-09-02", target: "HOLIDAY", name: "Audit Failure Holiday", changeReason: "audit failure" },
                 actor,
               ),

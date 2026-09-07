@@ -19,12 +19,27 @@ export type AuthenticatedUser = {
   roles: AuthenticatedRole[];
 };
 
+export type ActiveCompanyContext = {
+  id: string;
+  name: string;
+  legalName: string | null;
+  isActive: boolean;
+  officeLogoPath: string | null;
+  brandAccentColor: string | null;
+  backgroundMode: "DEFAULT_PREMIUM" | "CUSTOM";
+  customBackgroundPath: string | null;
+};
+
+export type AuthSessionRequestContext = {
+  id: string;
+  tokenId: string;
+  expiresAt: Date;
+  activeCompanyId: string | null;
+};
+
 export type AuthenticatedRequest = Request & {
-  authSession: {
-    id: string;
-    tokenId: string;
-    expiresAt: Date;
-  };
+  authSession: AuthSessionRequestContext;
+  activeCompany: ActiveCompanyContext | null;
   cookies?: Record<string, string | undefined>;
   user: AuthenticatedUser;
 };

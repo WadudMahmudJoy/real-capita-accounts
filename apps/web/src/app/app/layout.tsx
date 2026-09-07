@@ -37,6 +37,8 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Button, LoadingPanel, Notice } from "./_components/ui";
+import { OfficeSwitcher } from "./_components/OfficeSwitcher";
+import { OfficeThemeShell } from "./_components/OfficeThemeShell";
 
 type NavLink = {
   href: string;
@@ -312,9 +314,8 @@ export default function AppLayout({
   const roleNames = user.roles.map((role) => role.name).join(", ");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full flex-col px-5 py-5 sm:px-8 lg:h-screen lg:min-h-0 lg:overflow-hidden">
-        <header className="flex flex-col gap-4 border-b border-border bg-card pb-5 md:flex-row md:items-center md:justify-between">
+    <OfficeThemeShell>
+      <header className="flex flex-col gap-4 border-b border-border bg-card pb-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <Image
               alt=""
@@ -335,6 +336,7 @@ export default function AppLayout({
           </div>
 
           <div className="flex items-center gap-3">
+            <OfficeSwitcher />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-foreground">
                 {user.fullName}
@@ -464,11 +466,10 @@ export default function AppLayout({
             </div>
           </nav>
 
-          <main className="min-w-0 bg-background lg:overflow-y-auto lg:pl-8">
+          <main className="min-w-0 lg:overflow-y-auto lg:pl-8">
             {children}
           </main>
         </div>
-      </div>
-    </div>
+    </OfficeThemeShell>
   );
 }

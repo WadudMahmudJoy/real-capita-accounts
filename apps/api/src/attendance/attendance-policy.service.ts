@@ -5,7 +5,6 @@ import type { AuthenticatedUser } from "../auth/auth.types";
 import { parseDateOnly } from "../common/business-date";
 import { audit } from "./attendance-audit";
 import { normalizeAttendancePrismaError } from "./attendance-errors";
-import { currentCompanyId } from "./attendance-lock";
 import { dhakaBusinessDate } from "./attendance-time";
 import {
   canCreateInitial,
@@ -108,8 +107,7 @@ function cleanRequiredReason(value: string, label: string): string {
 export class AttendancePolicyService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listPolicies(): Promise<AttendancePolicyView[]> {
-    const companyId = await currentCompanyId(this.prisma);
+  async listPolicies(companyId: string): Promise<AttendancePolicyView[]> {
     const rows = await this.prisma.attendancePolicy.findMany({
       where: { companyId },
       orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
@@ -118,12 +116,12 @@ export class AttendancePolicyService {
   }
 
   async createInitialPolicy(
+    companyId: string,
     input: CreateInitialAttendancePolicyInput,
     user: AuthenticatedUser,
   ): Promise<AttendancePolicyView> {
     assertGraceMinutes(input.lateGraceMinutes, input.earlyLeaveGraceMinutes);
     const effectiveFrom = parseDateOnly(input.effectiveFrom, "effectiveFrom");
-    const companyId = await currentCompanyId(this.prisma);
     const today = dhakaBusinessDate();
     try {
       return await this.prisma.$transaction(
@@ -159,6 +157,7 @@ export class AttendancePolicyService {
   }
 
   async replacePolicy(
+    companyId: string,
     id: string,
     input: ReplaceAttendancePolicyInput,
     user: AuthenticatedUser,
@@ -166,7 +165,6 @@ export class AttendancePolicyService {
     assertGraceMinutes(input.lateGraceMinutes, input.earlyLeaveGraceMinutes);
     const changeReason = cleanRequiredReason(input.changeReason, "Change Reason");
     const replacementFrom = parseDateOnly(input.effectiveFrom, "effectiveFrom");
-    const companyId = await currentCompanyId(this.prisma);
     const today = dhakaBusinessDate();
     try {
       return await this.prisma.$transaction(
@@ -221,12 +219,12 @@ export class AttendancePolicyService {
   }
 
   async cancelFuturePolicy(
+    companyId: string,
     id: string,
     input: CancelFutureAttendancePolicyInput,
     user: AuthenticatedUser,
   ): Promise<AttendancePolicyView> {
     const cancellationReason = cleanRequiredReason(input.cancellationReason, "Cancellation Reason");
-    const companyId = await currentCompanyId(this.prisma);
     const today = dhakaBusinessDate();
     try {
       return await this.prisma.$transaction(

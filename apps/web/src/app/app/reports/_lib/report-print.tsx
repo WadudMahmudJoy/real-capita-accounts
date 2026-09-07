@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react";
 import { Printer } from "lucide-react";
+import { companyMediaUrl, type ReportCompanySummary } from "@/lib/api";
 import { Button } from "../../_components/ui";
 
 /**
@@ -12,6 +13,58 @@ import { Button } from "../../_components/ui";
  * triggered with `window.print()` only — no PDF generation, no Excel export,
  * and no file uploads. The look matches the voucher print foundation.
  */
+
+export const FALLBACK_REPORT_HEADING = "Real Capita Group";
+
+/**
+ * Document-company heading for the owning company of the report's fiscal
+ * year: the configured print header name, then the company name, then the
+ * legacy Real Capita heading so unconfigured rows keep today's appearance.
+ */
+export function resolveOwnerHeading(
+  company: Pick<ReportCompanySummary, "name" | "printHeaderName"> | null,
+): string {
+  return (
+    company?.printHeaderName ?? company?.name ?? FALLBACK_REPORT_HEADING
+  );
+}
+
+/**
+ * Print-logo URL from the public company media endpoint, cache-busted by the
+ * owner company's updatedAt revision. The stored printLogoPath is only a
+ * presence signal; a null path keeps the legacy no-logo layout.
+ */
+export function ownerPrintLogoSrc(
+  company: Pick<ReportCompanySummary, "id" | "printLogoPath" | "updatedAt">,
+): string | null {
+  if (company.printLogoPath == null) {
+    return null;
+  }
+  const revision = Date.parse(company.updatedAt);
+  return companyMediaUrl(
+    company.id,
+    "print-logo",
+    Number.isNaN(revision) ? 0 : revision,
+  );
+}
+
+/** Existing owner contact values only — missing values render nothing. */
+export function ownerContactItems(
+  company: Pick<ReportCompanySummary, "phone" | "email" | "address">,
+): string[] {
+  return [company.phone, company.email, company.address].filter(
+    (value): value is string =>
+      typeof value === "string" && value.trim().length > 0,
+  );
+}
+
+/** Configured owner-company footer text, or null for the legacy footer. */
+export function resolveOwnerFooterText(
+  company: Pick<ReportCompanySummary, "printFooterText">,
+): string | null {
+  const trimmed = company.printFooterText?.trim();
+  return trimmed ? trimmed : null;
+}
 
 /** A "Print report" button. Only meaningful after a report has loaded. */
 export function PrintReportButton({
@@ -44,24 +97,37 @@ export const printNumberHeadCell =
   "border border-black px-2 py-1.5 text-right font-semibold";
 
 /**
- * A professional, print-only frame for a report. Renders the Real Capita Group
- * heading, the report title, the report context (fiscal year, period or date
- * range / as-of date, and filters), the report body, the generated timestamp,
- * and prepared/checked/authorised signature placeholders.
+ * A professional, print-only frame for a report. Renders the owning
+ * company's document branding (heading, optional print logo, contact line),
+ * the report title, the report context (fiscal year, period or date range /
+ * as-of date, and filters), the report body, an optional owner-company
+ * footer line, the fixed platform footer with the generated timestamp, and
+ * prepared/checked/authorised signature placeholders.
+ *
+ * Branding derives ONLY from `ownerCompany` — the company that owns the
+ * report's fiscal year — never from the currently active office.
  */
 export function ReportPrintFrame({
   title,
   meta,
+  ownerCompany,
   children,
 }: {
   title: string;
   meta: PrintMetaItem[];
+  ownerCompany: ReportCompanySummary;
   children: ReactNode;
 }) {
   // This frame is rendered only after the report data arrives (client-side
   // state), so it never participates in server-side rendering or hydration.
   // Reading the clock directly here is therefore safe and cannot mismatch.
   const generatedAt = new Date().toLocaleString();
+
+  const hasPrintLogo = ownerCompany.printLogoPath != null;
+  const logoSrc = hasPrintLogo ? ownerPrintLogoSrc(ownerCompany) : null;
+  const heading = resolveOwnerHeading(ownerCompany);
+  const contactItems = ownerContactItems(ownerCompany);
+  const ownerFooterText = resolveOwnerFooterText(ownerCompany);
 
   return (
     <div className="hidden print:block print:m-0 print:p-0">
@@ -76,11 +142,35 @@ export function ReportPrintFrame({
 
       <div className="mx-auto max-w-[190mm] font-sans text-xs text-black">
         {/* Header */}
-        <div className="mb-4 border-b-2 border-black pb-3 text-center">
-          <h2 className="text-lg font-bold uppercase tracking-wide">
-            Real Capita Group
-          </h2>
-          <p className="mt-1 text-sm font-semibold">{title}</p>
+        <div className="mb-4 border-b-2 border-black pb-3">
+          <div className="flex items-center gap-4">
+            {hasPrintLogo && logoSrc ? (
+              /* Plain <img> for print reliability, matching the voucher
+                  print foundation. onError hides the slot so a broken or
+                  missing asset never leaves a broken-image icon or a large
+                  blank area. */
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                alt=""
+                className="h-12 w-24 shrink-0 object-contain object-left"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+                src={logoSrc}
+              />
+            ) : null}
+            <div className="min-w-0 flex-1 text-center">
+              <h2 className="text-lg font-bold uppercase tracking-wide">
+                {heading}
+              </h2>
+              {contactItems.length > 0 ? (
+                <p className="mt-0.5 text-[9px] leading-4 text-gray-700">
+                  {contactItems.join(" | ")}
+                </p>
+              ) : null}
+              <p className="mt-1 text-sm font-semibold">{title}</p>
+            </div>
+          </div>
         </div>
 
         {/* Report context */}
@@ -109,10 +199,16 @@ export function ReportPrintFrame({
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer: optional owner-company line above the fixed platform
+            footer, which always remains. */}
         <div className="mt-6 border-t border-black pt-2 text-center text-[10px] text-gray-500">
-          Real Capita Accounting &amp; Project Finance System | Generated:{" "}
-          {generatedAt}
+          {ownerFooterText ? (
+            <p className="text-gray-700">{ownerFooterText}</p>
+          ) : null}
+          <p>
+            Real Capita Accounting &amp; Project Finance System | Generated:{" "}
+            {generatedAt}
+          </p>
         </div>
       </div>
     </div>

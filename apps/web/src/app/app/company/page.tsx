@@ -1,60 +1,49 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ApiError,
-  createCompany,
-  getCompany,
+  getCompanies,
+  switchCompany,
   toErrorMessage,
-  updateCompany,
   type Company,
-  type CompanyInput,
 } from "@/lib/api";
 import {
   Button,
   Card,
   CardHeader,
-  Field,
+  EmptyState,
   LoadingPanel,
   Notice,
   PageIntro,
-  TextArea,
-  TextInput,
 } from "../_components/ui";
+import { OfficeEditor } from "./_components/OfficeEditor";
+import { OfficeList } from "./_components/OfficeList";
+import { notifyOfficeBrandingUpdated } from "../_lib/office-theme";
 
-type FormState = {
-  name: string;
-  legalName: string;
-  address: string;
-  phone: string;
-  email: string;
-  currency: string;
+type PageNotice = {
+  tone: "error" | "success";
+  message: string;
 };
 
-const emptyForm: FormState = {
-  address: "",
-  currency: "BDT",
-  email: "",
-  legalName: "",
-  name: "",
-  phone: "",
-};
-
-function toForm(company: Company): FormState {
-  return {
-    address: company.address ?? "",
-    currency: company.currency ?? "BDT",
-    email: company.email ?? "",
-    legalName: company.legalName ?? "",
-    name: company.name,
-    phone: company.phone ?? "",
-  };
-}
-
-function optional(value: string): string | undefined {
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
+// Only persisted changes to the theme-affecting branding fields notify the
+// office theme shell: brandAccentColor, backgroundMode, and the custom
+// background (its path changes on upload/remove). Basic Info and print-only
+// saves never dispatch, and editing any office merely notifies — the shell
+// still resolves theme authority from the activeCompanyId refetch.
+function reflectsThemeChange(
+  previous: Company | undefined,
+  updated: Company,
+): boolean {
+  if (!previous) {
+    return true;
+  }
+  return (
+    previous.brandAccentColor !== updated.brandAccentColor ||
+    previous.backgroundMode !== updated.backgroundMode ||
+    previous.customBackgroundPath !== updated.customBackgroundPath
+  );
 }
 
 export default function CompanyPage() {
@@ -63,20 +52,28 @@ export default function CompanyPage() {
     "loading",
   );
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [company, setCompany] = useState<Company | null>(null);
-  const [form, setForm] = useState<FormState>(emptyForm);
-  const [isSaving, setIsSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
+  const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [switchingCompanyId, setSwitchingCompanyId] = useState<string | null>(
+    null,
+  );
+  const [pageNotice, setPageNotice] = useState<PageNotice | null>(null);
+  const [mediaRevision, setMediaRevision] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function load() {
       try {
-        const existing = await getCompany(controller.signal);
-        setCompany(existing);
-        setForm(toForm(existing));
+        const result = await getCompanies(controller.signal);
+        if (controller.signal.aborted) {
+          return;
+        }
+        setCompanies(result.companies);
+        setActiveCompanyId(result.activeCompanyId);
         setStatus("ready");
       } catch (caught) {
         if (controller.signal.aborted) {
@@ -85,14 +82,6 @@ export default function CompanyPage() {
 
         if (caught instanceof ApiError && caught.isUnauthorized) {
           router.replace("/login");
-          return;
-        }
-
-        if (caught instanceof ApiError && caught.isNotFound) {
-          // No company profile yet: present the create form.
-          setCompany(null);
-          setForm(emptyForm);
-          setStatus("ready");
           return;
         }
 
@@ -106,67 +95,118 @@ export default function CompanyPage() {
     return () => controller.abort();
   }, [router]);
 
-  function updateField<K extends keyof FormState>(key: K, value: string) {
-    setForm((previous) => ({ ...previous, [key]: value }));
+  async function refreshCompanies(): Promise<void> {
+    const result = await getCompanies();
+    setCompanies(result.companies);
+    setActiveCompanyId(result.activeCompanyId);
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFormError(null);
-    setSuccessMessage(null);
+  // Selecting an office for editing only changes the editor target. It never
+  // touches the session's active office; only an explicit Switch does that.
+  function handleSelectForEditing(company: Company): void {
+    setEditingCompanyId(company.id);
+    setEditingCompany(company);
+    setIsCreating(false);
+    setPageNotice(null);
+  }
 
-    const name = form.name.trim();
-    if (!name) {
-      setFormError("Company name is required.");
-      return;
-    }
+  function handleAddOffice(): void {
+    setIsCreating(true);
+    setEditingCompanyId(null);
+    setEditingCompany(null);
+    setPageNotice(null);
+  }
 
-    const payload: CompanyInput = {
-      address: optional(form.address),
-      currency: optional(form.currency.toUpperCase()),
-      email: optional(form.email),
-      legalName: optional(form.legalName),
-      name,
-      phone: optional(form.phone),
-    };
+  function handleCloseEditor(): void {
+    setIsCreating(false);
+    setEditingCompanyId(null);
+    setEditingCompany(null);
+  }
 
-    setIsSaving(true);
+  // After creation the new office is selected for editing. The office list is
+  // refreshed from the server so the active office reflects reality: the
+  // backend binds the first-ever company automatically, while any existing
+  // active office stays selected.
+  async function handleCompanyCreated(created: Company): Promise<void> {
+    setEditingCompanyId(created.id);
+    setEditingCompany(created);
+    setIsCreating(false);
 
     try {
-      const saved = company
-        ? await updateCompany(company.id, payload)
-        : await createCompany(payload);
-
-      setCompany(saved);
-      setForm(toForm(saved));
-      setSuccessMessage(
-        company
-          ? "Company profile updated."
-          : "Company profile created.",
-      );
+      await refreshCompanies();
     } catch (caught) {
       if (caught instanceof ApiError && caught.isUnauthorized) {
         router.replace("/login");
         return;
       }
+      setPageNotice({ tone: "error", message: toErrorMessage(caught) });
+      return;
+    }
 
-      setFormError(toErrorMessage(caught));
-    } finally {
-      setIsSaving(false);
+    setPageNotice({
+      tone: "success",
+      message: `Office "${created.name}" was created and is now selected for editing.`,
+    });
+  }
+
+  function handleCompanySaved(updated: Company): void {
+    const previous = companies.find((company) => company.id === updated.id);
+    setCompanies((currentCompanies) =>
+      currentCompanies.map((company) =>
+        company.id === updated.id ? updated : company,
+      ),
+    );
+    if (editingCompanyId === updated.id) {
+      setEditingCompany(updated);
+    }
+    if (reflectsThemeChange(previous, updated)) {
+      notifyOfficeBrandingUpdated();
     }
   }
 
-  const isEditing = company !== null;
+  function handleCompanyMediaChanged(updated: Company): void {
+    handleCompanySaved(updated);
+    setMediaRevision((revision) => revision + 1);
+  }
+
+  async function handleSwitchCompany(company: Company): Promise<void> {
+    setSwitchingCompanyId(company.id);
+    setPageNotice(null);
+
+    try {
+      const result = await switchCompany(company.id);
+      setActiveCompanyId(result.activeCompanyId);
+      setCompanies((previous) =>
+        previous.map((item) =>
+          item.id === result.company.id ? result.company : item,
+        ),
+      );
+      setPageNotice({
+        tone: "success",
+        message: `Active office switched to "${result.company.name}".`,
+      });
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.isUnauthorized) {
+        router.replace("/login");
+        return;
+      }
+      setPageNotice({ tone: "error", message: toErrorMessage(caught) });
+    } finally {
+      setSwitchingCompanyId(null);
+    }
+  }
+
+  const isEditing = editingCompany !== null;
 
   return (
     <div className="flex flex-col gap-6">
       <PageIntro
-        description="Maintain the primary company profile. This is the top-level identity used across the accounting system."
+        description="Manage the offices of your organisation. Edit an office profile, add a new office, or switch the office you are actively working in."
         title="Company Setup"
       />
 
       {status === "loading" ? (
-        <LoadingPanel message="Loading company profile..." />
+        <LoadingPanel message="Loading offices..." />
       ) : null}
 
       {status === "error" ? (
@@ -176,107 +216,56 @@ export default function CompanyPage() {
       {status === "ready" ? (
         <Card>
           <CardHeader
-            description={
-              isEditing
-                ? "Update the details of the existing company profile."
-                : "No company profile exists yet. Create one to continue."
+            actions={
+              <Button onClick={handleAddOffice} type="button">
+                + Add Office
+              </Button>
             }
-            title={isEditing ? "Edit company profile" : "Create company profile"}
+            description="All company offices available in this accounting system. The current office indicator marks your active session."
+            title="Offices"
           />
 
-          <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit}>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field htmlFor="company-name" label="Company name" required>
-                <TextInput
-                  autoComplete="organization"
-                  id="company-name"
-                  onChange={(event) => updateField("name", event.target.value)}
-                  placeholder="Real Capita Group"
-                  required
-                  value={form.name}
-                />
-              </Field>
+          <div className="mt-6">
+            {companies.length === 0 ? (
+              <EmptyState
+                description="No office exists yet. Add the first office to begin."
+                title="No offices yet"
+              />
+            ) : (
+              <OfficeList
+                activeCompanyId={activeCompanyId}
+                companies={companies}
+                editingCompanyId={editingCompanyId}
+                onEdit={handleSelectForEditing}
+                onSwitch={(company) => void handleSwitchCompany(company)}
+                switchingCompanyId={switchingCompanyId}
+              />
+            )}
+          </div>
 
-              <Field htmlFor="company-legal-name" label="Legal name">
-                <TextInput
-                  id="company-legal-name"
-                  onChange={(event) =>
-                    updateField("legalName", event.target.value)
-                  }
-                  placeholder="Registered legal entity name"
-                  value={form.legalName}
-                />
-              </Field>
-
-              <Field htmlFor="company-phone" label="Phone">
-                <TextInput
-                  autoComplete="tel"
-                  id="company-phone"
-                  onChange={(event) => updateField("phone", event.target.value)}
-                  placeholder="Contact number"
-                  value={form.phone}
-                />
-              </Field>
-
-              <Field htmlFor="company-email" label="Email">
-                <TextInput
-                  autoComplete="email"
-                  id="company-email"
-                  onChange={(event) => updateField("email", event.target.value)}
-                  placeholder="accounts@example.com"
-                  type="email"
-                  value={form.email}
-                />
-              </Field>
-
-              <Field
-                hint="Three-letter ISO currency code. Defaults to BDT."
-                htmlFor="company-currency"
-                label="Default currency"
-              >
-                <TextInput
-                  id="company-currency"
-                  maxLength={3}
-                  onChange={(event) =>
-                    updateField("currency", event.target.value.toUpperCase())
-                  }
-                  placeholder="BDT"
-                  value={form.currency}
-                />
-              </Field>
-
-              <Field
-                className="sm:col-span-2"
-                htmlFor="company-address"
-                label="Address"
-              >
-                <TextArea
-                  id="company-address"
-                  onChange={(event) =>
-                    updateField("address", event.target.value)
-                  }
-                  placeholder="Office address"
-                  value={form.address}
-                />
-              </Field>
+          {pageNotice ? (
+            <div className="mt-4">
+              <Notice tone={pageNotice.tone}>{pageNotice.message}</Notice>
             </div>
-
-            {formError ? <Notice tone="error">{formError}</Notice> : null}
-            {successMessage ? (
-              <Notice tone="success">{successMessage}</Notice>
-            ) : null}
-
-            <div className="flex items-center gap-3">
-              <Button disabled={isSaving} type="submit">
-                {isSaving
-                  ? "Saving..."
-                  : isEditing
-                    ? "Save changes"
-                    : "Create company"}
-              </Button>
-            </div>
-          </form>
+          ) : null}
         </Card>
+      ) : null}
+
+      {status === "ready" && (isCreating || isEditing) ? (
+        <OfficeEditor
+          company={isCreating ? null : editingCompany}
+          isActiveOffice={
+            !isCreating &&
+            editingCompany !== null &&
+            editingCompany.id === activeCompanyId
+          }
+          key={isCreating ? "create" : editingCompanyId ?? "edit"}
+          mediaRevision={mediaRevision}
+          onCancel={handleCloseEditor}
+          onCreated={(created) => void handleCompanyCreated(created)}
+          onMediaChanged={handleCompanyMediaChanged}
+          onSaved={handleCompanySaved}
+        />
       ) : null}
     </div>
   );

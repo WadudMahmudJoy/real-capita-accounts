@@ -36,3 +36,7 @@ apps/api/src/generated/
 
 # Local MCP/tooling config
 .mcp.json
+
+# Runtime company branding media uploads (server-generated; never tracked)
+apps/api/storage/
+storage/company-branding/

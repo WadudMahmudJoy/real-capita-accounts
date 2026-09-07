@@ -348,7 +348,8 @@ function BalanceSheetPrint({
   meta: { label: string; value: string }[];
 }) {
   return (
-    <ReportPrintFrame meta={meta} title="Balance Sheet">
+    <ReportPrintFrame
+          ownerCompany={report.fiscalYear.company} meta={meta} title="Balance Sheet">
       <PrintSection
         section={report.assets}
         title="Assets"

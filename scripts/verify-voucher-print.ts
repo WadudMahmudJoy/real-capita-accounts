@@ -496,17 +496,27 @@ async function main(): Promise<void> {
   );
 
   check(
-    "V3: print document sources brand through the existing company API",
+    "V3: print document sources brand from the voucher's owning company",
     () => {
+      // D11A note: the original boundary asserted the print document fetched
+      // the company profile through GET /company (the session's active
+      // company). D11A is the authorized document-branding phase: branding
+      // authority is now the VOUCHER-OWNING company carried on the voucher
+      // detail payload, so an owned voucher prints its owner's branding
+      // regardless of the office the session is operating.
       const source = readSourceIfPresent(printDocumentFile);
       assert.ok(source, "VoucherPrintDocument.tsx does not exist yet");
       assert.ok(
-        source?.includes("getCompany("),
-        "the print document does not fetch the company profile",
+        source?.includes("voucher.company"),
+        "the print document does not use the voucher's owning company",
       );
       assert.ok(
         source?.includes("toPrintBrand("),
         "the print document does not build its PrintBrand",
+      );
+      assert.ok(
+        !source?.includes("getCompany("),
+        "the print document still fetches the session company for branding",
       );
     },
   );

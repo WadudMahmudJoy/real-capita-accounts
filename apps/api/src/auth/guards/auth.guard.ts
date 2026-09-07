@@ -10,8 +10,34 @@ import {
   AUTH_COOKIE_DEFAULT_NAME,
   roleLabels,
 } from "../auth.constants";
-import type { AuthenticatedRequest, AuthTokenPayload } from "../auth.types";
+import type {
+  ActiveCompanyContext,
+  AuthenticatedRequest,
+  AuthTokenPayload,
+} from "../auth.types";
 import { PrismaService } from "../../prisma/prisma.service";
+
+const ACTIVE_COMPANY_SELECT = {
+  id: true,
+  name: true,
+  legalName: true,
+  isActive: true,
+  officeLogoPath: true,
+  brandAccentColor: true,
+  backgroundMode: true,
+  customBackgroundPath: true,
+} as const;
+
+type ActiveCompanyRow = {
+  id: string;
+  name: string;
+  legalName: string | null;
+  isActive: boolean;
+  officeLogoPath: string | null;
+  brandAccentColor: string | null;
+  backgroundMode: "DEFAULT_PREMIUM" | "CUSTOM";
+  customBackgroundPath: string | null;
+};
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -32,6 +58,9 @@ export class AuthGuard implements CanActivate {
     const payload = await this.verifyToken(token);
     const session = await this.prisma.authSession.findUnique({
       include: {
+        activeCompany: {
+          select: ACTIVE_COMPANY_SELECT,
+        },
         user: {
           include: {
             roles: {
@@ -70,11 +99,40 @@ export class AuthGuard implements CanActivate {
       fullName: session.user.fullName,
       roles,
     };
+
+    // Multi-office session context. An explicit, non-null selection is always
+    // preserved — even when that company is inactive — so the user can reach
+    // the future office switch flow instead of being silently moved to
+    // another office. Only legacy sessions with a NULL activeCompanyId get a
+    // one-time fallback to the oldest active company, persisted to this exact
+    // session row.
+    let activeCompanyId: string | null = session.activeCompanyId;
+    let activeCompany: ActiveCompanyRow | null = session.activeCompany;
+
+    if (session.activeCompanyId === null) {
+      const defaultCompany = await this.prisma.company.findFirst({
+        orderBy: { createdAt: "asc" },
+        select: ACTIVE_COMPANY_SELECT,
+        where: { isActive: true },
+      });
+
+      if (defaultCompany) {
+        await this.prisma.authSession.update({
+          data: { activeCompanyId: defaultCompany.id },
+          where: { id: session.id },
+        });
+        activeCompanyId = defaultCompany.id;
+        activeCompany = defaultCompany;
+      }
+    }
+
     request.authSession = {
       id: session.id,
       tokenId: session.tokenId,
       expiresAt: session.expiresAt,
+      activeCompanyId,
     };
+    request.activeCompany = activeCompany satisfies ActiveCompanyContext | null;
 
     return true;
   }

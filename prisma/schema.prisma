@@ -70,17 +70,20 @@ model UserRole {
 }
 
 model AuthSession {
-  id        String    @id @default(cuid())
-  userId    String
-  tokenId   String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  userId          String
+  activeCompanyId String?
+  tokenId         String    @unique
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeCompany   Company?  @relation("AuthSessionActiveCompany", fields: [activeCompanyId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([activeCompanyId])
   @@map("auth_sessions")
 }
 
@@ -399,17 +402,31 @@ model EmployeePaymentProfile {
   @@map("employee_payment_profiles")
 }
 
+enum CompanyBackgroundMode {
+  DEFAULT_PREMIUM
+  CUSTOM
+}
+
 model Company {
   id                     String                  @id @default(cuid())
-  singletonKey           String                  @unique @default("PRIMARY")
+  singletonKey           String?                 @unique
   name                   String
   legalName              String?
   address                String?
   phone                  String?
   email                  String?
   currency               String                  @default("BDT")
+  isActive               Boolean                 @default(true)
+  officeLogoPath         String?
+  brandAccentColor       String?
+  backgroundMode         CompanyBackgroundMode   @default(DEFAULT_PREMIUM)
+  customBackgroundPath   String?
+  printLogoPath          String?
+  printHeaderName        String?
+  printFooterText        String?
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
+  activeSessions         AuthSession[]           @relation("AuthSessionActiveCompany")
   fiscalYears            FiscalYear[]
   vouchers               Voucher[]
   voucherNumberSequences VoucherNumberSequence[]

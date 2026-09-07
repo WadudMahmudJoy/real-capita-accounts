@@ -5,7 +5,7 @@ import type { AuthenticatedUser } from "../auth/auth.types";
 import { parseDateOnly } from "../common/business-date";
 import { audit } from "./attendance-audit";
 import { normalizeAttendancePrismaError } from "./attendance-errors";
-import { acquireAttendanceDateLock, currentCompanyId } from "./attendance-lock";
+import { acquireAttendanceDateLock } from "./attendance-lock";
 import { validateCalendarExceptionShape, type CompanyCalendarExceptionTypeValue } from "./attendance-calendar-rules";
 import {
   evaluateAttendance,
@@ -133,8 +133,7 @@ export class AttendanceCalendarService {
     private readonly expectations: AttendanceExpectationService,
   ) {}
 
-  async listExceptions(from: string, to: string): Promise<CalendarExceptionView[]> {
-    const companyId = await currentCompanyId(this.prisma);
+  async listExceptions(companyId: string, from: string, to: string): Promise<CalendarExceptionView[]> {
     const rows = await this.prisma.companyCalendarException.findMany({
       where: {
         companyId,
@@ -145,12 +144,11 @@ export class AttendanceCalendarService {
     return rows.map(view);
   }
 
-  async createException(input: CreateCalendarExceptionInput, user: AuthenticatedUser): Promise<CalendarExceptionView> {
+  async createException(companyId: string, input: CreateCalendarExceptionInput, user: AuthenticatedUser): Promise<CalendarExceptionView> {
     try {
       const name = cleanName(input.name);
       const businessDateValue = parseDateOnly(input.businessDate, "businessDate");
       const shape = resolvedShape(input.exceptionType, input);
-      const companyId = await currentCompanyId(this.prisma);
       return await this.prisma.$transaction(
         async tx => {
           await acquireAttendanceDateLock(tx, companyId, input.businessDate);
@@ -188,9 +186,8 @@ export class AttendanceCalendarService {
     }
   }
 
-  async updateException(id: string, input: UpdateCalendarExceptionInput, user: AuthenticatedUser): Promise<CalendarExceptionView> {
+  async updateException(companyId: string, id: string, input: UpdateCalendarExceptionInput, user: AuthenticatedUser): Promise<CalendarExceptionView> {
     try {
-      const companyId = await currentCompanyId(this.prisma);
       return await this.prisma.$transaction(
         async tx => {
           const row = await tx.companyCalendarException.findFirst({ where: { id, companyId } });
@@ -245,9 +242,8 @@ export class AttendanceCalendarService {
     }
   }
 
-  async cancelException(id: string, input: CancelCalendarExceptionInput, user: AuthenticatedUser): Promise<CalendarExceptionView> {
+  async cancelException(companyId: string, id: string, input: CancelCalendarExceptionInput, user: AuthenticatedUser): Promise<CalendarExceptionView> {
     const cancellationReason = cleanReason(input.cancellationReason, "Cancellation Reason");
-    const companyId = await currentCompanyId(this.prisma);
     try {
       return await this.prisma.$transaction(
         async tx => {
@@ -287,6 +283,7 @@ export class AttendanceCalendarService {
   }
 
   async historicalCorrect(
+    companyId: string,
     input: HistoricalCalendarCorrectionInput,
     user: AuthenticatedUser,
     now = new Date(),
@@ -299,7 +296,6 @@ export class AttendanceCalendarService {
         input.target === "NONE"
           ? { startMinuteOfDay: null, endMinuteOfDay: null, unpaidBreakMinutes: 0, crossesMidnight: false }
           : resolvedShape(input.target, input);
-      const companyId = await currentCompanyId(this.prisma);
       return await this.prisma.$transaction(
         async tx => {
           await acquireAttendanceDateLock(tx, companyId, input.businessDate);

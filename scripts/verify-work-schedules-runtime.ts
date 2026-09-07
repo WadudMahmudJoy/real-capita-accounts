@@ -73,9 +73,7 @@ async function main() {
   try {
     await prisma.$transaction(async (tx: Record<PropertyKey, any>) => {
       const scoped = scopedPrisma(tx);
-      const oldPrimary = await tx.company.findUnique({ where: { singletonKey: "PRIMARY" } });
-      if (oldPrimary) await tx.company.update({ where: { id: oldPrimary.id }, data: { singletonKey: `${prefix}_OLD_PRIMARY` } });
-      await tx.company.create({ data: { singletonKey: "PRIMARY", name: "HR2B Runtime Verification Company" } });
+      const company = await tx.company.create({ data: { name: "HR2B Runtime Verification Company" } });
       const role = await tx.role.findUniqueOrThrow({ where: { code: "ACCOUNTANT" } });
       const password = `Runtime-${randomUUID()}!`;
       const user = browser ? await tx.user.findUniqueOrThrow({ where: { email: "accountant@realcapita.local" } }) : await tx.user.create({ data: { email: `${prefix.toLowerCase()}@example.invalid`, fullName: "HR2B Runtime Accountant", passwordHash: await hash(password, 4), roles: { create: { roleId: role.id } } } });
@@ -107,6 +105,12 @@ async function main() {
           let r = await request(base, "/work-schedules"); check("real AuthGuard returns 401", r.status === 401);
           r = await request(base, "/auth/login", { method:"POST", body:JSON.stringify({ email:user.email, password }) });
           const cookie = r.headers.get("set-cookie")?.split(";",1)[0]; check("normal production login", r.status === 200 && cookie); assert.ok(cookie);
+          // Bind the freshly created session to the fixture company, exactly
+          // as POST /company/:id/switch does in production. The harness acts
+          // as the trusted office switch for this synthetic company id.
+          const cookieToken = cookie?.split("=")[1];
+          const jwtPayload = JSON.parse(Buffer.from(cookieToken.split(".")[1], "base64url").toString("utf8"));
+          await tx.authSession.update({ where: { id: jwtPayload.sid }, data: { activeCompanyId: company.id } });
           r = await request(base, "/work-schedules?companyId=client", {}, cookie); check("unknown system query rejected", r.status === 400);
           r = await request(base, "/work-schedules/effective?businessDate=2026-9-1", {}, cookie); check("strict date rejected by compiled DTO metadata", r.status === 400);
           r = await request(base, "/work-schedules", { method:"POST", body:JSON.stringify({ companyId:"client", name:"Unsafe", days:week() }) }, cookie); check("unknown system body rejected", r.status === 400);

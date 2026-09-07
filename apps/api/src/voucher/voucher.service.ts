@@ -64,9 +64,13 @@ const postedBySelect = {
 export class VoucherService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(query: ListVouchersQueryDto) {
+  // Every operation is scoped to the active company from the authenticated
+  // session. Voucher.companyId remains record-derived from the fiscal year at
+  // creation time; the companyId here is the read/mutation scope guard.
+  findAll(companyId: string, query: ListVouchersQueryDto) {
     return this.prisma.voucher.findMany({
       where: {
+        companyId,
         isDeleted: false,
         ...(query.voucherType ? { voucherType: query.voucherType } : {}),
         ...(query.status ? { status: query.status } : {}),
@@ -86,10 +90,29 @@ export class VoucherService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(companyId: string, id: string) {
     const voucher = await this.prisma.voucher.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, companyId, isDeleted: false },
       include: {
+        // Document-branding authority: the Company that OWNS the voucher
+        // record. Selected through the voucher relation itself — never the
+        // caller's current session company. Only document-relevant fields;
+        // printLogoPath is a presence signal for the public media endpoint.
+        company: {
+          select: {
+            id: true,
+            name: true,
+            legalName: true,
+            address: true,
+            phone: true,
+            email: true,
+            currency: true,
+            printLogoPath: true,
+            printHeaderName: true,
+            printFooterText: true,
+            updatedAt: true,
+          },
+        },
         fiscalYear: true,
         accountingPeriod: true,
         createdBy: createdBySelect,
@@ -140,15 +163,21 @@ export class VoucherService {
     return result;
   }
 
-  async create(dto: CreateVoucherDto, context: VoucherActionContext) {
+  async create(
+    companyId: string,
+    dto: CreateVoucherDto,
+    context: VoucherActionContext,
+  ) {
     const voucherDate = parseIsoDate(dto.voucherDate, "voucherDate");
 
     // companyId is always derived from the fiscal year; it is never accepted
-    // from the client. This keeps the company scope authoritative.
-    const { companyId } = await this.resolveDateContext(
+    // from the client. The resolved fiscal year must belong to the active
+    // company, so the created voucher is owned by the caller's office.
+    const { companyId: ownerCompanyId } = await this.resolveDateContext(
       dto.fiscalYearId,
       dto.accountingPeriodId,
       voucherDate,
+      companyId,
     );
 
     const validated = await this.validateLines(dto.lines);
@@ -156,14 +185,14 @@ export class VoucherService {
     return this.prisma.$transaction(async (tx) => {
       const systemVoucherNo = await this.reserveVoucherNumber(
         tx,
-        companyId,
+        ownerCompanyId,
         dto.fiscalYearId,
         dto.voucherType,
       );
 
       const created = await tx.voucher.create({
         data: {
-          companyId,
+          companyId: ownerCompanyId,
           fiscalYearId: dto.fiscalYearId,
           accountingPeriodId: dto.accountingPeriodId,
           voucherType: dto.voucherType,
@@ -202,15 +231,18 @@ export class VoucherService {
   }
 
   async createReversal(
+    companyId: string,
     id: string,
     dto: CreateReversalDto,
     context: VoucherActionContext,
   ) {
     const reason = dto.reason;
 
-    // 1. Fetch the original voucher with lines and reversal status.
+    // 1. Fetch the original voucher with lines and reversal status. The
+    // fetch is scoped to the active company so another office's voucher can
+    // never be reversed from this session.
     const original = await this.prisma.voucher.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, companyId, isDeleted: false },
       include: {
         fiscalYear: true,
         reversedBy: {
@@ -343,16 +375,17 @@ export class VoucherService {
       return created.id;
     });
 
-    return this.findOne(reversalId);
+    return this.findOne(companyId, reversalId);
   }
 
   async update(
+    companyId: string,
     id: string,
     dto: UpdateVoucherDto,
     context: VoucherActionContext,
   ) {
     const existing = await this.prisma.voucher.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, companyId, isDeleted: false },
     });
 
     if (!existing) {
@@ -379,11 +412,14 @@ export class VoucherService {
     }
 
     // Re-validate the (fiscal year, accounting period, date) relationship for
-    // the effective combination, even when only some fields changed.
-    const { companyId } = await this.resolveDateContext(
+    // the effective combination, even when only some fields changed. The
+    // resolved fiscal year must still belong to the active company, so a
+    // draft can never be moved to another company's context.
+    const { companyId: ownerCompanyId } = await this.resolveDateContext(
       fiscalYearId,
       accountingPeriodId,
       voucherDate,
+      companyId,
     );
 
     const validated = dto.lines
@@ -394,7 +430,7 @@ export class VoucherService {
       const updated = await tx.voucher.updateMany({
         where: { id, isDeleted: false, status: VoucherStatus.DRAFT },
         data: {
-          companyId,
+          companyId: ownerCompanyId,
           fiscalYearId,
           accountingPeriodId,
           voucherType,
@@ -445,12 +481,16 @@ export class VoucherService {
       });
     });
 
-    return this.findOne(id);
+    return this.findOne(companyId, id);
   }
 
-  async softDelete(id: string, context: VoucherActionContext) {
+  async softDelete(
+    companyId: string,
+    id: string,
+    context: VoucherActionContext,
+  ) {
     const existing = await this.prisma.voucher.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, companyId, isDeleted: false },
     });
 
     if (!existing) {
@@ -499,12 +539,16 @@ export class VoucherService {
     };
   }
 
-  async postVoucher(id: string, context: VoucherActionContext) {
+  async postVoucher(
+    companyId: string,
+    id: string,
+    context: VoucherActionContext,
+  ) {
     await this.prisma.$transaction(async (tx) => {
       await this.lockVoucherForPosting(tx, id);
 
       const voucher = await tx.voucher.findFirst({
-        where: { id, isDeleted: false },
+        where: { id, companyId, isDeleted: false },
         include: {
           accountingPeriod: true,
           fiscalYear: true,
@@ -565,7 +609,7 @@ export class VoucherService {
       });
     });
 
-    return this.findOne(id);
+    return this.findOne(companyId, id);
   }
 
   // -------------------------------------------------------------------------
@@ -574,15 +618,23 @@ export class VoucherService {
 
   // Validates the fiscal year, accounting period, and that the voucher date
   // falls inside both ranges. Returns the authoritative companyId from the
-  // fiscal year. The "period must be OPEN" rule is deferred to Chunk 2C-3.
+  // fiscal year. The fiscal year must belong to the expected (active
+  // session's) company — NotFound semantics avoid leaking another company's
+  // fiscal year existence. The "period must be OPEN" rule is deferred to
+  // Chunk 2C-3.
   private async resolveDateContext(
     fiscalYearId: string,
     accountingPeriodId: string,
     voucherDate: Date,
+    expectedCompanyId?: string,
   ): Promise<{ companyId: string }> {
-    const fiscalYear = await this.prisma.fiscalYear.findUnique({
-      where: { id: fiscalYearId },
-    });
+    const fiscalYear = expectedCompanyId
+      ? await this.prisma.fiscalYear.findFirst({
+          where: { id: fiscalYearId, companyId: expectedCompanyId },
+        })
+      : await this.prisma.fiscalYear.findUnique({
+          where: { id: fiscalYearId },
+        });
 
     if (!fiscalYear) {
       throw new NotFoundException("Fiscal year was not found.");
@@ -972,6 +1024,7 @@ export class VoucherService {
   private async validateReversalLinkage(
     tx: Prisma.TransactionClient,
     voucher: {
+      companyId: string;
       reversalOfVoucherId: string | null;
       voucherType: VoucherType;
       systemVoucherNo: string;
@@ -980,7 +1033,11 @@ export class VoucherService {
     if (!voucher.reversalOfVoucherId) return;
 
     const original = await tx.voucher.findFirst({
-      where: { id: voucher.reversalOfVoucherId, isDeleted: false },
+      where: {
+        id: voucher.reversalOfVoucherId,
+        companyId: voucher.companyId,
+        isDeleted: false,
+      },
     });
 
     if (!original) {

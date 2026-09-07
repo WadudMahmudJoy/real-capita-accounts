@@ -90,8 +90,17 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + expiresInMs);
     const tokenId = randomUUID();
 
+    // Multi-office foundation: new sessions start on the oldest active
+    // company. Login still succeeds when no company exists yet.
+    const defaultCompany = await this.prisma.company.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+      where: { isActive: true },
+    });
+
     const session = await this.prisma.authSession.create({
       data: {
+        activeCompanyId: defaultCompany?.id ?? null,
         expiresAt,
         tokenId,
         userId: user.id,

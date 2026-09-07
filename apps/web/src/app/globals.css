@@ -100,6 +100,24 @@ body {
   scrollbar-width: thin;
 }
 
+/* Office theme shell (D10): consumes the derived office CSS custom
+   properties applied by OfficeThemeShell; printing never paints the
+   workspace tint, gradient, or custom background. */
+.office-theme-shell {
+  transition: background-color 200ms ease;
+}
+
+@media print {
+  .office-theme-shell {
+    background: #fff;
+    background-image: none;
+  }
+
+  .office-theme-shell-overlay {
+    display: none;
+  }
+}
+
 .app-sidebar::-webkit-scrollbar {
   width: 6px;
 }

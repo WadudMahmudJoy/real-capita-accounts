@@ -1,4 +1,5 @@
 import { ConflictException } from "@nestjs/common";
+import type { ActiveCompanyContext } from "../auth/auth.types";
 import type { Prisma } from "../generated/prisma/client";
 
 export function attendanceDateLockKey(companyId: string, businessDate: string): string {
@@ -13,15 +14,12 @@ export async function acquireAttendanceDateLock(
   await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(hashtextextended(${attendanceDateLockKey(companyId, businessDate)}, 0))) AS lock_taken`;
 }
 
-export async function currentCompanyId(
-  prisma: Pick<Prisma.TransactionClient, "company">,
-): Promise<string> {
-  const company = await prisma.company.findUnique({
-    where: { singletonKey: "PRIMARY" },
-    select: { id: true },
-  });
-  if (!company) {
-    throw new ConflictException("Current company context is not configured.");
+export function requireActiveCompanyId(activeCompany: ActiveCompanyContext | null): string {
+  if (activeCompany === null) {
+    throw new ConflictException("No office is selected for this session. Select an office first.");
   }
-  return company.id;
+  if (!activeCompany.isActive) {
+    throw new ConflictException("The selected office is inactive. Switch to an active office to continue.");
+  }
+  return activeCompany.id;
 }

@@ -104,9 +104,7 @@ async function main() {
     try {
       await prisma.$transaction(async (tx: Record<PropertyKey, any>) => {
         const scoped = scopedPrisma(tx);
-        const oldPrimary = await tx.company.findUnique({ where: { singletonKey: "PRIMARY" } });
-        if (oldPrimary) await tx.company.update({ where: { id: oldPrimary.id }, data: { singletonKey: `${prefix}_OLD_PRIMARY` } });
-        const company = await tx.company.create({ data: { singletonKey: "PRIMARY", name: "HR2C Runtime Verification Company" } });
+        const company = await tx.company.create({ data: { name: "HR2C Runtime Verification Company" } });
         const role = await tx.role.findUniqueOrThrow({ where: { code: "ACCOUNTANT" } });
         const password = `Runtime-${randomUUID()}!`;
         const user = browser
@@ -180,6 +178,12 @@ async function runHeadless(context: HeadlessContext): Promise<void> {
   const cookie = r.headers.get("set-cookie")?.split(";", 1)[0];
   check("normal production login", r.status === 200 && Boolean(cookie));
   assert.ok(cookie);
+  // Bind the freshly created session to the fixture company, exactly as
+  // POST /company/:id/switch does in production. The harness acts as the
+  // trusted office switch for this synthetic company id.
+  const cookieToken = cookie.split("=")[1];
+  const jwtPayload = JSON.parse(Buffer.from(cookieToken.split(".")[1], "base64url").toString("utf8"));
+  await tx.authSession.update({ where: { id: jwtPayload.sid }, data: { activeCompanyId: company.id } });
 
   r = await request(base, "/attendance/day?businessDate=2026-09-05", {}, cookie);
   check("ACCOUNTANT role can access attendance", r.status === 200);
@@ -423,7 +427,7 @@ async function runHeadless(context: HeadlessContext): Promise<void> {
   r = await request(base, `/attendance/history/${employeeA.id}/2026-9-5`, {}, cookie);
   check("history detail strict date rejected", r.status === 400);
 
-  const companyB = await tx.company.create({ data: { singletonKey: `${prefix}_COB`, name: "Runtime Verification Company B" } });
+  const companyB = await tx.company.create({ data: { name: "Runtime Verification Company B" } });
   await tx.attendanceRecord.create({ data: { id: `${prefix}_COBREC`, companyId: companyB.id, employeeId: employeeA.id, businessDate: new Date("2026-09-20T00:00:00.000Z") } });
   await tx.attendanceRevision.create({ data: { id: `${prefix}_COBREV`, attendanceRecordId: `${prefix}_COBREC`, revisionNo: 1, origin: "SYSTEM_FINALIZATION", isAttendanceApplicable: true, expectedDayKind: "WEEKLY_REST", workScheduleAssignmentId: `${prefix}_WSA`, workScheduleSource: "COMPANY_DEFAULT", calendarExceptionId: null, attendancePolicyId: null, scheduledStartMinute: null, scheduledEndMinute: null, crossesMidnight: null, unpaidBreakMinutes: null, expectedWorkMinutes: null, lateGraceMinutes: null, earlyLeaveGraceMinutes: null, timeZone: "Asia/Dhaka", presenceState: "NOT_REQUIRED", isLate: false, isEarlyLeave: false, isNonWorkingDayAttendance: false, createdById: user.id, finalizedById: user.id, finalizedAt: new Date("2026-09-21T00:00:00.000Z") } });
   r = await request(base, "/attendance/history?from=2026-09-01&to=2026-09-30", {}, cookie);

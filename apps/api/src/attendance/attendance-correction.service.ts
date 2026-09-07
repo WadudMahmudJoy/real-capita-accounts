@@ -5,7 +5,7 @@ import type { AuthenticatedUser } from "../auth/auth.types";
 import { parseDateOnly } from "../common/business-date";
 import { audit } from "./attendance-audit";
 import { normalizeAttendancePrismaError } from "./attendance-errors";
-import { acquireAttendanceDateLock, currentCompanyId } from "./attendance-lock";
+import { acquireAttendanceDateLock } from "./attendance-lock";
 import {
   dhakaOffsetMinutes,
   formatLocalTime,
@@ -154,6 +154,7 @@ export class AttendanceCorrectionService {
   ) {}
 
   async correctAttendance(
+    companyId: string,
     employeeId: string,
     businessDate: string,
     input: CorrectAttendanceInput,
@@ -162,7 +163,6 @@ export class AttendanceCorrectionService {
   ): Promise<CorrectionResultView> {
     const businessDateValue = parseDateOnly(businessDate, "businessDate");
     const changeReason = cleanRequiredReason(input.changeReason, "Change Reason");
-    const companyId = await currentCompanyId(this.prisma);
     try {
       return await this.prisma.$transaction(
         async tx => {
@@ -230,6 +230,7 @@ export class AttendanceCorrectionService {
   }
 
   async markNotApplicable(
+    companyId: string,
     employeeId: string,
     businessDate: string,
     input: MarkNotApplicableInput,
@@ -238,7 +239,6 @@ export class AttendanceCorrectionService {
   ): Promise<CorrectionResultView> {
     const businessDateValue = parseDateOnly(businessDate, "businessDate");
     const changeReason = cleanRequiredReason(input.changeReason, "Change Reason");
-    const companyId = await currentCompanyId(this.prisma);
     try {
       return await this.prisma.$transaction(
         async tx => {

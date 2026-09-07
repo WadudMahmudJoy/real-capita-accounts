@@ -5,7 +5,7 @@ import type { AuthenticatedUser } from "../auth/auth.types";
 import { parseDateOnly } from "../common/business-date";
 import { audit } from "./attendance-audit";
 import { normalizeAttendancePrismaError } from "./attendance-errors";
-import { acquireAttendanceDateLock, currentCompanyId } from "./attendance-lock";
+import { acquireAttendanceDateLock } from "./attendance-lock";
 import { computeFinalizationAllowedAt, evaluateAttendance } from "./attendance-evaluation";
 import { dhakaBusinessDate } from "./attendance-time";
 import {
@@ -64,12 +64,12 @@ export class AttendanceFinalizationService {
   ) {}
 
   async finalizeDay(
+    companyId: string,
     input: FinalizeAttendanceDayInput,
     user: AuthenticatedUser,
     now = new Date(),
   ): Promise<FinalizeAttendanceDayResult> {
     const businessDateValue = parseDateOnly(input.businessDate, "businessDate");
-    const companyId = await currentCompanyId(this.prisma);
     const today = dhakaBusinessDate(now);
     if (input.businessDate > today) {
       throw new BadRequestException("A future business date cannot be finalized.");
