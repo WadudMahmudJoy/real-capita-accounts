@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../_components/permission-controls";
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
@@ -15,7 +16,6 @@ import {
   type FiscalYear,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   CheckboxField,
@@ -256,9 +256,9 @@ export default function FiscalYearsPage() {
             <CardHeader
               actions={
                 isEditing ? (
-                  <Button onClick={startCreate} variant="ghost">
+                  <PermissionButton permission="accounting.manage" onClick={startCreate} variant="ghost">
                     Cancel edit
-                  </Button>
+                  </PermissionButton>
                 ) : null
               }
               description={
@@ -348,13 +348,13 @@ export default function FiscalYearsPage() {
               ) : null}
 
               <div className="flex items-center gap-3">
-                <Button disabled={isSaving || createDisabled} type="submit">
+                <PermissionButton disabled={isSaving || createDisabled} permission="accounting.manage" type="submit">
                   {isSaving
                     ? "Saving..."
                     : isEditing
                       ? "Save changes"
                       : "Create fiscal year"}
-                </Button>
+                </PermissionButton>
               </div>
             </form>
           </Card>
@@ -409,23 +409,23 @@ export default function FiscalYearsPage() {
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-2">
                             {!year.isActive && !year.isClosed ? (
-                              <Button
+                              <PermissionButton
                                 disabled={activatingId === year.id}
-                                onClick={() => handleActivate(year)}
+                                permission="accounting.manage" onClick={() => handleActivate(year)}
                                 variant="secondary"
                               >
                                 {activatingId === year.id
                                   ? "Activating..."
                                   : "Activate"}
-                              </Button>
+                              </PermissionButton>
                             ) : null}
-                            <Button
-                              onClick={() => startEdit(year)}
+                            <PermissionButton
+                              permission="accounting.manage" onClick={() => startEdit(year)}
                               variant="ghost"
                             >
                               <Pencil aria-hidden="true" className="size-4" />
                               Edit
-                            </Button>
+                            </PermissionButton>
                           </div>
                         </td>
                       </tr>

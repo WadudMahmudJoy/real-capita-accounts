@@ -33,7 +33,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-hr-test-de109dc94ae3387c6e44f955ed52937b/types/**/*.ts",
+    ".next-hr-test-de109dc94ae3387c6e44f955ed52937b/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

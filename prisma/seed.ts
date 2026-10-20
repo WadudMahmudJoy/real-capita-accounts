@@ -43,10 +43,10 @@ async function main() {
     throw new Error("Refusing to run development seed in production.");
   }
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.MIGRATION_DATABASE_URL;
 
   if (!connectionString) {
-    throw new Error("DATABASE_URL is required to run the seed.");
+    throw new Error("MIGRATION_DATABASE_URL is required for explicitly authorized seeding.");
   }
 
   const prisma = new PrismaClient({

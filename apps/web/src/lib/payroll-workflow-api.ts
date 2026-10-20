@@ -1,0 +1,16 @@
+import { apiFetch } from './api';
+import type { PayrollDocumentAmounts } from './payroll-documents-api';
+export const deductionCategories = ['attendanceDeduction','providentFundDeduction','loanOrSalaryAdvanceDeduction','aitDeduction'] as const;
+export const deductionLabels = ['Attendance deduction','Provident fund','Loan / salary advance','AIT'] as const;
+export type DeductionEntry = {amount:string;zeroConfirmed:boolean};
+export type PayrollInput = {year:number;month:number;deductions:({employeeId:string;year:number;month:number;otherApprovedDeductions:(DeductionEntry&{description:string})[];otherDeductionsZeroConfirmed:boolean}&Record<typeof deductionCategories[number],DeductionEntry>)[]};
+export type PayrollPreview = {status:'READY'|'BLOCKED';readyForDraft:boolean;parent:{id:string;singletonKey:string}|null;
+  period:{year:number;month:number;timeZone:string};exceptions:{code:string;message:string;employeeId?:string;category?:string}[];
+  employees:{employeeId:string;employeeCode:string;fullName:string;sourceStatus:string;designation:string|null;departmentName:string|null;
+    earnings:{code:string;name:string;percentage:string;amount:string}[];attendance:{coverage:string};financial:{status:string;amounts:PayrollDocumentAmounts|null}}[];
+  financialTotals:{amounts:PayrollDocumentAmounts|null}};
+export type PayrollDetail = {id:string;year:number;month:number;status:'DRAFT'|'APPROVED';version:number;isCreator:boolean;approvedAt:string|null;lines:({id:string;employeeId:string;employee:{employeeCode:string|null;fullName:string|null;designation:string|null;departmentName:string|null}}&PayrollDocumentAmounts)[]};
+export const previewPayroll=(input:PayrollInput)=>apiFetch<PayrollPreview>('/payroll-runs/preview',{method:'POST',body:input});
+export const createPayrollDraft=(input:PayrollInput)=>apiFetch<{id:string}>('/payroll-runs',{method:'POST',body:input});
+export const getPayrollDetail=(id:string,signal?:AbortSignal)=>apiFetch<PayrollDetail>(`/payroll-runs/${encodeURIComponent(id)}`,{signal});
+export const approvePayroll=(id:string,version:number)=>apiFetch(`/payroll-runs/${encodeURIComponent(id)}/approve`,{method:'POST',body:{expectedVersion:version}});

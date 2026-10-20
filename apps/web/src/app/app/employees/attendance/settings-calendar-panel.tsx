@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,6 @@ import {
   type CalendarExceptionType,
 } from "@/lib/attendance-api";
 import {
-  Button,
   Card,
   CardHeader,
   CheckboxField,
@@ -354,10 +354,10 @@ export function SettingsCalendarPanel() {
       <CardHeader
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={openCreateForm} variant="secondary">
+            <PermissionButton permission="attendance.manage" onClick={openCreateForm} variant="secondary">
               Add Exception
-            </Button>
-            <Button onClick={openHistoricalForm}>Correct Historical Calendar</Button>
+            </PermissionButton>
+            <PermissionButton permission="attendance.manage" onClick={openHistoricalForm}>Correct Historical Calendar</PermissionButton>
           </div>
         }
         description="Holidays and special working days override the normal weekly schedule on their date. Historical corrections apply to finalized dates."
@@ -433,20 +433,20 @@ export function SettingsCalendarPanel() {
                   </div>
                   {status === "live" ? (
                     <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-                      <Button
+                      <PermissionButton
                         disabled={actionPending}
-                        onClick={() => openEditDialog(exception)}
+                        permission="attendance.manage" onClick={() => openEditDialog(exception)}
                         variant="secondary"
                       >
                         Edit
-                      </Button>
-                      <Button
+                      </PermissionButton>
+                      <PermissionButton
                         disabled={actionPending}
-                        onClick={() => openCancelDialog(exception)}
+                        permission="attendance.manage" onClick={() => openCancelDialog(exception)}
                         variant="danger"
                       >
                         Cancel Exception
-                      </Button>
+                      </PermissionButton>
                     </div>
                   ) : null}
                 </div>

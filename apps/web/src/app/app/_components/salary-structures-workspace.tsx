@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "./permission-controls";
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
@@ -30,7 +31,6 @@ import {
   salaryStatusBadge,
 } from "./salary-ui";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -356,18 +356,18 @@ export function SalaryStructuresWorkspace() {
       {success ? <Notice tone="success">{success}</Notice> : null}
       {formError ? <Notice tone="error">{formError}</Notice> : null}
       {status === "loading" ? <LoadingPanel message="Loading Salary Structures..." /> : null}
-      {status === "error" ? <Card><Notice tone="error">{loadError}</Notice><Button className="mt-4" onClick={() => void load()} variant="secondary"><RefreshCw aria-hidden="true" className="size-4" />Retry</Button></Card> : null}
+      {status === "error" ? <Card><Notice tone="error">{loadError}</Notice><PermissionButton className="mt-4" onClick={() => void load()} variant="secondary"><RefreshCw aria-hidden="true" className="size-4" />Retry</PermissionButton></Card> : null}
 
       {status === "ready" ? (
         <>
           <Card>
-            <CardHeader title="Structure controls" description="Version is assigned by the backend for each Structure Code. Approved or inactive versions are read-only." actions={<div className="flex flex-wrap gap-2"><Button onClick={() => void load()} variant="ghost"><RefreshCw aria-hidden="true" className="size-4" />Refresh</Button><Button aria-controls={editorRegionId} aria-expanded={formOpen && !editing} onClick={openCreate}><Plus aria-hidden="true" className="size-4" />Create Salary Structure</Button></div>} />
+            <CardHeader title="Structure controls" description="Version is assigned by the backend for each Structure Code. Approved or inactive versions are read-only." actions={<div className="flex flex-wrap gap-2"><PermissionButton onClick={() => void load()} variant="ghost"><RefreshCw aria-hidden="true" className="size-4" />Refresh</PermissionButton><PermissionButton aria-controls={editorRegionId} aria-expanded={formOpen && !editing} permission="salary.manage" onClick={openCreate}><Plus aria-hidden="true" className="size-4" />Create Salary Structure</PermissionButton></div>} />
           </Card>
 
           <div id={editorRegionId}>
           {formOpen ? (
             <Card>
-              <CardHeader title={editing ? `Edit Draft ${editing.code} v${editing.version}` : "Create Salary Structure"} description="Component totals shown here are informational; backend validation remains authoritative." actions={<Button disabled={isSaving} onClick={() => setFormOpen(false)} variant="ghost"><X aria-hidden="true" className="size-4" />Close</Button>} />
+              <CardHeader title={editing ? `Edit Draft ${editing.code} v${editing.version}` : "Create Salary Structure"} description="Component totals shown here are informational; backend validation remains authoritative." actions={<PermissionButton disabled={isSaving} onClick={() => setFormOpen(false)} variant="ghost"><X aria-hidden="true" className="size-4" />Close</PermissionButton>} />
               <form className="mt-6 flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field htmlFor="structure-code" label="Code" required hint={editing ? "Code and version are immutable after creation." : "A repeat Code creates the next server-managed version."}>
@@ -383,7 +383,7 @@ export function SalaryStructuresWorkspace() {
                 <div className="rounded-lg border border-border bg-background p-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div><h3 className="font-semibold text-foreground">Components</h3><p className="mt-1 text-sm text-muted-foreground">Add or remove rows while this version remains DRAFT. Percentages are never automatically adjusted.</p></div>
-                    <div className="flex flex-wrap gap-2"><Button onClick={requestStandardTemplate} variant="secondary">Use 60 / 30 / 10 Template</Button><Button onClick={() => setForm({ ...form, components: [...form.components, componentRow({ displayOrder: String(form.components.length + 1) })] })} variant="ghost"><Plus aria-hidden="true" className="size-4" />Add Component</Button></div>
+                    <div className="flex flex-wrap gap-2"><PermissionButton onClick={requestStandardTemplate} variant="secondary">Use 60 / 30 / 10 Template</PermissionButton><PermissionButton onClick={() => setForm({ ...form, components: [...form.components, componentRow({ displayOrder: String(form.components.length + 1) })] })} variant="ghost"><Plus aria-hidden="true" className="size-4" />Add Component</PermissionButton></div>
                   </div>
                   <div className="mt-5 flex flex-col gap-4">
                     {form.components.map((component, index) => (
@@ -392,7 +392,7 @@ export function SalaryStructuresWorkspace() {
                         <Field htmlFor={`component-name-${component.key}`} label="Name" required><TextInput {...fieldErrorProps(`component-name-${component.key}`, fieldErrors[`component.${index}.name`])} id={`component-name-${component.key}`} onChange={(event) => updateComponent(index, { name: event.target.value })} value={component.name} /><FieldError controlId={`component-name-${component.key}`} message={fieldErrors[`component.${index}.name`]} /></Field>
                         <Field htmlFor={`component-percentage-${component.key}`} label="Percentage" required><TextInput {...fieldErrorProps(`component-percentage-${component.key}`, fieldErrors[`component.${index}.percentage`])} id={`component-percentage-${component.key}`} inputMode="decimal" onChange={(event) => updateComponent(index, { percentage: event.target.value })} value={component.percentage} /><FieldError controlId={`component-percentage-${component.key}`} message={fieldErrors[`component.${index}.percentage`]} /></Field>
                         <Field htmlFor={`component-order-${component.key}`} label="Display Order" required><TextInput {...fieldErrorProps(`component-order-${component.key}`, fieldErrors[`component.${index}.displayOrder`])} id={`component-order-${component.key}`} inputMode="numeric" onChange={(event) => updateComponent(index, { displayOrder: event.target.value })} value={component.displayOrder} /><FieldError controlId={`component-order-${component.key}`} message={fieldErrors[`component.${index}.displayOrder`]} /></Field>
-                        <div className="flex items-end"><Button aria-label={`Remove component ${index + 1}`} className="w-full md:w-auto" disabled={form.components.length === 1} onClick={() => setForm({ ...form, components: form.components.filter((_, rowIndex) => rowIndex !== index) })} variant="ghost"><Trash2 aria-hidden="true" className="size-4" /><span className="md:sr-only">Remove</span></Button></div>
+                        <div className="flex items-end"><PermissionButton aria-label={`Remove component ${index + 1}`} className="w-full md:w-auto" disabled={form.components.length === 1} onClick={() => setForm({ ...form, components: form.components.filter((_, rowIndex) => rowIndex !== index) })} variant="ghost"><Trash2 aria-hidden="true" className="size-4" /><span className="md:sr-only">Remove</span></PermissionButton></div>
                       </div>
                     ))}
                   </div>
@@ -402,7 +402,7 @@ export function SalaryStructuresWorkspace() {
                   </div>
                   <FieldError message={fieldErrors.componentTotal} />
                 </div>
-                <div className="flex flex-wrap gap-3"><Button disabled={isSaving} type="submit">{isSaving ? "Saving..." : editing ? "Save Draft" : "Create Draft"}</Button><Button disabled={isSaving} onClick={() => setFormOpen(false)} variant="secondary">Cancel</Button></div>
+                <div className="flex flex-wrap gap-3"><PermissionButton disabled={isSaving} permission="salary.manage" type="submit">{isSaving ? "Saving..." : editing ? "Save Draft" : "Create Draft"}</PermissionButton><PermissionButton disabled={isSaving} onClick={() => setFormOpen(false)} variant="secondary">Cancel</PermissionButton></div>
               </form>
             </Card>
           ) : null}
@@ -410,7 +410,7 @@ export function SalaryStructuresWorkspace() {
 
           {viewing ? (
             <Card>
-              <CardHeader title={`${viewing.code} v${viewing.version} - ${viewing.name}`} description={viewing.description ?? "No description"} actions={<Button onClick={() => setViewing(null)} variant="ghost"><X aria-hidden="true" className="size-4" />Close Details</Button>} />
+              <CardHeader title={`${viewing.code} v${viewing.version} - ${viewing.name}`} description={viewing.description ?? "No description"} actions={<PermissionButton onClick={() => setViewing(null)} variant="ghost"><X aria-hidden="true" className="size-4" />Close Details</PermissionButton>} />
               <div className="mt-5 grid gap-4 sm:grid-cols-2"><div><p className="text-xs uppercase text-muted-foreground">Effective Period</p><p className="mt-1 text-sm">{formatEffectivePeriod(viewing.effectiveFrom, viewing.effectiveTo)}</p></div><div><p className="text-xs uppercase text-muted-foreground">Status</p><div className="mt-1">{salaryStatusBadge(viewing.status)}</div></div></div>
               <div className="mt-5 overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="border-b border-border text-left text-xs uppercase text-muted-foreground"><th className="py-3 pr-4">Code</th><th className="py-3 pr-4">Name</th><th className="py-3 pr-4">Percentage</th><th className="py-3">Display Order</th></tr></thead><tbody>{(viewing.components ?? []).map((component) => <tr className="border-b border-border/80" key={component.id ?? `${component.code}-${component.displayOrder}`}><td className="py-3 pr-4 font-medium">{component.code}</td><td className="py-3 pr-4">{component.name}</td><td className="py-3 pr-4 tabular-nums">{formatPercentage(component.percentage)}</td><td className="py-3 tabular-nums">{component.displayOrder}</td></tr>)}</tbody></table></div>
             </Card>
@@ -421,7 +421,7 @@ export function SalaryStructuresWorkspace() {
             <div className="mt-6 overflow-x-auto">
               {structures.length === 0 ? <EmptyState title="No Salary Structures" description="Create the first draft version and deliberately approve it after reviewing the 100% component total." /> : (
                 <table className="min-w-full border-collapse text-sm"><thead><tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground"><th className="py-3 pr-4 font-medium">Code</th><th className="py-3 pr-4 font-medium">Version</th><th className="py-3 pr-4 font-medium">Name</th><th className="py-3 pr-4 font-medium">Effective Period</th><th className="py-3 pr-4 font-medium">Status</th><th className="py-3 pr-4 font-medium">Component Summary</th><th className="py-3 font-medium">Actions</th></tr></thead><tbody>{structures.map((structure) => (
-                  <tr className="border-b border-border/80 align-top" key={structure.id}><td className="py-3 pr-4 font-medium">{structure.code}</td><td className="py-3 pr-4 tabular-nums">v{structure.version}</td><td className="py-3 pr-4">{structure.name}</td><td className="py-3 pr-4 whitespace-nowrap">{formatEffectivePeriod(structure.effectiveFrom, structure.effectiveTo)}</td><td className="py-3 pr-4">{salaryStatusBadge(structure.status)}</td><td className="max-w-80 py-3 pr-4">{(structure.components ?? []).map((component) => `${component.name} ${formatPercentage(component.percentage)}`).join(" · ") || "-"}</td><td className="py-3"><div className="flex flex-wrap gap-2"><Button className="h-9 px-3" onClick={() => setViewing(structure)} variant="ghost"><Eye aria-hidden="true" className="size-4" />View</Button>{structure.status === "DRAFT" ? <><Button aria-controls={editorRegionId} aria-expanded={formOpen && editing?.id === structure.id} className="h-9 px-3" onClick={() => openEdit(structure)} variant="ghost"><Pencil aria-hidden="true" className="size-4" />Edit Draft</Button><Button className="h-9 px-3" onClick={() => setApprovalTarget(structure)} variant="secondary"><Check aria-hidden="true" className="size-4" />Approve</Button></> : null}{structure.status === "APPROVED" ? <Button className="h-9 px-3" onClick={() => setInactiveTarget(structure)} variant="secondary">Inactivate</Button> : null}</div></td></tr>
+                  <tr className="border-b border-border/80 align-top" key={structure.id}><td className="py-3 pr-4 font-medium">{structure.code}</td><td className="py-3 pr-4 tabular-nums">v{structure.version}</td><td className="py-3 pr-4">{structure.name}</td><td className="py-3 pr-4 whitespace-nowrap">{formatEffectivePeriod(structure.effectiveFrom, structure.effectiveTo)}</td><td className="py-3 pr-4">{salaryStatusBadge(structure.status)}</td><td className="max-w-80 py-3 pr-4">{(structure.components ?? []).map((component) => `${component.name} ${formatPercentage(component.percentage)}`).join(" · ") || "-"}</td><td className="py-3"><div className="flex flex-wrap gap-2"><PermissionButton className="h-9 px-3" onClick={() => setViewing(structure)} variant="ghost"><Eye aria-hidden="true" className="size-4" />View</PermissionButton>{structure.status === "DRAFT" ? <><PermissionButton aria-controls={editorRegionId} aria-expanded={formOpen && editing?.id === structure.id} className="h-9 px-3" permission="salary.manage" onClick={() => openEdit(structure)} variant="ghost"><Pencil aria-hidden="true" className="size-4" />Edit Draft</PermissionButton><PermissionButton className="h-9 px-3" permission="salary.approve" onClick={() => setApprovalTarget(structure)} variant="secondary"><Check aria-hidden="true" className="size-4" />Approve</PermissionButton></> : null}{structure.status === "APPROVED" ? <PermissionButton className="h-9 px-3" permission="salary.manage" onClick={() => setInactiveTarget(structure)} variant="secondary">Inactivate</PermissionButton> : null}</div></td></tr>
                 ))}</tbody></table>
               )}
             </div>

@@ -10,14 +10,11 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { ACCOUNTANT_ROLE } from "./auth.constants";
 import { AuthService } from "./auth.service";
 import type { AuthenticatedRequest } from "./auth.types";
 import { CurrentUser } from "./decorators/current-user.decorator";
-import { Roles } from "./decorators/roles.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { AuthGuard } from "./guards/auth.guard";
-import { RolesGuard } from "./guards/roles.guard";
 
 @Controller("auth")
 export class AuthController {
@@ -46,8 +43,7 @@ export class AuthController {
   }
 
   @Get("me")
-  @Roles(ACCOUNTANT_ROLE)
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   getMe(@CurrentUser() user: AuthenticatedRequest["user"]) {
     return {
       status: "ok" as const,
@@ -56,8 +52,7 @@ export class AuthController {
   }
 
   @Get("session")
-  @Roles(ACCOUNTANT_ROLE)
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   getSession(@Req() request: AuthenticatedRequest) {
     return this.authService.buildSessionResponse(
       request.user,
@@ -67,8 +62,7 @@ export class AuthController {
 
   @Post("logout")
   @HttpCode(HttpStatus.OK)
-  @Roles(ACCOUNTANT_ROLE)
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   async logout(
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response,

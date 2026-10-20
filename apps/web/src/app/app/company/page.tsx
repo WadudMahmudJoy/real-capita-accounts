@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../_components/permission-controls";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,7 +11,6 @@ import {
   type Company,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -217,9 +217,9 @@ export default function CompanyPage() {
         <Card>
           <CardHeader
             actions={
-              <Button onClick={handleAddOffice} type="button">
+              <PermissionButton permission="company.manage" onClick={handleAddOffice} type="button">
                 + Add Office
-              </Button>
+              </PermissionButton>
             }
             description="All company offices available in this accounting system. The current office indicator marks your active session."
             title="Offices"

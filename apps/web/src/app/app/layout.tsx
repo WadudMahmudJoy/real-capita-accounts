@@ -1,4 +1,8 @@
 "use client";
+import {WorkspacePermissions} from './_components/permission-controls';
+import {workspacePermission} from '@/lib/workspace-permissions';
+import {authorityAccess} from '@/lib/authority-api';
+import {userAccess,type UserAccess} from '@/lib/hr-admin-api';
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -132,11 +136,32 @@ const customerBookingLinks: NavLink[] = [
 ];
 
 const hrSalaryLinks: NavLink[] = [
+  {href:"/app/leave-categories",icon:CalendarRange,label:"Leave Categories",match:pathname=>pathname.startsWith("/app/leave-categories")},
+  {href:"/app/leave-apply",icon:CalendarRange,label:"Leave Apply",match:pathname=>pathname.startsWith("/app/leave-apply")},
+  {href:"/app/leave-requests",icon:ScrollText,label:"Apply Leave List",match:pathname=>pathname.startsWith("/app/leave-requests")},
+  {
+    href: "/app/payroll-runs",
+    icon: FileBarChart,
+    label: "Payroll Runs",
+    match: (pathname) => pathname.startsWith("/app/payroll-runs"),
+  },
   {
     href: "/app/employees",
     icon: Users,
     label: "Employees",
-    match: (pathname) => pathname.startsWith("/app/employees"),
+    match: (pathname) => pathname === "/app/employees" || /^\/app\/employees\/(?!attendance|work-schedules)[^/]+$/.test(pathname),
+  },
+  {
+    href: "/app/users",
+    icon: Users,
+    label: "Users",
+    match: (pathname) => pathname.startsWith("/app/users"),
+  },
+  {
+    href: "/app/employees/attendance",
+    icon: CalendarClock,
+    label: "Employee Attendance",
+    match: (pathname) => pathname.startsWith("/app/employees/attendance"),
   },
   {
     href: "/app/salary-structures",
@@ -237,6 +262,9 @@ export default function AppLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [activated,setActivated]=useState(false);
+  const [authority,setAuthority]=useState<string[]>([]);
+  const [access,setAccess]=useState<UserAccess|null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -250,6 +278,10 @@ export default function AppLayout({
     async function loadUser() {
       try {
         const currentUser = await getCurrentUser(controller.signal);
+        if(!currentUser.roles.some(r=>r.code==='ACCOUNTANT'))setAccess(await userAccess());
+        const effective=await authorityAccess();
+        setActivated(effective.activated);
+        setAuthority(effective.activated?(effective.allowedPermissions??[]):effective.permissions);
         setUser(currentUser);
         setStatus("ready");
       } catch (caught) {
@@ -270,7 +302,7 @@ export default function AppLayout({
     void loadUser();
 
     return () => controller.abort();
-  }, [router]);
+  }, [router,pathname]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -311,6 +343,16 @@ export default function AppLayout({
     );
   }
 
+  const visible=(href:string)=>!activated||Boolean(workspacePermission(href)&&authority.includes(workspacePermission(href)!));
+  if(activated){
+    const links=[{href:'/app',label:'Dashboard'}, {href:'/app/roles',label:'Role Management'},...primaryLinks,...customerBookingLinks,...hrSalaryLinks,...reportLinks].filter(l=>visible(l.href));
+    const allowed=visible(pathname);
+    return <WorkspacePermissions.Provider value={authority}><main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav aria-label="Authorized workflows" className="flex flex-wrap gap-4">{links.map(l=><Link key={l.href} href={l.href}>{l.label}</Link>)}</nav>{allowed?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main></WorkspacePermissions.Provider>;
+  }
+  if(!user.roles.some(r=>r.code==='ACCOUNTANT')){
+    const leave=Boolean(access?.employee||access?.hrAdmin),permitted=(pathname==='/app/roles'&&authority.includes('roles.view'))||pathname==='/app/users'||(leave&&['/app/leave-apply','/app/leave-requests'].includes(pathname))||(access?.hrAdmin&&pathname==='/app/leave-categories');
+    return <main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav className="flex flex-wrap gap-4"><Link href="/app/users">Users</Link>{authority.includes('roles.view')&&<Link href="/app/roles">Role Management</Link>}{leave&&<><Link href="/app/leave-apply">Leave Apply</Link><Link href="/app/leave-requests">Apply Leave List</Link></>}{access?.hrAdmin&&<Link href="/app/leave-categories">Leave Categories</Link>}</nav>{pathname==='/app'?<Notice tone="info">Welcome to your Real Capita workspace. Choose an authorized workflow above.</Notice>:permitted?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main>;
+  }
   const roleNames = user.roles.map((role) => role.name).join(", ");
 
   return (
@@ -361,6 +403,7 @@ export default function AppLayout({
             className="app-sidebar flex flex-col gap-6 border-b border-border pb-6 lg:w-[240px] lg:overflow-y-auto lg:overscroll-contain lg:rounded-xl lg:border-0 lg:bg-[linear-gradient(180deg,var(--sidebar-blue)_0%,var(--sidebar-teal)_52%,var(--sidebar-green)_100%)] lg:px-3 lg:py-3"
           >
             <div className="flex flex-col gap-1">
+              {authority.includes('roles.view')&&<Link className="rounded-lg px-3 py-2 text-sm font-medium" href="/app/roles">Role Management</Link>}
               {primaryLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = link.match(pathname);

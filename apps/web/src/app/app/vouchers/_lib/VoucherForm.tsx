@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
@@ -26,7 +27,6 @@ import {
   type VoucherType,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   Field,
@@ -465,7 +465,7 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
       });
       setShowReversalModal(false);
       setReversalReason("");
-      
+
       // Navigate to the newly created reversal draft voucher
       router.push(`/app/vouchers/${draftReversal.id}`);
       router.refresh();
@@ -716,10 +716,10 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
           <CardHeader
             actions={
               isReadOnly ? undefined : (
-                <Button onClick={addLine} variant="secondary">
+                <PermissionButton onClick={addLine} variant="secondary">
                   <Plus aria-hidden="true" className="size-4" />
                   Add line
-                </Button>
+                </PermissionButton>
               )
             }
             description="Each line is either a debit or a credit against a ledger account."
@@ -796,13 +796,13 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                       ) : null}
                     </div>
                     {!isReadOnly && lines.length > 2 ? (
-                      <Button
+                      <PermissionButton
                         onClick={() => removeLine(line.key)}
                         variant="ghost"
                       >
                         <Trash2 aria-hidden="true" className="size-4" />
                         Remove
-                      </Button>
+                      </PermissionButton>
                     ) : null}
                   </div>
 
@@ -1094,63 +1094,63 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
         {isReadOnly ? (
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/app/vouchers">
-              <Button type="button" variant="secondary">
+              <PermissionButton type="button" variant="secondary">
                 Back to vouchers
-              </Button>
+              </PermissionButton>
             </Link>
-            <Button
+            <PermissionButton
               onClick={() => window.print()}
               type="button"
               variant="primary"
             >
               Print voucher
-            </Button>
+            </PermissionButton>
             {isEligibleForReversal && (
-              <Button
-                onClick={() => setShowReversalModal(true)}
+              <PermissionButton
+                permission="vouchers.reverse" onClick={() => setShowReversalModal(true)}
                 type="button"
                 variant="danger"
               >
                 Create Reversal
-              </Button>
+              </PermissionButton>
             )}
           </div>
         ) : (
           <>
             {mode === "edit" && voucher && !showConfirmPost ? (
               <div className="flex flex-wrap items-center gap-3">
-                <Button disabled={isSaving} type="submit">
+                <PermissionButton permission="vouchers.edit" disabled={isSaving} type="submit">
                   {isSaving ? "Saving..." : "Save draft voucher"}
-                </Button>
-                <Button
+                </PermissionButton>
+                <PermissionButton
                   disabled={isDeleting || isPosting}
-                  onClick={handleDelete}
+                  permission="vouchers.delete" onClick={handleDelete}
                   variant="danger"
                 >
                   {isDeleting ? "Deleting..." : "Delete draft"}
-                </Button>
-                <Button
+                </PermissionButton>
+                <PermissionButton
                   disabled={isPosting || isSaving || isDeleting}
-                  onClick={() => setShowConfirmPost(true)}
+                  permission="vouchers.post" onClick={() => setShowConfirmPost(true)}
                   variant="secondary"
                 >
                   {isPosting ? "Posting..." : "Post voucher"}
-                </Button>
+                </PermissionButton>
                 <Link href="/app/vouchers">
-                  <Button type="button" variant="ghost">
+                  <PermissionButton type="button" variant="ghost">
                     Cancel
-                  </Button>
+                  </PermissionButton>
                 </Link>
               </div>
             ) : mode === "create" ? (
               <div className="flex flex-wrap items-center gap-3">
-                <Button disabled={isSaving} type="submit">
+                <PermissionButton permission="vouchers.create" disabled={isSaving} type="submit">
                   {isSaving ? "Saving..." : "Create draft voucher"}
-                </Button>
+                </PermissionButton>
                 <Link href="/app/vouchers">
-                  <Button type="button" variant="ghost">
+                  <PermissionButton type="button" variant="ghost">
                     Cancel
-                  </Button>
+                  </PermissionButton>
                 </Link>
               </div>
             ) : null}
@@ -1182,20 +1182,20 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                   </ul>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button
+                  <PermissionButton
                     disabled={isPosting}
-                    onClick={handlePost}
+                    permission="vouchers.post" onClick={handlePost}
                     variant="primary"
                   >
                     {isPosting ? "Posting..." : "Confirm and post"}
-                  </Button>
-                  <Button
+                  </PermissionButton>
+                  <PermissionButton
                     disabled={isPosting}
                     onClick={() => setShowConfirmPost(false)}
                     variant="ghost"
                   >
                     Cancel
-                  </Button>
+                  </PermissionButton>
                 </div>
               </Card>
             ) : null}
@@ -1234,7 +1234,7 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
               )}
 
               <div className="flex justify-end gap-3 mt-2">
-                <Button
+                <PermissionButton
                   disabled={isCreatingReversal}
                   onClick={() => {
                     setShowReversalModal(false);
@@ -1245,14 +1245,14 @@ export function VoucherForm({ mode, reference, voucher }: VoucherFormProps) {
                   variant="ghost"
                 >
                   Cancel
-                </Button>
-                <Button
-                  disabled={isCreatingReversal}
+                </PermissionButton>
+                <PermissionButton
+                  permission="vouchers.reverse" disabled={isCreatingReversal}
                   type="submit"
                   variant="danger"
                 >
                   {isCreatingReversal ? "Creating Reversal..." : "Create Reversal"}
-                </Button>
+                </PermissionButton>
               </div>
             </form>
           </Card>

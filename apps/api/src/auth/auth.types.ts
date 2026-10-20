@@ -42,6 +42,7 @@ export type AuthenticatedRequest = Request & {
   activeCompany: ActiveCompanyContext | null;
   cookies?: Record<string, string | undefined>;
   user: AuthenticatedUser;
+  businessPermission?: string;
 };
 
 export type RequestContext = {

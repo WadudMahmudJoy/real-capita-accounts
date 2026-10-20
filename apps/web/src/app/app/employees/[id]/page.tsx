@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton,Permit,usePermission} from "../../_components/permission-controls";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -31,7 +32,6 @@ import {
   salaryErrorMessage,
 } from "../../_components/salary-ui";
 import {
-  Button,
   buttonClassName,
   Card,
   CardHeader,
@@ -87,6 +87,7 @@ const bloodGroups: Array<{ value: BloodGroup; label: string }> = [
 
 export default function EmployeeDetailPage() {
   const params = useParams<{ id: string }>();
+  const canReadDepartments=usePermission('departments.view');
   const router = useRouter();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -108,7 +109,7 @@ export default function EmployeeDetailPage() {
       try {
         const [employeeData, departmentData] = await Promise.all([
           getEmployee(params.id, signal),
-          getDepartments(signal),
+          canReadDepartments?getDepartments(signal):Promise.resolve([]),
         ]);
         setEmployee(employeeData);
         setDepartments(departmentData);
@@ -124,7 +125,7 @@ export default function EmployeeDetailPage() {
         setStatus("error");
       }
     },
-    [params.id, router],
+    [params.id, router,canReadDepartments],
   );
 
   useEffect(() => {
@@ -133,7 +134,7 @@ export default function EmployeeDetailPage() {
       try {
         const [employeeData, departmentData] = await Promise.all([
           getEmployee(params.id, controller.signal),
-          getDepartments(controller.signal),
+          canReadDepartments?getDepartments(controller.signal):Promise.resolve([]),
         ]);
         setEmployee(employeeData);
         setDepartments(departmentData);
@@ -151,7 +152,7 @@ export default function EmployeeDetailPage() {
     }
     void initialLoad();
     return () => controller.abort();
-  }, [params.id, router]);
+  }, [params.id, router,canReadDepartments]);
 
   useEffect(() => {
     function beforeUnload(event: BeforeUnloadEvent) {
@@ -242,14 +243,14 @@ export default function EmployeeDetailPage() {
             <ArrowLeft aria-hidden="true" className="size-4" />
             Back to Employees
           </Link>
-          <Link
+<Permit code="salary.preview">          <Link
             className={buttonClassName({ variant: "secondary" })}
             href="/app/salary-preview"
             onClick={guardNavigation}
           >
             <Calculator aria-hidden="true" className="size-4" />
             Salary Preview
-          </Link>
+          </Link></Permit>
         </div>
       </div>
 
@@ -257,9 +258,9 @@ export default function EmployeeDetailPage() {
       {error ? <Notice tone="error">{error}</Notice> : null}
       {status === "loading" ? <LoadingPanel message="Loading Employee detail..." /> : null}
       {status === "error" ? (
-        <Button className="self-start" onClick={() => void load()} variant="secondary">
+        <PermissionButton className="self-start" onClick={() => void load()} variant="secondary">
           Retry
-        </Button>
+        </PermissionButton>
       ) : null}
 
       {status === "ready" && employee ? (
@@ -666,7 +667,7 @@ export default function EmployeeDetailPage() {
             )}
           </SectionCard>
 
-          <div className="flex flex-col gap-6">
+          <Permit code="salary.view"><div className="flex flex-col gap-6">
             <div>
               <h2 className="text-lg font-semibold">Salary Configuration</h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -681,7 +682,7 @@ export default function EmployeeDetailPage() {
               employeeActive={employee.isActive}
               employeeId={employee.id}
             />
-          </div>
+          </div></Permit>
         </>
       ) : null}
     </div>
@@ -709,10 +710,10 @@ function SectionCard({
         description={description}
         actions={
           editing ? null : (
-            <Button onClick={onEdit} variant="secondary">
+            <PermissionButton permission="employees.edit" onClick={onEdit} variant="secondary">
               <Pencil aria-hidden="true" className="size-4" />
               Edit Section
-            </Button>
+            </PermissionButton>
           )
         }
       />
@@ -730,14 +731,14 @@ function SectionActions({
 }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <Button disabled={disabled} type="submit">
+      <PermissionButton disabled={disabled} type="submit">
         <Save aria-hidden="true" className="size-4" />
         {disabled ? "Saving..." : "Save Section"}
-      </Button>
-      <Button disabled={disabled} onClick={onCancel} variant="secondary">
+      </PermissionButton>
+      <PermissionButton disabled={disabled} onClick={onCancel} variant="secondary">
         <X aria-hidden="true" className="size-4" />
         Cancel
-      </Button>
+      </PermissionButton>
     </div>
   );
 }

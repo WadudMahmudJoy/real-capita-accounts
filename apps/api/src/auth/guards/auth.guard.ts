@@ -1,13 +1,18 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
+import { PATH_METADATA } from '@nestjs/common/constants';
+import { enforceBusinessPermission } from '../business-permissions';
+import {effectiveAccountant} from '../onboarding-access';
 import { JwtService } from "@nestjs/jwt";
 import {
   ACCOUNTANT_ROLE,
   AUTH_COOKIE_DEFAULT_NAME,
+  READ_ONLY_AUTH_CONTEXT_METADATA_KEY,
   roleLabels,
 } from "../auth.constants";
 import type {
@@ -62,10 +67,11 @@ export class AuthGuard implements CanActivate {
           select: ACTIVE_COMPANY_SELECT,
         },
         user: {
-          include: {
+          select: {
+            id:true,email:true,fullName:true,isActive:true,
             roles: {
               include: {
-                role: true,
+                role: {select:{code:true,name:true}},
               },
             },
           },
@@ -85,9 +91,10 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Authentication required.");
     }
 
+    const accountant=await effectiveAccountant(this.prisma,session.user.id,session.user.roles.some(({role})=>role.code===ACCOUNTANT_ROLE));
     const roles = session.user.roles
       .map(({ role }) => role)
-      .filter((role) => role.code === ACCOUNTANT_ROLE)
+      .filter((role) => role.code === ACCOUNTANT_ROLE&&accountant)
       .map(() => ({
         code: ACCOUNTANT_ROLE,
         name: roleLabels.ACCOUNTANT,
@@ -109,7 +116,11 @@ export class AuthGuard implements CanActivate {
     let activeCompanyId: string | null = session.activeCompanyId;
     let activeCompany: ActiveCompanyRow | null = session.activeCompany;
 
-    if (session.activeCompanyId === null) {
+    const readOnlyContext: unknown =
+      Reflect.getMetadata(READ_ONLY_AUTH_CONTEXT_METADATA_KEY, context.getHandler()) ??
+      Reflect.getMetadata(READ_ONLY_AUTH_CONTEXT_METADATA_KEY, context.getClass());
+
+    if (session.activeCompanyId === null && readOnlyContext !== true) {
       const defaultCompany = await this.prisma.company.findFirst({
         orderBy: { createdAt: "asc" },
         select: ACTIVE_COMPANY_SELECT,
@@ -134,6 +145,13 @@ export class AuthGuard implements CanActivate {
     };
     request.activeCompany = activeCompany satisfies ActiveCompanyContext | null;
 
+    const controllerPath: unknown = Reflect.getMetadata(PATH_METADATA, context.getClass()) ?? '';
+    const handlerPath: unknown = Reflect.getMetadata(PATH_METADATA, context.getHandler()) ?? '';
+    if (typeof controllerPath !== 'string' || typeof handlerPath !== 'string') {
+      throw new ForbiddenException('Unsupported authorization route metadata.');
+    }
+    request.businessPermission = await enforceBusinessPermission(this.prisma, request.user.id,
+      controllerPath, handlerPath, request.method ?? 'GET');
     return true;
   }
 

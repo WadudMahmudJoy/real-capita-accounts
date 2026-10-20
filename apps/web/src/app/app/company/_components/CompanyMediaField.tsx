@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import { ChangeEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +12,7 @@ import {
   type Company,
   type CompanyMediaKind,
 } from "@/lib/api";
-import { Button, Notice } from "../../_components/ui";
+import { Notice } from "../../_components/ui";
 
 const ACCEPTED_MEDIA_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
@@ -148,9 +149,9 @@ export function CompanyMediaField({
           ref={inputRef}
           type="file"
         />
-        <Button
+        <PermissionButton
           disabled={isBusy}
-          onClick={() => inputRef.current?.click()}
+          permission="company.manage" onClick={() => inputRef.current?.click()}
           type="button"
           variant="secondary"
         >
@@ -159,16 +160,16 @@ export function CompanyMediaField({
             : hasMedia
               ? "Replace"
               : "Upload"}
-        </Button>
+        </PermissionButton>
         {hasMedia ? (
-          <Button
+          <PermissionButton
             disabled={isBusy}
-            onClick={() => void handleRemove()}
+            permission="company.manage" onClick={() => void handleRemove()}
             type="button"
             variant="secondary"
           >
             {isRemoving ? "Removing..." : "Remove"}
-          </Button>
+          </PermissionButton>
         ) : null}
       </div>
 

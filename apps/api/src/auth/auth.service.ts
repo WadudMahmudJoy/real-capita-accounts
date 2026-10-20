@@ -1,3 +1,5 @@
+import {binding,permission,unavailable} from './hr-access';
+import {effectiveAccountant} from './onboarding-access';
 import {
   Injectable,
   InternalServerErrorException,
@@ -64,10 +66,11 @@ export class AuthService {
     const normalizedEmail = email.trim().toLowerCase();
     const requestContext = this.getRequestContext(request);
     const user = await this.prisma.user.findUnique({
-      include: {
+      select: {
+        id:true,email:true,fullName:true,isActive:true,passwordHash:true,
         roles: {
           include: {
-            role: true,
+            role: {select:{code:true,name:true}},
           },
         },
       },
@@ -81,7 +84,7 @@ export class AuthService {
 
     const passwordMatches = await compare(password, user.passwordHash);
 
-    if (!passwordMatches || !this.hasAccountantRole(user)) {
+    if (!passwordMatches || !(await this.hasAccountantRole(user)||await this.hasHrAccess(user.id))) {
       await this.recordLoginFailure(user.id, requestContext);
       throw new UnauthorizedException("Invalid email or password.");
     }
@@ -139,7 +142,7 @@ export class AuthService {
         maxAge: expiresInMs,
       },
       token,
-      user: this.toAuthenticatedUser(user),
+      user: await this.toAuthenticatedUser(user),
     };
   }
 
@@ -213,17 +216,19 @@ export class AuthService {
     });
   }
 
-  private hasAccountantRole(user: UserWithRoles): boolean {
-    return user.roles.some(({ role }) => role.code === ACCOUNTANT_ROLE);
+  private async hasHrAccess(id:string){try{return await this.prisma.$transaction(async tx=>Boolean(await permission(tx,id,'SYSTEM_ADMIN')||await permission(tx,id,'HR_ADMIN')||await binding(tx,id)));}catch(e){if(unavailable(e))return false;throw e;}}
+  private hasAccountantRole(user: UserWithRoles): Promise<boolean> {
+    return effectiveAccountant(this.prisma,user.id,user.roles.some(({ role }) => role.code === ACCOUNTANT_ROLE));
   }
 
-  private toAuthenticatedUser(user: UserWithRoles): AuthenticatedUser {
+  private async toAuthenticatedUser(user: UserWithRoles): Promise<AuthenticatedUser> {
+    const accountant=await this.hasAccountantRole(user);
     return {
       email: user.email,
       fullName: user.fullName,
       id: user.id,
       roles: user.roles
-        .filter(({ role }) => role.code === ACCOUNTANT_ROLE)
+        .filter(({ role }) => role.code === ACCOUNTANT_ROLE&&accountant)
         .map(() => ({
           code: ACCOUNTANT_ROLE,
           name: roleLabels.ACCOUNTANT,

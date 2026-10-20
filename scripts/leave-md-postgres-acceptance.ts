@@ -1,0 +1,116 @@
+import assert from 'node:assert/strict';
+import {createHash,randomBytes,randomUUID} from 'node:crypto';
+import {writeFileSync,readFileSync,existsSync} from 'node:fs';
+import {join} from 'node:path';
+import {authorityPrivateWriterPrivileges} from './db/authority-privileges';
+// Only the existing owned PostgreSQL 17 harness may invoke this technical fixture.
+export async function verifyLeaveMdPostgres(c:any){
+ const {db,apiDb,app,load,req,apiReq,actor,user,parent,roster,department,security,fixture,temp}=c;
+ assert(process.argv.includes('--leave-md-sprint7d'));const database=(await db.$queryRawUnsafe('SELECT current_database() db'))[0].db;assert(/^real_capita_payroll_accept_[a-f0-9]{32}$/.test(database));
+ const url=new URL(process.env.PAYROLL_SECURITY_INSTANCE_URL!);assert.equal(url.hostname,'127.0.0.1');assert(!['55532','55432','5432'].includes(url.port));url.pathname='/'+database;
+ const {Client,Pool}=apiReq('pg'),owner=new Client({connectionString:url.toString()});await owner.connect();
+ const role='leave_writer_'+randomBytes(8).toString('hex'),password=randomBytes(32).toString('hex');let pool:any,maintenance:any,checks=0;let stage='fixture setup';
+ const ok=(v:boolean)=>{assert(v,'Assertion after '+checks+' passing checks in '+stage);checks++;};
+ try{
+  ok((await owner.query('SELECT current_database() db')).rows[0].db===database);
+  await owner.query(`CREATE ROLE "${role}" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS PASSWORD '${password}'`);await owner.query(`GRANT CONNECT ON DATABASE "${database}" TO "${role}"`);await authorityPrivateWriterPrivileges(owner,role);
+  const privateUrl=new URL(url);privateUrl.username=role;privateUrl.password=password;pool=new Pool({connectionString:privateUrl.toString(),max:4});
+  maintenance=new (load('generated/prisma/client.js').PrismaClient)({adapter:new (req('@prisma/adapter-pg').PrismaPg)({connectionString:security.url(security.migration)})});
+  const tracedPool={connect:async()=>{const client=await pool.connect();return {query:async(sql:string,args?:unknown[])=>{try{return await client.query(sql,args);}catch(e:any){if(sql.startsWith('SELECT leave_stage_command')||sql.startsWith('SELECT authority_command')||sql==='COMMIT')console.error('ISOLATED_LEAVE_SQL '+JSON.stringify({code:e.code,message:e.message,constraint:e.constraint}));throw e;}},release:()=>client.release()};}};
+  const executor=new (load('authority/sql-authority-executor.js').SqlAuthorityExecutor)(tracedPool,database,role),writer=app.get(load('authority/authority-writer.js').AuthorityWriter),verifier=app.get(load('authority/authority-writer.js').MdClaimVerifier);
+  const productionExecute=writer.execute.bind(writer);
+  const users=app.get(load('users/users.service.js').UsersService),employees=app.get(load('employee/employee.service.js').EmployeeService),leave=app.get(load('leave/leave.service.js').LeaveService);
+  const person=async(code:string)=>employees.create({employeeCode:code,fullName:'Synthetic '+code,departmentId:department.id,designation:'Technical fixture',joiningDate:'2026-01-01',mobileNumber:'01712345678'},user);
+  const create=async(email:string,name:string,pwd:string,employeeId:string,hr=false)=>{let u=await users.create({email,fullName:name,password:pwd,reason:'Isolated authenticated technical identity'},actor.id);u=await users.action(u.id,{action:'BIND',employeeId,expectedVersion:u.adminVersion,verificationReference:'Independent synthetic personnel verification',reason:'Isolated verified binding'},actor.id);if(hr)u=await users.action(u.id,{action:'GRANT_PERMISSION',permission:'HR_ADMIN',expectedVersion:u.adminVersion,reason:'Explicit isolated HR designation'},actor.id);return u;};
+  const workerPassword=randomUUID(),hrPassword=randomUUID(),mdPassword=randomUUID();
+  const worker=await create('stage-employee@example.invalid','Synthetic Employee',workerPassword,roster[0].id),hr=await create('stage-hr@example.invalid','Synthetic HR Reviewer',hrPassword,roster[1].id,true),md=await create('stage-md@example.invalid','Synthetic MD',mdPassword,(await person('STAGEMD')).id);
+  const reviewer=await db.user.findUniqueOrThrow({where:{email:'independent-hr@example.invalid'}});
+  await users.action(reviewer.id,{action:'GRANT_PERMISSION',permission:'SYSTEM_ADMIN',expectedVersion:(await users.get(reviewer.id,actor.id)).adminVersion,reason:'Independent isolated onboarding operator'},actor.id);
+  await users.action(actor.id,{action:'BIND',employeeId:(await person('STAGEAGM')).id,expectedVersion:(await users.get(actor.id,actor.id)).adminVersion,verificationReference:'Independent synthetic AGM identity',reason:'Independent technical binding'},reviewer.id);
+  const category=await leave.category(null,{code:'REQUEST',name:'Configured leave request',isActive:true,expectedVersion:0},hr.id);
+  const api=fixture.api;const login=async(email:string,pwd:string)=>{const r=await fetch(api+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pwd})});ok(r.status===200);return r.headers.get('set-cookie')!.split(';')[0];};
+  const wc=await login(worker.email,workerPassword),hc=await login(hr.email,hrPassword),mc=await login(md.email,mdPassword),ac=await login(actor.email,fixture.password),rc=await login(reviewer.email,fixture.reviewPassword);
+  const http=async(path:string,cookie:string,method='GET',body?:unknown)=>fetch(api+path,{method,headers:{Cookie:cookie,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+  const body=async(r:Response,status=201)=>{if(r.status!==status)console.error('LEAVE_HTTP_STATUS '+JSON.stringify({expected:status,actual:r.status,body:await r.clone().json().catch(()=>null)}));ok(r.status===status);return r.json();};
+  ok((await http('/authority/md-claim',mc,'POST',{claimReference:'untrusted'})).status===503);
+  const token=randomBytes(32).toString('hex');await maintenance.authorityBootstrap.create({data:{companyId:parent.id,targetUserId:md.id,authorizerId:reviewer.id,tokenHash:createHash('sha256').update(token).digest('hex'),expiresAt:new Date(Date.now()+60000),purpose:'ACTIVATE',provenance:{technicalOnly:true,provider:'isolated-independent-ceremony'}}});
+  writer.execute=executor.execute.bind(executor);verifier.verify=async(id:string,reference:string)=>{if(id!==md.id||reference!=='synthetic-independent-claim')throw Error('Unverified fixture');return {ticketToken:token};};
+  await body(await http('/authority/md-claim',mc,'POST',{claimReference:'synthetic-independent-claim'}));
+  const instruction=(operation:string,payload:any,version=0)=>({operation,payload,expectedVersion:version,idempotencyKey:randomUUID(),reason:'Isolated authority workflow',expiresAt:new Date(Date.now()+3600000).toISOString()});
+  const approve=async(id:string)=>body(await http('/authority/requests/'+id+'/decision',mc,'POST',{command:'APPROVE',expectedVersion:1,reason:'Independent MD technical approval'}));
+  const permissions=['leave.view','leave.create','leave.review','leave.recommend','leave.history.view','leave.categories.manage'];
+  for(const session of [hc,rc]){const d=await body(await http('/authority/requests',session,'POST',instruction('DELEGATE',{permissions,expiresAt:new Date(Date.now()+3600000).toISOString()})));await approve(d.id);}
+  const agmDelegation=await body(await http('/authority/requests',ac,'POST',instruction('DELEGATE',{permissions:['roles.manage','roles.view','employees.view','users.view','users.manage','leave.recommend'],expiresAt:new Date(Date.now()+3600000).toISOString()})));await approve(agmDelegation.id);
+  const access=await body(await http('/authority/access',hc),200);ok(access.permissions.includes('leave.recommend')&&!access.permissions.includes('leave.finalize'));
+  ok((await http('/authority/requests',ac,'POST',instruction('ROLE_CREATE',{code:'FORGED_MD',name:'Denied',permissions:['leave.finalize']}))).status===400);
+  const submit=async(day:number,cookie=wc,employeeId=worker.binding?.employeeId??roster[0].id)=>body(await http('/leave-requests',cookie,'POST',{employeeId,categoryId:category.id,startDate:'2027-03-'+String(day).padStart(2,'0'),endDate:'2027-03-'+String(day).padStart(2,'0'),reason:'Synthetic private leave',idempotencyKey:randomUUID(),officeContextCompanyId:c.office.id}));
+  const decision=(recommendation:string,version:number)=>({decision:recommendation,expectedVersion:version,reason:'Independent technical review',idempotencyKey:randomUUID()});
+  const recommend=async(id:string,v='RECOMMEND_APPROVAL',session=hc)=>body(await http('/leave-requests/'+id+'/recommendation',session,'POST',decision(v,1)));
+  const finalize=async(id:string,v='APPROVED')=>body(await http('/leave-requests/'+id+'/md-decision',mc,'POST',decision(v,2)));
+  stage='two-stage authenticated lifecycle';
+  const first=await submit(1);ok(first.status==='PENDING_HR_REVIEW'&&first.version===1);
+  const duplicateInput={employeeId:roster[0].id,categoryId:category.id,startDate:'2027-03-01',endDate:'2027-03-01',reason:'Synthetic private leave',idempotencyKey:randomUUID(),officeContextCompanyId:c.office.id};
+  ok((await http('/leave-requests',wc,'POST',duplicateInput)).status===409);
+  ok((await http('/leave-requests/'+first.id+'/recommendation',hc,'POST',{...decision('RECOMMEND_APPROVAL',1),actorId:md.id})).status===400);
+  ok((await http('/leave-requests/'+first.id+'/recommendation',hc,'POST',decision('APPROVED',1))).status===400);
+  ok((await http('/leave-requests/'+first.id+'/md-decision',mc,'POST',decision('RECOMMEND_APPROVAL',1))).status===400);
+  ok((await http('/leave-requests/'+first.id+'/decision',mc,'POST',{decision:'APPROVED',expectedVersion:1,reason:'Retired endpoint bypass'})).status===409);
+  stage='historical Prisma upgrade';const {verifyLeaveHistoricalUpgrade}=await import('./leave-md-upgrade-acceptance');await verifyLeaveHistoricalUpgrade({owner,security,apiReq,temp,req},{worker:worker.id,hr:hr.id,employee:roster[0].id,hrEmployee:roster[1].id,department:department.id,company:parent.id,category:category.id,identity:(await db.leaveRequest.findUniqueOrThrow({where:{id:first.id}})).identitySnapshot});
+  stage='two-stage authenticated lifecycle';
+  ok((await http('/leave-requests/'+first.id+'/md-decision',mc,'POST',decision('APPROVED',1))).status===403);
+  ok((await http('/leave-requests/'+first.id+'/md-decision',hc,'POST',decision('APPROVED',1))).status===403);
+  ok((await http('/leave-requests/'+first.id+'/recommendation',ac,'POST',decision('RECOMMEND_APPROVAL',1))).status===403);
+  ok((await http('/leave-requests/'+first.id+'/decision',hc,'POST',{decision:'APPROVED',reason:'Legacy bypass',expectedVersion:1})).status===403);
+  const recommendation=decision('RECOMMEND_APPROVAL',1);const pending=await body(await http('/leave-requests/'+first.id+'/recommendation',hc,'POST',recommendation));ok(pending.status==='PENDING_MD_DECISION'&&pending.version===2&&pending.reviewedAt===null&&pending.hrRecommendation.decision==='RECOMMEND_APPROVAL');
+  await body(await http('/leave-requests/'+first.id+'/recommendation',hc,'POST',recommendation));ok(await db.leaveStageDecision.count({where:{requestId:first.id,stage:'HR'}})===1);
+  ok((await http('/leave-requests/'+first.id+'/recommendation',hc,'POST',{...recommendation,reason:'Changed claim'})).status===409);
+  ok((await http('/leave-requests/'+first.id+'/withdraw',wc,'POST',{expectedVersion:2})).status===409);
+  const finalInput=decision('APPROVED',2),approved=await body(await http('/leave-requests/'+first.id+'/md-decision',mc,'POST',finalInput));ok(approved.status==='APPROVED'&&approved.version===3&&approved.mdDecision.actorId===md.id&&approved.hrRecommendation.actorId===hr.id);
+  await body(await http('/leave-requests/'+first.id+'/md-decision',mc,'POST',finalInput));ok(await db.leaveStageDecision.count({where:{requestId:first.id}})===2);
+  ok((await http('/leave-requests/'+first.id+'/md-decision',mc,'POST',decision('REJECTED',2))).status===409);
+  const disagreed=await submit(2);await recommend(disagreed.id,'RECOMMEND_REJECTION');ok((await finalize(disagreed.id)).status==='APPROVED');
+  const rejected=await submit(3);await recommend(rejected.id);ok((await finalize(rejected.id,'REJECTED')).status==='REJECTED');
+  const hrOwn=await submit(4,hc,roster[1].id);ok((await http('/leave-requests/'+hrOwn.id+'/recommendation',hc,'POST',decision('RECOMMEND_APPROVAL',1))).status===403);await recommend(hrOwn.id,'RECOMMEND_REJECTION',rc);ok((await finalize(hrOwn.id,'REJECTED')).status==='REJECTED');
+  ok((await http('/leave-requests',mc,'POST',{employeeId:(await db.employeeAccountBinding.findFirstOrThrow({where:{userId:md.id,unboundAt:null}})).employeeId,categoryId:category.id,startDate:'2027-03-05',endDate:'2027-03-05',reason:'MD own leave prohibited',idempotencyKey:randomUUID()})).status===403);
+  const withdrawn=await submit(6);ok((await body(await http('/leave-requests/'+withdrawn.id+'/withdraw',wc,'POST',{expectedVersion:1}))).status==='WITHDRAWN');
+  const behalf=await submit(7,hc,roster[0].id);ok((await body(await http('/leave-requests/'+behalf.id+'/withdraw',wc,'POST',{expectedVersion:1}))).status==='WITHDRAWN');
+  ok((await http('/leave-requests/'+first.id,rc)).status===200);ok((await http('/leave-requests/'+hrOwn.id,wc)).status===404);ok((await http('/leave-requests/md-queue',wc)).status===403);ok((await http('/leave-requests/'+first.id+'/md-decision',ac,'POST',decision('APPROVED',3))).status===403);
+  stage='concurrency and atomic rollback';
+  const race=await submit(8),hrRace=await Promise.all([http('/leave-requests/'+race.id+'/recommendation',hc,'POST',decision('RECOMMEND_APPROVAL',1)),http('/leave-requests/'+race.id+'/recommendation',rc,'POST',decision('RECOMMEND_REJECTION',1))]);ok(hrRace.filter(r=>r.status===201).length===1);ok(hrRace.filter(r=>r.status===409).length===1);
+  const mdRace=await Promise.all([http('/leave-requests/'+race.id+'/md-decision',mc,'POST',decision('APPROVED',2)),http('/leave-requests/'+race.id+'/md-decision',mc,'POST',decision('REJECTED',2))]);ok(mdRace.filter(r=>r.status===201).length===1);ok(mdRace.filter(r=>r.status===409).length===1);
+  const rollback=await submit(9);await recommend(rollback.id);const before={events:await db.leaveRequestEvent.count(),decisions:await db.leaveStageDecision.count(),audits:await db.auditEvent.count()};
+  await db.$executeRawUnsafe("CREATE FUNCTION leave_stage_test_audit_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='LEAVE_MD_DECISION' THEN RAISE EXCEPTION 'Isolated atomic audit failure';END IF;RETURN NEW;END $$");await db.$executeRawUnsafe('CREATE TRIGGER leave_stage_test_audit_fail BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION leave_stage_test_audit_fail()');
+  try{ok((await http('/leave-requests/'+rollback.id+'/md-decision',mc,'POST',decision('APPROVED',2))).status===500);}finally{await db.$executeRawUnsafe('DROP TRIGGER leave_stage_test_audit_fail ON audit_events');await db.$executeRawUnsafe('DROP FUNCTION leave_stage_test_audit_fail()');}
+  ok((await db.leaveRequest.findUniqueOrThrow({where:{id:rollback.id}})).version===2);ok((await db.leaveWorkflow.findUniqueOrThrow({where:{requestId:rollback.id}})).stage==='PENDING_MD_DECISION');ok(await db.leaveStageDecision.count()===before.decisions&&await db.leaveRequestEvent.count()===before.events&&await db.auditEvent.count()===before.audits);await finalize(rollback.id);
+  stage='SQL privilege and history integrity';
+  for(const sql of ["SELECT leave_stage_command('claimed','MD','{}'::jsonb)","UPDATE leave_stage_decisions SET reason='forged'","DELETE FROM leave_stage_decisions","UPDATE leave_workflows SET stage='FINAL'","ALTER TABLE leave_requests DISABLE TRIGGER ALL"]){await assert.rejects(()=>apiDb.$executeRawUnsafe(sql));checks++;}
+  await assert.rejects(()=>apiDb.$executeRawUnsafe("UPDATE leave_requests SET status='APPROVED',version=3 WHERE id=$1",withdrawn.id));checks++;
+  await assert.rejects(()=>db.$executeRawUnsafe('DELETE FROM leave_stage_decisions WHERE "requestId"=$1',first.id));checks++;
+  await assert.rejects(()=>apiDb.$executeRawUnsafe("UPDATE leave_requests SET reason='altered' WHERE id=$1",first.id));checks++;
+  ok(await db.payrollPaymentConfirmation.count()===0&&await db.voucher.count()===0&&await db.payrollRun.count()===0);
+  const safe=await body(await http('/leave-requests/'+first.id+'/history',mc),200);ok(!JSON.stringify(safe).includes('requestFingerprint')&&!JSON.stringify(safe).includes('authoritySnapshot')&&safe.history.length===3);
+  stage='recommendation source revision integrity';
+  const extraRole=await body(await http('/authority/requests',ac,'POST',instruction('ROLE_CREATE',{code:'HR_REVISION_ROLE',name:'HR source revision',permissions:['leave.recommend']})));
+  const assignment=await body(await http('/authority/requests',ac,'POST',instruction('ROLE_ASSIGN',{roleId:extraRole.role.id,targetUserId:reviewer.id,expiresAt:new Date(Date.now()+3600000).toISOString()},1)));await approve(assignment.id);
+  const sourceChanged=await submit(19);await recommend(sourceChanged.id,'RECOMMEND_APPROVAL',rc);
+  await body(await http('/authority/requests',ac,'POST',instruction('ROLE_EDIT',{roleId:extraRole.role.id,name:'Updated source revision',permissions:['leave.recommend'],isActive:true},1)));
+  ok((await body(await http('/authority/access',rc),200)).permissions.includes('leave.recommend'));
+  ok((await http('/leave-requests/'+sourceChanged.id+'/md-decision',mc,'POST',decision('APPROVED',2))).status===403);
+  stage='current HR permission revocation';
+  const grantStale=await submit(13);await recommend(grantStale.id);
+  const hrAccount=await body(await http('/users/'+hr.id,ac),200);
+  await body(await http('/users/'+hr.id+'/actions',ac,'POST',{action:'REVOKE_PERMISSION',permission:'HR_ADMIN',expectedVersion:hrAccount.adminVersion,reason:'Independent authorized administrator revocation'}));
+  ok((await http('/authority/access',hc)).status===401);const revokedHrCookie=await login(hr.email,hrPassword);const rawHr=await body(await http('/authority/access',revokedHrCookie),200);ok(rawHr.permissions.includes('leave.recommend')&&!rawHr.allowedPermissions.includes('leave.recommend'));
+  const freshBlocked=await submit(14);ok((await http('/leave-requests/'+freshBlocked.id+'/recommendation',revokedHrCookie,'POST',decision('RECOMMEND_APPROVAL',1))).status===403);ok((await http('/leave-requests/'+grantStale.id+'/md-decision',mc,'POST',decision('APPROVED',2))).status===403);
+  const expiry=await submit(10);const currentHr=await db.authorityMandate.findFirstOrThrow({where:{userId:hr.id,kind:'DELEGATE'}});const revocation=await body(await http('/authority/requests',ac,'POST',instruction('DELEGATE_REVOKE',{mandateId:currentHr.id},currentHr.version)));await approve(revocation.id);ok((await http('/leave-requests/'+expiry.id+'/recommendation',revokedHrCookie,'POST',decision('RECOMMEND_APPROVAL',1))).status===403);
+  const alternate=await recommend(expiry.id,'RECOMMEND_APPROVAL',rc);ok(alternate.status==='PENDING_MD_DECISION');
+  console.log(`PASS ${checks} actual PostgreSQL/HTTP two-stage leave assertions, runtime/private privilege denials, concurrence and audit rollback; synthetic authority only`);
+  if(!process.argv.includes('--leave-md-db-only')){
+   const f={...fixture,workerEmail:worker.email,workerPassword,hrEmail:reviewer.email,hrPassword:fixture.reviewPassword,mdEmail:md.email,mdPassword,workerEmployeeId:roster[0].id,categoryId:category.id};
+   writeFileSync(join(temp,'leave-md-scenario.js'),readFileSync('scripts/leave-md-browser-scenario.js','utf8').replace('__FIXTURE__',JSON.stringify(f)));console.log('LEAVE_MD_BROWSER_SCENARIO '+join(temp,'leave-md-scenario.js'));
+   const resultFile=join(temp,'leave-md-result.json');for(let n=0;n<600&&!existsSync(resultFile);n++)await new Promise(r=>setTimeout(r,1000));assert(existsSync(resultFile));const result=JSON.parse(readFileSync(resultFile,'utf8'));assert.equal(result.status,'PASS');console.log(`PASS ${result.checks} actual authenticated two-stage leave browser/API assertions`);
+  }
+  const pendingMd=await submit(11);await recommend(pendingMd.id,'RECOMMEND_APPROVAL',rc);writer.execute=productionExecute;try{ok((await http('/leave-requests/'+pendingMd.id+'/md-decision',mc,'POST',decision('APPROVED',2))).status===503);}finally{writer.execute=executor.execute.bind(executor);}ok((await db.leaveRequest.findUniqueOrThrow({where:{id:pendingMd.id}})).version===2);const revokeToken=randomBytes(32).toString('hex');await maintenance.authorityBootstrap.create({data:{companyId:parent.id,targetUserId:md.id,authorizerId:reviewer.id,tokenHash:createHash('sha256').update(revokeToken).digest('hex'),expiresAt:new Date(Date.now()+60000),purpose:'REVOKE',provenance:{technicalOnly:true}}});const blocker=await pool.connect();try{await blocker.query('BEGIN');await blocker.query("SELECT pg_advisory_xact_lock(hashtextextended('real_capita_authority:'||$1,0))",[parent.id]);const waiting=http('/leave-requests/'+pendingMd.id+'/md-decision',mc,'POST',decision('APPROVED',2));let observed=false;for(let n=0;n<100;n++){const blocked=(await owner.query("SELECT count(*)::int n FROM pg_stat_activity WHERE datname=$1 AND wait_event='advisory' AND query LIKE '%leave_stage_command%'",[database])).rows[0].n;if(blocked){observed=true;break;}await new Promise(r=>setTimeout(r,30));}ok(observed);await blocker.query("SELECT authority_command($1,'BOOTSTRAP',$2::jsonb)",[md.id,JSON.stringify({ticketToken:revokeToken})]);await blocker.query('COMMIT');ok((await waiting).status===409);}finally{await blocker.query('ROLLBACK').catch(()=>undefined);blocker.release();}ok((await db.leaveRequest.findUniqueOrThrow({where:{id:pendingMd.id}})).version===2);ok(await db.leaveStageDecision.count({where:{requestId:pendingMd.id,stage:'MD'}})===0);ok((await http('/leave-requests/'+pendingMd.id+'/md-decision',mc,'POST',decision('APPROVED',2))).status===403);
+  console.log(`PASS ${checks} final PostgreSQL-backed assertions including revoked MD denial; no attendance/payroll mutations`);
+ }catch(e:any){console.error('LEAVE_MD_ACCEPTANCE_STAGE '+stage+' '+JSON.stringify({type:e?.name,code:e?.code,message:e?.message,locations:e?.stack?.split('\n').filter((s:string)=>s.trim().startsWith('at ')).slice(0,4)}));throw e;}finally{if(maintenance)await maintenance.$disconnect();if(pool)await pool.end();await owner.end();}
+}

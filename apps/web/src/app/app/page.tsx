@@ -8,6 +8,8 @@ import {
   Layers,
   Users,
 } from "lucide-react";
+import {Permit} from './_components/permission-controls';
+import {workspacePermission} from '@/lib/workspace-permissions';
 import { Card, PageIntro } from "./_components/ui";
 
 const sections = [
@@ -68,7 +70,7 @@ export default function AppOverviewPage() {
           const Icon = section.icon;
 
           return (
-            <Link className="group" href={section.href} key={section.href}>
+            <Permit key={section.href} code={workspacePermission(section.href)!}><Link className="group" href={section.href}>
               <Card className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/35 group-hover:shadow-[0_14px_32px_rgba(24,92,103,0.12)] motion-reduce:transform-none motion-reduce:transition-none">
                 <div className="flex h-full flex-col gap-4">
                   <div className="flex size-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
@@ -91,7 +93,7 @@ export default function AppOverviewPage() {
                   </span>
                 </div>
               </Card>
-            </Link>
+            </Link></Permit>
           );
         })}
       </div>

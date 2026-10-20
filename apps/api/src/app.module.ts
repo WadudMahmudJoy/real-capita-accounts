@@ -1,3 +1,7 @@
+import {OnboardingModule} from './onboarding/onboarding.module';
+import {AuthorityModule} from './authority/authority.module';
+import {UsersModule} from './users/users.module';
+import {LeaveModule} from "./leave/leave.module";
 import { Module } from "@nestjs/common";
 import { AccountingPeriodModule } from "./accounting-period/accounting-period.module";
 import { AccountingModule } from "./accounting/accounting.module";
@@ -14,13 +18,14 @@ import { FiscalYearModule } from "./fiscal-year/fiscal-year.module";
 import { EmployeeModule } from "./employee/employee.module";
 import { HealthController } from "./health.controller";
 import { ProjectModule } from "./project/project.module";
+import { PayrollModule } from "./payroll/payroll.module";
 import { ReportModule } from "./report/report.module";
 import { VoucherModule } from "./voucher/voucher.module";
 import { SalaryModule } from "./salary/salary.module";
 import { WorkScheduleModule } from "./work-schedule/work-schedule.module";
 
 @Module({
-  imports: [
+  imports: [OnboardingModule,AuthorityModule,UsersModule,
     AuthModule,
     CompanyModule,
     FiscalYearModule,
@@ -37,8 +42,10 @@ import { WorkScheduleModule } from "./work-schedule/work-schedule.module";
     BookingModule,
     EmployeeModule,
     SalaryModule,
+    PayrollModule,
     WorkScheduleModule,
     AttendanceModule,
+    LeaveModule,
   ],
   controllers: [HealthController],
 })

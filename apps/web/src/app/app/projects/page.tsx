@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../_components/permission-controls";
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,6 @@ import {
   type ProjectInput,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   CheckboxField,
@@ -191,9 +191,9 @@ export default function ProjectsPage() {
             <CardHeader
               actions={
                 isEditing ? (
-                  <Button onClick={startCreate} variant="ghost">
+                  <PermissionButton permission="projects.create" onClick={startCreate} variant="ghost">
                     Cancel edit
-                  </Button>
+                  </PermissionButton>
                 ) : null
               }
               description={
@@ -300,13 +300,13 @@ export default function ProjectsPage() {
               ) : null}
 
               <div className="flex items-center gap-3">
-                <Button disabled={isSaving} type="submit">
+                <PermissionButton disabled={isSaving} permission={form.id?"projects.edit":"projects.create"} type="submit">
                   {isSaving
                     ? "Saving..."
                     : isEditing
                       ? "Save changes"
                       : "Create project"}
-                </Button>
+                </PermissionButton>
               </div>
             </form>
           </Card>
@@ -360,13 +360,13 @@ export default function ProjectsPage() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end">
-                            <Button
+                            <PermissionButton permission="projects.edit"
                               onClick={() => startEdit(project)}
                               variant="ghost"
                             >
                               <Pencil aria-hidden="true" className="size-4" />
                               Edit
-                            </Button>
+                            </PermissionButton>
                           </div>
                         </td>
                       </tr>

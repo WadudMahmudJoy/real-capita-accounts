@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "./permission-controls";
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
@@ -31,7 +32,6 @@ import {
   salaryErrorMessage,
 } from "./salary-ui";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -290,7 +290,7 @@ export function SalaryPreviewWorkspace() {
     <div className="flex flex-col gap-6">
       <PageIntro title="HR & Salary - Salary Preview" description="Preview Gross earnings, deductions, Net Pay, and Bank/Cash allocation through the verified backend calculator. Nothing on this page creates a payroll or accounting transaction." />
       {status === "loading" ? <LoadingPanel message="Loading Salary Preview references..." /> : null}
-      {status === "error" ? <Card><Notice tone="error">{loadError}</Notice><Button className="mt-4" onClick={() => void loadReferences()} variant="secondary"><RefreshCw aria-hidden="true" className="size-4" />Retry</Button></Card> : null}
+      {status === "error" ? <Card><Notice tone="error">{loadError}</Notice><PermissionButton className="mt-4" onClick={() => void loadReferences()} variant="secondary"><RefreshCw aria-hidden="true" className="size-4" />Retry</PermissionButton></Card> : null}
 
       {status === "ready" ? (
         <form className="flex flex-col gap-6" onSubmit={calculate}>
@@ -346,21 +346,21 @@ export function SalaryPreviewWorkspace() {
             </div>
 
             <div className="mt-7 flex flex-col gap-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-semibold text-foreground">Other Approved Deductions</h3><p className="mt-1 text-sm text-muted-foreground">Add as many approved items as needed for this preview.</p></div><Button onClick={() => setOtherDeductions([...otherDeductions, { key: deductionKey++, description: "", amount: "0.00", approvalReference: "" }])} variant="secondary"><Plus aria-hidden="true" className="size-4" />Add Deduction</Button></div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-semibold text-foreground">Other Approved Deductions</h3><p className="mt-1 text-sm text-muted-foreground">Add as many approved items as needed for this preview.</p></div><PermissionButton onClick={() => setOtherDeductions([...otherDeductions, { key: deductionKey++, description: "", amount: "0.00", approvalReference: "" }])} variant="secondary"><Plus aria-hidden="true" className="size-4" />Add Deduction</PermissionButton></div>
               {otherDeductions.length === 0 ? <EmptyState title="No Other Approved Deductions" description="Use Add Deduction when an approved item needs to be included in this calculation." /> : null}
               {otherDeductions.map((item, index) => (
                 <div className="grid gap-4 rounded-md border border-border bg-background p-4 sm:grid-cols-[1.5fr_1fr_1fr_auto]" key={item.key}>
                   <Field htmlFor={`other-description-${item.key}`} label="Description" required={!isZeroDecimal(item.amount)}><TextInput {...fieldErrorProps(`other-description-${item.key}`, fieldErrors[`other.${index}.description`])} id={`other-description-${item.key}`} onChange={(event) => setOtherDeductions(otherDeductions.map((row) => row.key === item.key ? { ...row, description: event.target.value } : row))} value={item.description} /><FieldError controlId={`other-description-${item.key}`} message={fieldErrors[`other.${index}.description`]} /></Field>
                   <Field htmlFor={`other-amount-${item.key}`} label="Amount" required><TextInput {...fieldErrorProps(`other-amount-${item.key}`, fieldErrors[`other.${index}.amount`])} id={`other-amount-${item.key}`} inputMode="decimal" onChange={(event) => setOtherDeductions(otherDeductions.map((row) => row.key === item.key ? { ...row, amount: event.target.value } : row))} value={item.amount} /><FieldError controlId={`other-amount-${item.key}`} message={fieldErrors[`other.${index}.amount`]} /></Field>
                   <Field htmlFor={`other-reference-${item.key}`} label="Approval Reference"><TextInput id={`other-reference-${item.key}`} onChange={(event) => setOtherDeductions(otherDeductions.map((row) => row.key === item.key ? { ...row, approvalReference: event.target.value } : row))} value={item.approvalReference} /></Field>
-                  <div className="flex items-end"><Button aria-label={`Remove Other Approved Deduction ${index + 1}`} onClick={() => setOtherDeductions(otherDeductions.filter((row) => row.key !== item.key))} variant="ghost"><Trash2 aria-hidden="true" className="size-4" /><span className="sm:sr-only">Remove</span></Button></div>
+                  <div className="flex items-end"><PermissionButton aria-label={`Remove Other Approved Deduction ${index + 1}`} onClick={() => setOtherDeductions(otherDeductions.filter((row) => row.key !== item.key))} variant="ghost"><Trash2 aria-hidden="true" className="size-4" /><span className="sm:sr-only">Remove</span></PermissionButton></div>
                 </div>
               ))}
             </div>
           </Card>
 
           {previewError ? <Notice tone="error">{previewError}</Notice> : null}
-          <div><Button disabled={isCalculating} type="submit"><Calculator aria-hidden="true" className="size-4" />{isCalculating ? "Calculating..." : "Calculate Salary Preview"}</Button></div>
+          <div><PermissionButton disabled={isCalculating} permission="salary.preview" type="submit"><Calculator aria-hidden="true" className="size-4" />{isCalculating ? "Calculating..." : "Calculate Salary Preview"}</PermissionButton></div>
         </form>
       ) : null}
 

@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton,Permit,usePermission} from "../_components/permission-controls";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,7 +15,6 @@ import {
   type EmployeeListItem,
 } from "@/lib/api";
 import {
-  Button,
   buttonClassName,
   Card,
   CardHeader,
@@ -54,7 +54,10 @@ const emptyForm: EmployeeForm = {
 };
 
 export default function EmployeesPage() {
+  const canReadDepartments=usePermission('departments.view');
   const router = useRouter();
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -74,9 +77,9 @@ export default function EmployeesPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const loadDepartments = useCallback(async (signal?: AbortSignal) => {
-    const data = await getDepartments(signal);
+    const data = await (canReadDepartments?getDepartments(signal):Promise.resolve([]));
     setDepartments(data);
-  }, []);
+  }, [canReadDepartments]);
 
   const loadEmployees = useCallback(
     async (signal?: AbortSignal) => {
@@ -115,6 +118,7 @@ export default function EmployeesPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function initialLoad() {
+      setStatus("loading");
       try {
         const [employeeRows, departmentRows] = await Promise.all([
           getEmployees(
@@ -125,7 +129,7 @@ export default function EmployeesPage() {
             },
             controller.signal,
           ),
-          getDepartments(controller.signal),
+          canReadDepartments?getDepartments(controller.signal):Promise.resolve([]),
         ]);
         setEmployees(employeeRows);
         setDepartments(departmentRows);
@@ -143,7 +147,7 @@ export default function EmployeesPage() {
     }
     void initialLoad();
     return () => controller.abort();
-  }, [departmentFilter, router, search, statusFilter]);
+  }, [departmentFilter, router, search, statusFilter,canReadDepartments]);
 
   function openCreate() {
     setForm(emptyForm);
@@ -207,16 +211,20 @@ export default function EmployeesPage() {
 
   function applySearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setPage(1);
     setSearch(searchInput.trim());
   }
 
+  const pageCount = Math.max(1, Math.ceil(employees.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleEmployees = employees.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const activeDepartments = departments.filter((department) => department.isActive);
 
   return (
     <div className="flex flex-col gap-6">
       <PageIntro
         title="Employees"
-        description="Maintain Employee identity, contact, employment, emergency contact, and existing Salary configuration without duplicating Salary or bank data."
+        description="Employees are shared across all offices. Maintain one identity per employee; office-specific schedules and attendance stay linked to that identity."
       />
 
       {success ? <Notice tone="success">{success}</Notice> : null}
@@ -225,10 +233,10 @@ export default function EmployeesPage() {
       {status === "error" ? (
         <Card>
           <Notice tone="error">{loadError}</Notice>
-          <Button className="mt-4" onClick={() => void loadAll()} variant="secondary">
+          <PermissionButton className="mt-4" onClick={() => void loadAll()} variant="secondary">
             <RefreshCw aria-hidden="true" className="size-4" />
             Retry
-          </Button>
+          </PermissionButton>
         </Card>
       ) : null}
 
@@ -240,25 +248,25 @@ export default function EmployeesPage() {
               description="Search and filters are applied by the server. Deleted records remain outside the normal UI."
               actions={
                 <div className="flex flex-wrap gap-2">
-                  <Link className={buttonClassName({ variant: "secondary" })} href="/app/employees/work-schedules">
+                  <Permit code="schedules.view"><Link className={buttonClassName({ variant: "secondary" })} href="/app/employees/work-schedules">
                     <CalendarClock aria-hidden="true" className="size-4" />
                     Work Schedule Settings
-                  </Link>
-                  <Link className={buttonClassName({ variant: "secondary" })} href="/app/employees/attendance">
+                  </Link></Permit>
+                  <Permit code="attendance.view"><Link className={buttonClassName({ variant: "secondary" })} href="/app/employees/attendance">
                     <ClipboardCheck aria-hidden="true" className="size-4" />
                     Attendance
-                  </Link>
-                  <Button
+                  </Link></Permit>
+                  <PermissionButton permission="departments.edit"
                     onClick={() => setDepartmentsOpen((current) => !current)}
                     variant="secondary"
                   >
                     <Building2 aria-hidden="true" className="size-4" />
                     Manage Departments
-                  </Button>
-                  <Button disabled={activeDepartments.length === 0} onClick={openCreate}>
+                  </PermissionButton>
+                  <PermissionButton permission="employees.create" disabled={activeDepartments.length === 0} onClick={openCreate}>
                     <Plus aria-hidden="true" className="size-4" />
                     Add Employee
-                  </Button>
+                  </PermissionButton>
                 </div>
               }
             />
@@ -284,7 +292,7 @@ export default function EmployeesPage() {
                 <Select
                   id="employee-status-filter"
                   onChange={(event) =>
-                    setStatusFilter(event.target.value as typeof statusFilter)
+                    { setPage(1); setStatusFilter(event.target.value as typeof statusFilter); }
                   }
                   value={statusFilter}
                 >
@@ -296,7 +304,7 @@ export default function EmployeesPage() {
               <Field htmlFor="employee-department-filter" label="Department">
                 <Select
                   id="employee-department-filter"
-                  onChange={(event) => setDepartmentFilter(event.target.value)}
+                  onChange={(event) => { setPage(1); setDepartmentFilter(event.target.value); }}
                   value={departmentFilter}
                 >
                   <option value="">All Departments</option>
@@ -309,14 +317,14 @@ export default function EmployeesPage() {
                 </Select>
               </Field>
               <div className="flex items-end gap-2">
-                <Button type="submit">
+                <PermissionButton type="submit">
                   <Search aria-hidden="true" className="size-4" />
                   Search
-                </Button>
-                <Button onClick={() => void loadAll()} variant="ghost">
+                </PermissionButton>
+                <PermissionButton onClick={() => void loadAll()} variant="ghost">
                   <RefreshCw aria-hidden="true" className="size-4" />
                   <span className="sr-only">Refresh</span>
-                </Button>
+                </PermissionButton>
               </div>
             </form>
           </Card>
@@ -337,10 +345,10 @@ export default function EmployeesPage() {
                 title="Add Employee"
                 description="Create the compact Employee record first, then complete optional profile information from Employee detail."
                 actions={
-                  <Button disabled={isSaving} onClick={closeForm} variant="ghost">
+                  <PermissionButton disabled={isSaving} onClick={closeForm} variant="ghost">
                     <X aria-hidden="true" className="size-4" />
                     Close
-                  </Button>
+                  </PermissionButton>
                 }
               />
               <form className="mt-6 flex flex-col gap-5" onSubmit={submit}>
@@ -431,12 +439,12 @@ export default function EmployeesPage() {
                 </div>
                 {formError ? <Notice tone="error">{formError}</Notice> : null}
                 <div className="flex flex-wrap gap-3">
-                  <Button disabled={isSaving} type="submit">
+                  <PermissionButton disabled={isSaving} type="submit">
                     {isSaving ? "Saving..." : "Create Employee"}
-                  </Button>
-                  <Button disabled={isSaving} onClick={closeForm} variant="secondary">
+                  </PermissionButton>
+                  <PermissionButton disabled={isSaving} onClick={closeForm} variant="secondary">
                     Cancel
-                  </Button>
+                  </PermissionButton>
                 </div>
               </form>
             </Card>
@@ -468,7 +476,7 @@ export default function EmployeesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {employees.map((employee) => (
+                    {visibleEmployees.map((employee) => (
                       <tr className="border-b border-border/80 align-top" key={employee.id}>
                         <td className="py-3 pr-4 font-mono text-xs font-semibold">
                           {employee.employeeCode}
@@ -504,6 +512,13 @@ export default function EmployeesPage() {
                 </table>
               )}
             </div>
+            <nav aria-label="Employee pagination" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p aria-live="polite" className="text-sm text-muted-foreground">{employees.length} employees · Page {currentPage} of {pageCount}</p>
+              <div className="flex gap-2">
+                <PermissionButton variant="secondary" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Previous</PermissionButton>
+                <PermissionButton variant="secondary" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>Next</PermissionButton>
+              </div>
+            </nav>
           </Card>
         </>
       ) : null}

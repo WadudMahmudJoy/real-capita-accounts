@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "./permission-controls";
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -13,7 +14,6 @@ import {
   type PaymentProfileInput,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -262,8 +262,8 @@ export function PaymentProfilePanel({
         description="Configure the Gross-based Bank allocation and bank destination without creating a payment or payroll transaction."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void load()} variant="ghost"><RefreshCw aria-hidden="true" className="size-4" />Refresh</Button>
-            <Button disabled={!employeeActive} onClick={openCreate}><Plus aria-hidden="true" className="size-4" />Create Payment Profile</Button>
+            <PermissionButton onClick={() => void load()} variant="ghost"><RefreshCw aria-hidden="true" className="size-4" />Refresh</PermissionButton>
+            <PermissionButton disabled={!employeeActive} permission="salary.manage" onClick={openCreate}><Plus aria-hidden="true" className="size-4" />Create Payment Profile</PermissionButton>
           </div>
         }
       />
@@ -278,15 +278,15 @@ export function PaymentProfilePanel({
         <form className="mt-6 rounded-lg border border-border bg-background p-5" onSubmit={submit}>
           <div className="flex items-start justify-between gap-3">
             <div><h3 className="font-semibold text-foreground">{editing ? "Edit Draft Payment Profile" : "New Draft Payment Profile"}</h3><p className="mt-1 text-sm text-muted-foreground">The percentage remains freely editable. Standard company allocation is 60%.</p></div>
-            <Button disabled={isSaving} onClick={() => setFormOpen(false)} variant="ghost"><X aria-hidden="true" className="size-4" />Close</Button>
+            <PermissionButton disabled={isSaving} onClick={() => setFormOpen(false)} variant="ghost"><X aria-hidden="true" className="size-4" />Close</PermissionButton>
           </div>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <Field htmlFor="profile-bank-percentage" label="Selected Bank Percentage" required hint={`Policy Cash Share: ${formatPercentage(policyCashShare(form.selectedBankPercentage))}`}>
               <TextInput {...fieldErrorProps("profile-bank-percentage", fieldErrors.selectedBankPercentage)} id="profile-bank-percentage" inputMode="decimal" onChange={(event) => changeBankPercentage(event.target.value)} value={form.selectedBankPercentage} />
               <FieldError controlId="profile-bank-percentage" message={fieldErrors.selectedBankPercentage} />
               <div className="flex flex-wrap gap-2">
-                <Button className="h-8 px-3 text-xs" onClick={() => changeBankPercentage("0")} variant="ghost">All Cash - 0%</Button>
-                <Button className="h-8 px-3 text-xs" onClick={() => changeBankPercentage("60")} variant="ghost">Standard - 60%</Button>
+                <PermissionButton className="h-8 px-3 text-xs" onClick={() => changeBankPercentage("0")} variant="ghost">All Cash - 0%</PermissionButton>
+                <PermissionButton className="h-8 px-3 text-xs" onClick={() => changeBankPercentage("60")} variant="ghost">Standard - 60%</PermissionButton>
               </div>
             </Field>
             <Field htmlFor="profile-bank-name" label="Bank Name" required={requiresBankDetails}>
@@ -317,7 +317,7 @@ export function PaymentProfilePanel({
               <FieldError controlId="profile-reason" message={fieldErrors.changeReason} />
             </Field>
           </div>
-          <div className="mt-5 flex flex-wrap gap-3"><Button disabled={isSaving} type="submit">{isSaving ? "Saving..." : editing ? "Save Draft" : "Create Draft"}</Button><Button disabled={isSaving} onClick={() => setFormOpen(false)} variant="secondary">Cancel</Button></div>
+          <div className="mt-5 flex flex-wrap gap-3"><PermissionButton disabled={isSaving} permission="salary.manage" type="submit">{isSaving ? "Saving..." : editing ? "Save Draft" : "Create Draft"}</PermissionButton><PermissionButton disabled={isSaving} onClick={() => setFormOpen(false)} variant="secondary">Cancel</PermissionButton></div>
         </form>
       ) : null}
 
@@ -338,7 +338,7 @@ export function PaymentProfilePanel({
                   <td className="py-3 pr-4">{salaryStatusBadge(profile.status)}</td>
                   <td className="max-w-64 py-3 pr-4">{profile.changeReason ?? "-"}</td>
                   <td className="py-3 pr-4 whitespace-nowrap">{formatSalaryDate(profile.approvedAt)}</td>
-                  <td className="py-3"><div className="flex flex-wrap gap-2">{profile.status === "DRAFT" ? <><Button className="h-9 px-3" onClick={() => openEdit(profile)} variant="ghost"><Pencil aria-hidden="true" className="size-4" />Edit Draft</Button><Button className="h-9 px-3" disabled={!employeeActive} onClick={() => setApprovalTarget(profile)} variant="secondary"><Check aria-hidden="true" className="size-4" />Approve</Button></> : <span className="text-xs text-muted-foreground">Historical - read only</span>}</div></td>
+                  <td className="py-3"><div className="flex flex-wrap gap-2">{profile.status === "DRAFT" ? <><PermissionButton className="h-9 px-3" permission="salary.manage" onClick={() => openEdit(profile)} variant="ghost"><Pencil aria-hidden="true" className="size-4" />Edit Draft</PermissionButton><PermissionButton className="h-9 px-3" disabled={!employeeActive} permission="salary.approve" onClick={() => setApprovalTarget(profile)} variant="secondary"><Check aria-hidden="true" className="size-4" />Approve</PermissionButton></> : <span className="text-xs text-muted-foreground">Historical - read only</span>}</div></td>
                 </tr>
               ))}</tbody>
             </table>

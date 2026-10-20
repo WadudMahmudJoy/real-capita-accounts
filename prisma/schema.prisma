@@ -8,7 +8,279 @@ datasource db {
   provider = "postgresql"
 }
 
+enum PayrollSourceActionKind {
+  APPROVE
+  REVOKE
+}
+
+enum PayrollReservationState {
+  HELD
+  RELEASED
+  CONSUMED
+}
+
+model PayrollFinanceDelegate {
+  id String @id @default(cuid())
+  companyId String
+  userId String
+  canInitiate Boolean @default(false)
+  canReview Boolean @default(false)
+  generation Int
+  requestedAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  authorizedAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  initiatedById String
+  reviewedById String
+  expiresAt DateTime?
+  authorityReference String
+  auditSnapshot Json
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  initiatedBy User @relation("PayrollDelegateInitiator", fields: [initiatedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reviewedBy User @relation("PayrollDelegateReviewer", fields: [reviewedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revocation PayrollFinanceDelegateRevocation?
+  @@unique([companyId, userId, generation])
+  @@map("payroll_finance_delegates")
+}
+
+model PayrollFinanceDelegateRevocation {
+  id String @id @default(cuid())
+  delegateId String @unique
+  requestedAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  revokedAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  initiatedById String
+  reviewedById String
+  authorityReference String
+  auditSnapshot Json
+  delegate PayrollFinanceDelegate @relation(fields: [delegateId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  initiatedBy User @relation("PayrollDelegateRevoker", fields: [initiatedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reviewedBy User @relation("PayrollDelegateRevocationReviewer", fields: [reviewedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("payroll_finance_delegate_revocations")
+}
+
+model PayrollSourceAction {
+  id String @id @default(cuid())
+  grantId String
+  kind PayrollSourceActionKind
+  initiatedById String
+  createdAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  idempotencyKey String @unique @db.VarChar(128)
+  auditSnapshot Json
+  grant PayrollSourceAuthorization @relation(fields: [grantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  initiatedBy User @relation(fields: [initiatedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decision PayrollSourceDecision?
+  @@unique([grantId, kind])
+  @@map("payroll_source_actions")
+}
+
+model PayrollSourceDecision {
+  id String @id @default(cuid())
+  actionId String @unique
+  reviewedById String
+  reviewedAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  authorityReference String
+  auditSnapshot Json
+  action PayrollSourceAction @relation(fields: [actionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reviewedBy User @relation(fields: [reviewedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("payroll_source_decisions")
+}
+
+model PayrollPaymentReservation {
+  id String @id @default(cuid())
+  payrollRunLineId String
+  channel PayrollPaymentChannel
+  lineId String @unique
+  state PayrollReservationState @default(HELD)
+  version Int @default(1)
+  payrollRunLine PayrollRunLine @relation(fields: [payrollRunLineId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  line PayrollPaymentLine @relation(fields: [lineId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([payrollRunLineId, channel])
+  @@map("payroll_payment_reservations")
+}
+
+model PayrollCancellationRequest {
+  id String @id @default(cuid())
+  batchId String
+  expectedVersion Int
+  initiatedById String
+  createdAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  evidenceReference String
+  idempotencyKey String @unique @db.VarChar(128)
+  auditSnapshot Json
+  batch PayrollPaymentBatch @relation(fields: [batchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  initiatedBy User @relation(fields: [initiatedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decision PayrollCancellationDecision?
+  @@map("payroll_cancellation_requests")
+}
+
+model PayrollCancellationDecision {
+  id String @id @default(cuid())
+  requestId String @unique
+  reviewedById String
+  reviewedAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  evidenceDigest String @db.VarChar(64)
+  verificationAuthority String
+  verifiedAt DateTime
+  auditSnapshot Json
+  request PayrollCancellationRequest @relation(fields: [requestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reviewedBy User @relation(fields: [reviewedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@map("payroll_cancellation_decisions")
+}
+
+enum PayrollPaymentChannel {
+  BANK
+  CASH
+}
+
+enum PayrollPaymentBatchStatus {
+  PREPARED
+  CONFIRMED
+  CANCELLED
+}
+
+model PayrollSourceAuthorization {
+  id String @id @default(cuid())
+  companyId String
+  sourceAccountId String
+  channel PayrollPaymentChannel
+  grantedById String
+  grantedAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  expiresAt DateTime?
+  auditSnapshot Json
+  generation Int
+  sourceRevision String @db.VarChar(64)
+  sourceSnapshot Json
+  actions PayrollSourceAction[]
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sourceAccount CashBankAccount @relation(fields: [sourceAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grantedBy User @relation("PaymentSourceGrantor", fields: [grantedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  batches PayrollPaymentBatch[]
+  @@unique([companyId, sourceAccountId, channel, generation])
+  @@index([grantedById])
+  @@map("payroll_source_authorizations")
+}
+
+model PayrollPaymentBatch {
+  id String @id @default(cuid())
+  companyId String
+  payrollRunId String
+  sourceAccountId String
+  sourceAuthorizationId String
+  channel PayrollPaymentChannel
+  status PayrollPaymentBatchStatus @default(PREPARED)
+  version Int @default(1)
+  createdById String
+  createdAt DateTime @default(dbgenerated("(clock_timestamp() AT TIME ZONE 'UTC')"))
+  idempotencyKey String @unique @db.VarChar(128)
+  requestHash String @db.VarChar(64)
+  totalAmount Decimal @db.Decimal(18,2)
+  creationAudit Json
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sourceAccount CashBankAccount @relation(fields: [sourceAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sourceAuthorization PayrollSourceAuthorization @relation(fields: [sourceAuthorizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lines PayrollPaymentLine[]
+  confirmation PayrollPaymentConfirmation?
+  cancellationRequests PayrollCancellationRequest[]
+  @@index([payrollRunId, channel])
+  @@index([companyId, status])
+  @@index([sourceAuthorizationId])
+  @@map("payroll_payment_batches")
+}
+
+model PayrollPaymentLine {
+  cashAcknowledgment PayrollCashAcknowledgment?
+  id String @id @default(cuid())
+  batchId String
+  payrollRunLineId String
+  employeeId String
+  channel PayrollPaymentChannel
+  amount Decimal @db.Decimal(18,2)
+  obligationSnapshot Json
+  reservation PayrollPaymentReservation?
+  batch PayrollPaymentBatch @relation(fields: [batchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  payrollRunLine PayrollRunLine @relation(fields: [payrollRunLineId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  // Preserve immutable instruction history. Active exclusivity and authorized
+  // release/reuse are enforced separately by PayrollPaymentReservation.
+  @@unique([batchId, payrollRunLineId, channel])
+  @@index([batchId])
+  @@index([employeeId])
+  @@map("payroll_payment_lines")
+}
+
+model PayrollPaymentConfirmation {
+  cashAcknowledgments PayrollCashAcknowledgment[]
+  id String @id @default(cuid())
+  batchId String @unique
+  confirmedById String
+  confirmedAt DateTime
+  evidenceKind String
+  evidenceReference String
+  evidenceDigest String @db.VarChar(64)
+  verificationAuthority String
+  verifiedAt DateTime
+  attestation Json
+  auditSnapshot Json
+  idempotencyKey String @unique @db.VarChar(128)
+  batch PayrollPaymentBatch @relation(fields: [batchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  confirmedBy User @relation(fields: [confirmedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@index([confirmedById])
+  @@unique([verificationAuthority, evidenceKind, evidenceReference])
+  @@map("payroll_payment_confirmations")
+}
+
+model PayrollCashAcknowledgment {
+  id String @id
+  confirmationId String
+  lineId String @unique
+  authority String
+  acknowledgmentId String
+  amount Decimal @db.Decimal(18,2)
+  occurredAt DateTime @db.Timestamp(3)
+  confirmation PayrollPaymentConfirmation @relation(fields: [confirmationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  line PayrollPaymentLine @relation(fields: [lineId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([authority, acknowledgmentId])
+  @@map("payroll_cash_acknowledgments")
+}
+
 model User {
+  leaveStageDecisions LeaveStageDecision[] // SPRINT7D
+  authorityTickets AuthorityBootstrap[] @relation("BootstrapTarget") // SPRINT7B
+  authorizedTickets AuthorityBootstrap[] @relation("BootstrapAuthorizer") // SPRINT7B
+  authorityMandates AuthorityMandate[] // SPRINT7B
+  authorityGrants AuthorityRoleGrant[] // SPRINT7B
+  authorityRequests AuthorityRequest[] @relation("AuthorityInitiator") // SPRINT7B
+  authorityReviews AuthorityRequest[] @relation("AuthorityReviewer") // SPRINT7B
+  authorityEvents AuthorityEvent[] // SPRINT7B
+  adminVersion Int @default(1) // HR4
+  hrPermissions UserPermission[] @relation("PermissionSubject") // HR4
+  permissionGrants UserPermission[] @relation("PermissionGrantor") // HR4
+  permissionRevocations UserPermission[] @relation("PermissionRevoker") // HR4
+  employeeBindings EmployeeAccountBinding[] @relation("BindingSubject") // HR4
+  bindingVerifications EmployeeAccountBinding[] @relation("BindingVerifier") // HR4
+  bindingReleases EmployeeAccountBinding[] @relation("BindingReleaser") // HR4
+  adminActions UserAdminEvent[] @relation("AdminActor") // HR4
+  adminHistory UserAdminEvent[] @relation("AdminTarget") // HR4
+  leaveRequests LeaveRequest[] @relation("LeaveCreator")
+  withdrawnLeaveRequests LeaveRequest[] @relation("LeaveWithdrawer")
+  reviewedLeaveRequests LeaveRequest[] @relation("LeaveReviewer")
+  leaveEvents LeaveRequestEvent[]
+
+  payrollDelegateInitiations PayrollFinanceDelegate[] @relation("PayrollDelegateInitiator")
+  payrollDelegateReviews PayrollFinanceDelegate[] @relation("PayrollDelegateReviewer")
+  payrollDelegateRevocations PayrollFinanceDelegateRevocation[] @relation("PayrollDelegateRevoker")
+  payrollDelegateRevocationReviews PayrollFinanceDelegateRevocation[] @relation("PayrollDelegateRevocationReviewer")
+  financeDelegations PayrollFinanceDelegate[]
+  sourceActions PayrollSourceAction[]
+  sourceDecisions PayrollSourceDecision[]
+  cancellationRequests PayrollCancellationRequest[]
+  cancellationDecisions PayrollCancellationDecision[]
+
+  payrollSourceGrants PayrollSourceAuthorization[] @relation("PaymentSourceGrantor")
+  preparedPaymentBatches PayrollPaymentBatch[]
+  payrollPaymentConfirmations PayrollPaymentConfirmation[]
+
   id                        String                     @id @default(cuid())
   email                     String                     @unique
   fullName                  String
@@ -28,6 +300,8 @@ model User {
   approvedSalaryAssignments EmployeeSalaryAssignment[] @relation("SalaryAssignmentApprovedBy")
   createdPaymentProfiles    EmployeePaymentProfile[]   @relation("PaymentProfileCreatedBy")
   approvedPaymentProfiles   EmployeePaymentProfile[]   @relation("PaymentProfileApprovedBy")
+  createdPayrollRuns        PayrollRun[]               @relation("PayrollRunCreatedBy")
+  approvedPayrollRuns       PayrollRun[]               @relation("PayrollRunApprovedBy")
 
   createdWorkSchedules       WorkSchedule[]           @relation("WorkScheduleCreatedBy")
   createdScheduleAssignments WorkScheduleAssignment[] @relation("WorkScheduleAssignmentCreatedBy")
@@ -42,9 +316,27 @@ model User {
   cancelledCalendarExceptions   CompanyCalendarException[]  @relation("CalendarExceptionCancelledBy")
 
   @@map("users")
+  onboardingIdentity OnboardingIdentity? @relation("OnboardingSubject")
+  verifiedOnboarding OnboardingIdentity[] @relation("OnboardingVerifier")
+  onboardingInvitations OnboardingInvitation[] @relation("InvitationSubject")
+  issuedOnboardingInvitations OnboardingInvitation[] @relation("InvitationIssuer")
+  onboardingRequests OnboardingAuthorization[] @relation("OnboardingActor")
+  onboardingTargets OnboardingAuthorization[] @relation("OnboardingTarget")
+  onboardingReviews OnboardingAuthorization[] @relation("OnboardingReviewer")
+  onboardingEvents OnboardingEvent[] @relation("OnboardingEventActor")
+  onboardingHistory OnboardingEvent[] @relation("OnboardingEventTarget")
+
 }
 
 model Role {
+  authorityCompanyId String? // SPRINT7B
+  authorityCompany Company? @relation("ManagedRoleCompany", fields: [authorityCompanyId], references: [id], onDelete: Restrict, onUpdate: Restrict) // SPRINT7B
+  createdUnderId String? // SPRINT7B
+  createdUnder AuthorityMandate? @relation(fields: [createdUnderId], references: [id], onDelete: Restrict, onUpdate: Restrict) // SPRINT7B
+  permissionCodes String[] @default([]) // SPRINT7B
+  isActive Boolean @default(true) // SPRINT7B
+  version Int @default(1) // SPRINT7B
+  authorityGrants AuthorityRoleGrant[] // SPRINT7B
   id          String     @id @default(cuid())
   code        String     @unique
   name        String
@@ -268,6 +560,12 @@ model Department {
 }
 
 model Employee {
+  leaveStageDecisions LeaveStageDecision[] // SPRINT7D
+  accountBindings EmployeeAccountBinding[] // HR4
+  leaveRequests LeaveRequest[]
+
+  payrollPaymentLines PayrollPaymentLine[]
+
   id                           String                     @id @default(cuid())
   employeeCode                 String                     @unique
   fullName                     String
@@ -299,6 +597,7 @@ model Employee {
   department                   Department?                @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   salaryAssignments            EmployeeSalaryAssignment[]
   paymentProfiles              EmployeePaymentProfile[]
+  payrollRunLines              PayrollRunLine[]
 
   workScheduleAssignments WorkScheduleAssignment[]
 
@@ -308,6 +607,8 @@ model Employee {
   @@index([isActive])
   @@index([isDeleted])
   @@map("employees")
+  onboardingIdentity OnboardingIdentity[]
+
 }
 
 model SalaryStructure {
@@ -328,6 +629,7 @@ model SalaryStructure {
   approvedBy        User?                      @relation("SalaryStructureApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   components        SalaryStructureComponent[]
   salaryAssignments EmployeeSalaryAssignment[]
+  payrollRunLines   PayrollRunLine[]
 
   @@unique([code, version])
   @@index([status])
@@ -369,6 +671,7 @@ model EmployeeSalaryAssignment {
   salaryStructure   SalaryStructure           @relation(fields: [salaryStructureId], references: [id])
   createdBy         User                      @relation("SalaryAssignmentCreatedBy", fields: [createdById], references: [id])
   approvedBy        User?                     @relation("SalaryAssignmentApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  payrollRunLines   PayrollRunLine[]
 
   @@index([employeeId, effectiveFrom])
   @@index([employeeId, status])
@@ -396,10 +699,97 @@ model EmployeePaymentProfile {
   employee               Employee                  @relation(fields: [employeeId], references: [id])
   createdBy              User                      @relation("PaymentProfileCreatedBy", fields: [createdById], references: [id])
   approvedBy             User?                     @relation("PaymentProfileApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  payrollRunLines        PayrollRunLine[]
 
   @@index([employeeId, effectiveFrom])
   @@index([employeeId, status])
   @@map("employee_payment_profiles")
+}
+
+// Central regular payroll only; no office allocation or payment lifecycle.
+enum PayrollRunStatus {
+  DRAFT
+  APPROVED
+}
+
+model PayrollRun {
+  paymentBatches PayrollPaymentBatch[]
+
+  id                     String           @id @default(cuid())
+  // Resolve Company.singletonKey = PRIMARY in trusted backend code, never the
+  // active office. This FK alone does not enforce the designated parent.
+  // Verify the actual existing parent record before migration execution.
+  companyId              String
+  payrollYear            Int
+  payrollMonth           Int
+  status                 PayrollRunStatus @default(DRAFT)
+  version                Int              @default(1)
+  createdById            String
+  approvedById           String?
+  approvedAt             DateTime?
+  // Required versioned snapshot of parent identity/currency, not a live join.
+  companySnapshot        Json
+  snapshotSchemaVersion  Int              @default(1)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  company                Company          @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy              User             @relation("PayrollRunCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  approvedBy             User?            @relation("PayrollRunApprovedBy", fields: [approvedById], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lines                  PayrollRunLine[]
+
+  // One centralized regular run per month across all offices. Together with
+  // line uniqueness this prevents duplicate employee/month inclusion.
+  @@unique([payrollYear, payrollMonth])
+  @@index([companyId, status])
+  @@index([createdById])
+  @@index([approvedById])
+  @@map("payroll_runs")
+}
+
+model PayrollRunLine {
+  paymentReservations PayrollPaymentReservation[]
+
+  paymentInstructions PayrollPaymentLine[]
+
+  id                             String                    @id @default(cuid())
+  payrollRunId                   String
+  employeeId                     String
+  salaryAssignmentId             String
+  salaryStructureId              String
+  paymentProfileId               String
+  // Required snapshots must capture identity, effective ranges, structure
+  // version/ordered components, bank details, inputs, deductions and rounding.
+  // Encode all JSON money/percentages as decimal strings; never JS numbers.
+  // Backend validates payloads/source consistency and freezes approved history.
+  employeeSnapshot               Json
+  salarySnapshot                 Json
+  paymentProfileSnapshot         Json
+  calculationSnapshot            Json
+  grossSalary                    Decimal                   @db.Decimal(18, 2)
+  totalEarnings                  Decimal                   @db.Decimal(18, 2)
+  attendanceDeduction            Decimal                   @db.Decimal(18, 2)
+  providentFundDeduction          Decimal                   @db.Decimal(18, 2)
+  loanOrSalaryAdvanceDeduction    Decimal                   @db.Decimal(18, 2)
+  aitDeduction                   Decimal                   @db.Decimal(18, 2)
+  otherDeductionsTotal            Decimal                   @db.Decimal(18, 2)
+  totalDeductions                Decimal                   @db.Decimal(18, 2)
+  netPay                         Decimal                   @db.Decimal(18, 2)
+  bankPay                        Decimal                   @db.Decimal(18, 2)
+  cashPay                        Decimal                   @db.Decimal(18, 2)
+  createdAt                      DateTime                  @default(now())
+  updatedAt                      DateTime                  @updatedAt
+  payrollRun                     PayrollRun                @relation(fields: [payrollRunId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  employee                       Employee                  @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  salaryAssignment               EmployeeSalaryAssignment  @relation(fields: [salaryAssignmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  salaryStructure                SalaryStructure           @relation(fields: [salaryStructureId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  paymentProfile                 EmployeePaymentProfile    @relation(fields: [paymentProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([payrollRunId, employeeId])
+  @@index([employeeId])
+  @@index([salaryAssignmentId])
+  @@index([salaryStructureId])
+  @@index([paymentProfileId])
+  @@map("payroll_run_lines")
 }
 
 enum CompanyBackgroundMode {
@@ -408,6 +798,18 @@ enum CompanyBackgroundMode {
 }
 
 model Company {
+  authorityTickets AuthorityBootstrap[] // SPRINT7B
+  authorityMandates AuthorityMandate[] // SPRINT7B
+  managedRoles Role[] @relation("ManagedRoleCompany") // SPRINT7B
+  authorityRequests AuthorityRequest[] // SPRINT7B
+  leaveRequests LeaveRequest[]
+
+  financeDelegates PayrollFinanceDelegate[]
+  payrollAuthorityVersion Int @default(1)
+
+  payrollSourceAuthorizations PayrollSourceAuthorization[]
+  payrollPaymentBatches PayrollPaymentBatch[]
+
   id                     String                  @id @default(cuid())
   singletonKey           String?                 @unique
   name                   String
@@ -430,6 +832,7 @@ model Company {
   fiscalYears            FiscalYear[]
   vouchers               Voucher[]
   voucherNumberSequences VoucherNumberSequence[]
+  payrollRuns            PayrollRun[]
 
   workSchedules           WorkSchedule[]
   workScheduleAssignments WorkScheduleAssignment[]
@@ -440,6 +843,9 @@ model Company {
   companyCalendarExceptions  CompanyCalendarException[]
 
   @@map("companies")
+  onboardingIdentities OnboardingIdentity[]
+  onboardingAuthorizations OnboardingAuthorization[]
+
 }
 
 model WorkSchedule {
@@ -753,6 +1159,8 @@ model AccountGroup {
 }
 
 model LedgerAccount {
+  payrollMaterialVersion Int @default(1)
+
   id                 String            @id @default(cuid())
   accountGroupId     String
   code               String            @unique
@@ -773,6 +1181,11 @@ model LedgerAccount {
 }
 
 model CashBankAccount {
+  payrollMaterialVersion Int @default(1)
+
+  payrollSourceAuthorizations PayrollSourceAuthorization[]
+  payrollPaymentBatches PayrollPaymentBatch[]
+
   id                String              @id @default(cuid())
   ledgerAccountId   String              @unique
   displayName       String
@@ -998,4 +1411,340 @@ model VoucherNumberSequence {
 
   @@unique([companyId, fiscalYearId, voucherType])
   @@map("voucher_number_sequences")
+}
+
+
+enum LeaveRequestStatus {
+  SUBMITTED
+  WITHDRAWN
+  APPROVED
+  REJECTED
+}
+
+model LeaveCategory {
+  description String? @db.VarChar(1000) // HR4
+  version Int @default(1) // HR4
+  id String @id @default(cuid())
+  code String @unique @db.VarChar(32)
+  name String @db.VarChar(100)
+  isActive Boolean @default(false)
+  requests LeaveRequest[]
+  @@map("leave_categories")
+}
+
+model LeaveRequest {
+  workflow LeaveWorkflow? // SPRINT7D
+  stageDecisions LeaveStageDecision[] // SPRINT7D
+  id String @id @default(cuid())
+  employeeId String
+  companyId String
+  categoryId String
+  createdById String
+  withdrawnById String?
+  reviewedById String?
+  reviewedAt DateTime? @db.Timestamptz(3)
+  decisionReason String? @db.VarChar(1000)
+  reviewAuthoritySnapshot Json? @db.JsonB
+  startDate DateTime @db.Date
+  endDate DateTime @db.Date
+  reason String @db.VarChar(1000)
+  supportingReference String? @db.VarChar(500)
+  status LeaveRequestStatus @default(SUBMITTED)
+  version Int @default(1)
+  idempotencyKey String @unique @db.VarChar(128)
+  identitySnapshot Json @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  withdrawnAt DateTime? @db.Timestamptz(3)
+  employee Employee @relation(fields:[employeeId], references:[id], onDelete:Restrict)
+  company Company @relation(fields:[companyId], references:[id], onDelete:Restrict)
+  category LeaveCategory @relation(fields:[categoryId], references:[id], onDelete:Restrict)
+  creator User @relation("LeaveCreator",fields:[createdById], references:[id], onDelete:Restrict)
+  withdrawer User? @relation("LeaveWithdrawer",fields:[withdrawnById], references:[id], onDelete:Restrict)
+  reviewer User? @relation("LeaveReviewer",fields:[reviewedById], references:[id], onDelete:Restrict)
+  events LeaveRequestEvent[]
+  @@index([employeeId,startDate,endDate])
+  @@index([createdById,status,createdAt])
+  @@map("leave_requests")
+}
+
+model LeaveRequestEvent {
+  id String @id @default(cuid())
+  requestId String
+  actorId String
+  action String @db.VarChar(32)
+  version Int
+  snapshot Json @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  request LeaveRequest @relation(fields:[requestId], references:[id], onDelete:Restrict)
+  actor User @relation(fields:[actorId], references:[id], onDelete:Restrict)
+  @@unique([requestId,version])
+  @@map("leave_request_events")
+}
+
+// BEGIN SPRINT4
+enum HrPermission {
+  SYSTEM_ADMIN
+  HR_ADMIN
+}
+model UserPermission {
+  id String @id @default(cuid())
+  userId String
+  code HrPermission
+  grantedById String
+  grantedAt DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt DateTime? @db.Timestamptz(3)
+  revokedById String?
+  revokedAt DateTime? @db.Timestamptz(3)
+  reason String @db.VarChar(1000)
+  user User @relation("PermissionSubject",fields:[userId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  grantor User @relation("PermissionGrantor",fields:[grantedById],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  revoker User? @relation("PermissionRevoker",fields:[revokedById],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  @@index([userId,code])
+  @@map("user_permissions")
+}
+model EmployeeAccountBinding {
+  leaveStageDecisions LeaveStageDecision[] // SPRINT7D
+  id String @id @default(cuid())
+  userId String
+  employeeId String
+  verifiedById String
+  verifiedAt DateTime @default(now()) @db.Timestamptz(3)
+  verificationReference String @db.VarChar(1000)
+  unboundById String?
+  unboundAt DateTime? @db.Timestamptz(3)
+  user User @relation("BindingSubject",fields:[userId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  employee Employee @relation(fields:[employeeId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  verifier User @relation("BindingVerifier",fields:[verifiedById],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  releaser User? @relation("BindingReleaser",fields:[unboundById],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  @@index([employeeId])
+  @@map("employee_account_bindings")
+}
+model UserAdminEvent {
+  id String @id @default(cuid())
+  actorId String
+  targetUserId String
+  action String @db.VarChar(64)
+  snapshot Json @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  actor User @relation("AdminActor",fields:[actorId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  target User @relation("AdminTarget",fields:[targetUserId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+  @@index([targetUserId,createdAt])
+  @@map("user_admin_events")
+}
+
+// BEGIN SPRINT7B: MD-first authority; no initial identities or grants.
+model AuthorityBootstrap {
+ id String @id @default(cuid())
+ companyId String
+ targetUserId String
+ authorizerId String
+ tokenHash String @unique
+ expiresAt DateTime @db.Timestamptz(3)
+ consumedAt DateTime? @db.Timestamptz(3)
+ purpose String
+ provenance Json @db.JsonB
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ company Company @relation(fields:[companyId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ target User @relation("BootstrapTarget",fields:[targetUserId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ authorizer User @relation("BootstrapAuthorizer",fields:[authorizerId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ mandates AuthorityMandate[]
+ @@map("authority_bootstraps")
+}
+model AuthorityMandate {
+ id String @id @default(cuid())
+ companyId String
+ userId String
+ kind String
+ ceiling String[]
+ bootstrapId String? @unique
+ requestId String? @unique
+ expiresAt DateTime? @db.Timestamptz(3)
+ revokedAt DateTime? @db.Timestamptz(3)
+ version Int @default(1)
+ company Company @relation(fields:[companyId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ bootstrap AuthorityBootstrap? @relation(fields:[bootstrapId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ request AuthorityRequest? @relation(fields:[requestId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ roles Role[]
+ grants AuthorityRoleGrant[]
+ @@index([userId])
+ @@map("authority_mandates")
+}
+model AuthorityRoleGrant {
+ id String @id @default(cuid())
+ roleId String
+ userId String
+ mandateId String
+ requestId String @unique
+ expiresAt DateTime? @db.Timestamptz(3)
+ revokedAt DateTime? @db.Timestamptz(3)
+ version Int @default(1)
+ role Role @relation(fields:[roleId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ mandate AuthorityMandate @relation(fields:[mandateId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ request AuthorityRequest @relation(fields:[requestId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ @@index([userId])
+ @@map("authority_role_grants")
+}
+model AuthorityRequest {
+ id String @id @default(cuid())
+ companyId String
+ actorId String
+ reviewerId String?
+ operation String
+ payload Json @db.JsonB
+ status String @default("PENDING")
+ version Int @default(1)
+ expectedVersion Int
+ idempotencyKey String
+ reason String
+ decisionReason String?
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ expiresAt DateTime @db.Timestamptz(3)
+ decidedAt DateTime? @db.Timestamptz(3)
+ company Company @relation(fields:[companyId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ actor User @relation("AuthorityInitiator",fields:[actorId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ reviewer User? @relation("AuthorityReviewer",fields:[reviewerId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ mandates AuthorityMandate[]
+ grants AuthorityRoleGrant[]
+ events AuthorityEvent[]
+ @@unique([actorId,idempotencyKey])
+ @@index([companyId,status,createdAt])
+ @@map("authority_requests")
+}
+model AuthorityEvent {
+ id String @id @default(cuid())
+ requestId String?
+ actorId String
+ action String
+ entityId String
+ snapshot Json @db.JsonB
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ request AuthorityRequest? @relation(fields:[requestId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ actor User @relation(fields:[actorId],references:[id],onDelete:Restrict,onUpdate:Restrict)
+ @@index([entityId,createdAt])
+ @@map("authority_events")
+}
+
+// BEGIN SPRINT7D
+model LeaveWorkflow {
+  requestId String @id
+  stage String @db.VarChar(32)
+  version Int
+  request LeaveRequest @relation(fields:[requestId],references:[id],onDelete:Restrict)
+  @@index([stage,requestId])
+  @@map("leave_workflows")
+}
+model LeaveStageDecision {
+  id String @id @default(cuid())
+  requestId String
+  stage String @db.VarChar(8)
+  actorId String
+  employeeId String
+  bindingId String
+  decision String @db.VarChar(32)
+  reason String @db.VarChar(1000)
+  requestVersion Int
+  requestFingerprint String @db.VarChar(32)
+  idempotencyKey String @unique @db.VarChar(128)
+  authoritySnapshot Json @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  request LeaveRequest @relation(fields:[requestId],references:[id],onDelete:Restrict)
+  actor User @relation(fields:[actorId],references:[id],onDelete:Restrict)
+  employee Employee @relation(fields:[employeeId],references:[id],onDelete:Restrict)
+  binding EmployeeAccountBinding @relation(fields:[bindingId],references:[id],onDelete:Restrict)
+  @@unique([requestId,stage])
+  @@index([actorId,createdAt])
+  @@map("leave_stage_decisions")
+}
+
+// BEGIN SPRINT7F: additive, unapplied secure onboarding. No nominated people seeded.
+model OnboardingIdentity {
+ userId String @id
+ companyId String
+ employeeId String?
+ emailVerifiedAt DateTime? @db.Timestamptz(3)
+ verifiedAt DateTime? @db.Timestamptz(3)
+ verifiedById String?
+ evidenceDigest String?
+ version Int @default(1)
+ user User @relation("OnboardingSubject",fields:[userId],references:[id],onDelete:Restrict)
+ verifier User? @relation("OnboardingVerifier",fields:[verifiedById],references:[id],onDelete:Restrict)
+ company Company @relation(fields:[companyId],references:[id],onDelete:Restrict)
+ employee Employee? @relation(fields:[employeeId],references:[id],onDelete:Restrict)
+ @@map("onboarding_identities")
+}
+model OnboardingInvitation {
+ id String @id @default(cuid())
+ userId String
+ email String
+ tokenHash String @unique
+ status String @default("DELIVERED")
+ createdById String?
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ expiresAt DateTime @db.Timestamptz(3)
+ consumedAt DateTime? @db.Timestamptz(3)
+ cancelledAt DateTime? @db.Timestamptz(3)
+ user User @relation("InvitationSubject",fields:[userId],references:[id],onDelete:Restrict)
+ issuer User? @relation("InvitationIssuer",fields:[createdById],references:[id],onDelete:Restrict)
+ @@index([userId,createdAt])
+ @@map("onboarding_invitations")
+}
+model OnboardingAuthorization {
+ id String @id @default(cuid())
+ companyId String
+ actorId String
+ targetUserId String
+ reviewerId String?
+ kind String
+ scope String
+ state String @default("PENDING")
+ reason String
+ decisionReason String?
+ evidenceDigest String?
+ parentId String?
+ sessionId String?
+ expectedVersion Int @default(0)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ expiresAt DateTime @db.Timestamptz(3)
+ consumedAt DateTime? @db.Timestamptz(3)
+ revokedAt DateTime? @db.Timestamptz(3)
+ actor User @relation("OnboardingActor",fields:[actorId],references:[id],onDelete:Restrict)
+ target User @relation("OnboardingTarget",fields:[targetUserId],references:[id],onDelete:Restrict)
+ reviewer User? @relation("OnboardingReviewer",fields:[reviewerId],references:[id],onDelete:Restrict)
+ company Company @relation(fields:[companyId],references:[id],onDelete:Restrict)
+ parent OnboardingAuthorization? @relation("OnboardingParent",fields:[parentId],references:[id],onDelete:Restrict)
+ children OnboardingAuthorization[] @relation("OnboardingParent")
+ @@index([targetUserId,state])
+ @@map("onboarding_authorizations")
+}
+model OnboardingEvent {
+ id String @id @default(cuid())
+ actorId String?
+ targetUserId String?
+ action String
+ reason String?
+ recordId String
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ actor User? @relation("OnboardingEventActor",fields:[actorId],references:[id],onDelete:Restrict)
+ target User? @relation("OnboardingEventTarget",fields:[targetUserId],references:[id],onDelete:Restrict)
+ @@index([targetUserId,createdAt])
+ @@map("onboarding_events")
+}
+model OnboardingNonce {
+ nonceHash String @id
+ actorId String?
+ sessionId String?
+ command String
+ payloadHash String
+ expiresAt DateTime @db.Timestamptz(3)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ @@map("onboarding_nonces")
+}
+model OnboardingRate {
+ key String @id
+ windowStartedAt DateTime @db.Timestamptz(3)
+ attempts Int
+ @@map("onboarding_rates")
 }

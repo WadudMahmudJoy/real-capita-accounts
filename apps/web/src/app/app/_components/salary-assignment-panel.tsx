@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "./permission-controls";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,7 +17,6 @@ import {
   type SalaryStructure,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -245,17 +245,17 @@ export function SalaryAssignmentPanel({
         description="Gross Salary and its approved Salary Structure are effective-dated. Approved records remain historical and read-only."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void load()} variant="ghost">
+            <PermissionButton onClick={() => void load()} variant="ghost">
               <RefreshCw aria-hidden="true" className="size-4" />
               Refresh
-            </Button>
-            <Button
+            </PermissionButton>
+            <PermissionButton
               disabled={!employeeActive || approvedStructures.length === 0}
-              onClick={openCreate}
+              permission="salary.manage" onClick={openCreate}
             >
               <Plus aria-hidden="true" className="size-4" />
               New Salary Assignment
-            </Button>
+            </PermissionButton>
           </div>
         }
       />
@@ -286,9 +286,9 @@ export function SalaryAssignmentPanel({
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">Gross Salary is transmitted as a Decimal string. Approval is a separate action.</p>
             </div>
-            <Button disabled={isSaving} onClick={() => setFormOpen(false)} variant="ghost">
+            <PermissionButton disabled={isSaving} onClick={() => setFormOpen(false)} variant="ghost">
               <X aria-hidden="true" className="size-4" /> Close
-            </Button>
+            </PermissionButton>
           </div>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <Field htmlFor="assignment-structure" label="Salary Structure" required>
@@ -332,8 +332,8 @@ export function SalaryAssignmentPanel({
             </Field>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button disabled={isSaving} type="submit">{isSaving ? "Saving..." : editing ? "Save Draft" : "Create Draft"}</Button>
-            <Button disabled={isSaving} onClick={() => setFormOpen(false)} variant="secondary">Cancel</Button>
+            <PermissionButton disabled={isSaving} permission="salary.manage" type="submit">{isSaving ? "Saving..." : editing ? "Save Draft" : "Create Draft"}</PermissionButton>
+            <PermissionButton disabled={isSaving} onClick={() => setFormOpen(false)} variant="secondary">Cancel</PermissionButton>
           </div>
         </form>
       ) : null}
@@ -357,8 +357,8 @@ export function SalaryAssignmentPanel({
                   <td className="py-3 pr-4 whitespace-nowrap">{formatSalaryDate(row.approvedAt)}</td>
                   <td className="py-3"><div className="flex flex-wrap gap-2">
                     {row.status === "DRAFT" ? <>
-                      <Button className="h-9 px-3" onClick={() => openEdit(row)} variant="ghost"><Pencil aria-hidden="true" className="size-4" />Edit Draft</Button>
-                      <Button className="h-9 px-3" disabled={!employeeActive} onClick={() => setApprovalTarget(row)} variant="secondary"><Check aria-hidden="true" className="size-4" />Approve</Button>
+                      <PermissionButton className="h-9 px-3" permission="salary.manage" onClick={() => openEdit(row)} variant="ghost"><Pencil aria-hidden="true" className="size-4" />Edit Draft</PermissionButton>
+                      <PermissionButton className="h-9 px-3" disabled={!employeeActive} permission="salary.approve" onClick={() => setApprovalTarget(row)} variant="secondary"><Check aria-hidden="true" className="size-4" />Approve</PermissionButton>
                     </> : <span className="text-xs text-muted-foreground">Historical - read only</span>}
                   </div></td>
                 </tr>

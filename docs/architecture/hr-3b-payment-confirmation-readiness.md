@@ -1,0 +1,37 @@
+# HR-3B 002E-3A — confirmation readiness and evidence trust
+
+## Implemented boundary
+
+`PayrollPaymentConfirmationReadinessService.assess(batchId, expectedVersion, authenticatedUser, transaction?)` is reusable backend validation only. It adds no route, confirmation action, paid transition, audit mutation, voucher or external transfer. The user identity must come from the existing server-side session at any future HTTP boundary; the service also verifies the active persisted ACCOUNTANT identity.
+
+The assessment resolves active PRIMARY independently of selected office, scopes batch/payroll ownership, requires PREPARED/expected version, a distinct maker/checker, approved payroll, a nonempty bounded collection of unique employee obligations, HELD matching reservations, positive full-channel allocations and exact Decimal totals. It rejects existing confirmation or any pending/decided cancellation; cancellation history must not be ignored to make a batch confirmable.
+
+Installed `payroll_payment_grant_valid` independently checks approval/revocation, UTC wall-clock expiry, generation and material source revision under the existing source locks. Invalid source/channel/ledger fails explicitly. Missing, expired, revoked or stale grants block; these causes share `SOURCE_AUTHORIZATION_EXPIRED_REVOKED_OR_STALE` rather than revealing private grant/source metadata. Existing payment preparation revalidates historical salary/profile/financial integrity without recalculating from current salary configurations.
+
+The default assessment uses one RepeatableRead transaction; a future Serializable confirmation operation can pass its transaction for revalidation. Read/lock RPCs acquire locks but perform no writes. This assessment cannot replace locking/version checks and independent evidence verification inside a future protected operation. Database/permission failures propagate fail-closed; no passing response is fabricated.
+
+Output is explicitly allowlisted: batch/version, status, line count, exact total and machine-readable blocker codes. No employee identities, bank credentials, source snapshots, audit payloads or evidence records are returned. `READY_FOR_EVIDENCE_VERIFICATION` means technical prerequisites permit verification, **not proof of settlement or authorization to mutate**. `settlementVerified` is always false and transactional revalidation is always required.
+
+## Provider contract — no production trust source registered
+
+`PayrollPaymentEvidenceProvider` is registered with `isConfigured() = false` and `verify() = null`. There is no confirmation endpoint. Only an explicitly approved server-side adapter may replace this provider. Client configuration, dependency overrides, free-text references, uploaded files, caller hashes and self-attestation must never activate authority. Synthetic configured providers are constructed solely in isolated automated tests and do not claim payment evidence.
+
+`PaymentEvidenceExpectation` is constructed from locked server-owned instructions: batch/channel, source account, exact amount and each globally identified beneficiary/full allocation. An opaque handle locates an external record; it is not proof. `VerifiedPaymentEvidence` identifies the authority and authoritative record, occurrence/verification dates, source, batch/channel, amount and beneficiary bindings; CASH includes independently verifiable acknowledgment IDs for each recipient. Provider outputs remain internal.
+
+- BANK adapter must independently authenticate an external transaction against an approved bank/reconciliation source and bind reference, actual date, exact amount, authorized source account and batch/beneficiary allocations. A transaction reference alone is insufficient.
+- CASH adapter must authenticate signed acknowledgment records through an approved independent registry/verification procedure, binding signer/recipient identity, actual date, exact amount, cash source and beneficiary allocation. A scanned receipt or uploaded signature alone is insufficient.
+- Any future protected confirmation must validate the returned bindings, dates, completeness and trusted authority; require an independent authenticated ACCOUNTANT's evidence verification/attestation, recheck current grant/source/reservations/status/version, and atomically record immutable evidence and audit. This task implements none of those mutations.
+
+Still required: genuinely designated finance-user identities and auditable source grants; an approved external bank evidence source; an approved independent cash acknowledgment mechanism; trusted mapping from external beneficiaries to employee obligations; and private adapter access/operational custody. No new roles or implicit ACCOUNTANT provisioning authority are introduced. Finance database credentials stay outside API configuration/providers. Private credentials alone do not establish business authority.
+
+## Acceptance and preservation
+
+The existing task-owned PostgreSQL 17 harness uses a separate loopback instance with tmpfs and no business volumes. Actual login/session guards, independently approved synthetic salary/payroll and finalized attendance workflows run under the reviewed restricted runtime profile. Added authenticated BANK/CASH HTTP preparation assertions verify two unique employees, totals 120.02/80.00, PREPARATION_NOT_DISBURSED, safe DTOs and unchanged payment counts. Added real PostgreSQL readiness checks cover current grant/held obligation validation, version, maker-checker and default verifier blocking. Existing authenticated approved list/detail, payslips/sheet, role/ownership/invalid-ID denials and historical snapshot regression remain exercised.
+
+Results: **42 real PostgreSQL acceptance groups**, **28 deterministic readiness/provider assertions**, **20 payroll read/auth checks**, **7 preparation checks**, **8 document checks** passed. PostgreSQL coverage includes expired/revoked/source-drifted grants, UTC expiry, cancellation/release, SQL guards, concurrency and rollback. Deterministic readiness tests cover invalid state, duplicates, unavailable authority, released/consumed reservations, incorrect totals and source bindings. API/helper/harness TypeScript, targeted lint, Prisma validation and diff checks passed. The initial helper type-check invocation lacked decorator flags; it was corrected and passed without changing business code. Existing pg concurrent-query deprecation warning remains; no upgrade was performed.
+
+Both disposable database and owning container were removed after identity/session checks. Salary-dev received only a verified READ ONLY inspection: no valid existing sessions or payroll records, and zero payment batches/delegates/confirmations. Its authenticated/positive-document smoke is **NOT TESTABLE**; no production fixture was manufactured. Its migration/roles were not redeployed. Protected/Aafiyat databases were not accessed. Positive actual settlement/confirmation remains unimplemented and untested.
+
+Task files: new evidence provider, new confirmation-readiness service, PayrollModule registration/export, extended `scripts/verify-payroll-acceptance.ts`, new `scripts/verify-payment-confirmation-readiness.ts`, and this document. No schema/migration changes.
+
+Verdict: **PASS for this isolated HTTP acceptance and read-only foundation**. Salary-dev positive authenticated documents remain NOT TESTABLE; genuine evidence/delegation remains a prerequisite for any later confirmation implementation.

@@ -1,5 +1,30 @@
 # Real Capita Accounting & Project Finance System Handoff
 
+## Sprint 7F — stop after secure onboarding implementation
+
+Continue on `Joy` with accumulated uncommitted work preserved. Secure claiming,
+independent company MD onboarding, private signed execution, specialized MD approval,
+bounded Role Management and recovery controls are implemented in source. Read the
+[Sprint 7F acceptance/readiness report](hr-admin/sprint7f-onboarding-acceptance.md)
+and [implementation record](hr-admin/sprint7f-implementation-plan.md) before further
+work. The evidence register contains completed checks and the final technical record.
+
+Salary-dev retains migrations 18/19 and 18 successful applied migrations. Migration
+20 is unapplied; migration 15 remains deferred. No genuine MD/AGM/HR identity proof,
+Employee binding, provider/private OS/database setup or activation was performed.
+Initial registrar access requires a genuine authenticated ERP session and independent
+signed evidence. Salam's independent company appointment authority must be verified
+separately from subsequent MD delegation. Email claiming alone leaves an account
+inactive until independent identity verification. Own specialized requests are pending
+until independent MD approval. Non-MD replacement transfers no privileges; independent
+MD recovery revokes the root but cannot establish a replacement MD. Stop after Sprint
+7F. No automatic deployment, next sprint, Git operation or business transaction is
+authorized by this handoff. Earlier sprint sections below remain history.
+
+## Sprint 7E — stop after controlled deployment
+
+On Joy, migrations 20261018000000_md_authority_foundation and 20261019000000_leave_hr_md_workflow were actually applied, in order, only to localhost:55532/real_capita_accounts_salary_dev. Final count 18 successful matching migrations; 20261015000000_payroll_confirmation_evidence remains pending. Fresh outside-Git backup/restoration, unchanged business fingerprints, bounded grants, restricted smoke and isolated authority/leave acceptance passed. Operational readiness remains PARTIAL: no genuine MD/AGM/HR onboarding, verifier/private executor or real-user acceptance. Reviewed 7D source/SQL remains intact. Accumulated uncommitted changes preserved; no commit/push/pull/merge or next sprint. Read [Sprint 7E acceptance](hr-admin/sprint7e-deployment-acceptance.md) for exact checksums, evidence, verifier deviations and remaining prerequisites.
+
 ## Current Phase
 
 - **Phase 2M-3E AGM-ready polish and final hardening is implemented in this session.**

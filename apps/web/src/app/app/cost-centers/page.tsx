@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../_components/permission-controls";
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +16,6 @@ import {
   type Project,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   CheckboxField,
@@ -216,9 +216,9 @@ export default function CostCentersPage() {
             <CardHeader
               actions={
                 isEditing ? (
-                  <Button onClick={startCreate} variant="ghost">
+                  <PermissionButton permission="cost-centers.create" onClick={startCreate} variant="ghost">
                     Cancel edit
-                  </Button>
+                  </PermissionButton>
                 ) : null
               }
               description={
@@ -337,13 +337,13 @@ export default function CostCentersPage() {
               ) : null}
 
               <div className="flex items-center gap-3">
-                <Button disabled={isSaving || !hasProjects} type="submit">
+                <PermissionButton disabled={isSaving || !hasProjects} permission={form.id?"cost-centers.edit":"cost-centers.create"} type="submit">
                   {isSaving
                     ? "Saving..."
                     : isEditing
                       ? "Save changes"
                       : "Create cost center"}
-                </Button>
+                </PermissionButton>
               </div>
             </form>
           </Card>
@@ -397,13 +397,13 @@ export default function CostCentersPage() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end">
-                            <Button
+                            <PermissionButton permission="cost-centers.edit"
                               onClick={() => startEdit(costCenter)}
                               variant="ghost"
                             >
                               <Pencil aria-hidden="true" className="size-4" />
                               Edit
-                            </Button>
+                            </PermissionButton>
                           </div>
                         </td>
                       </tr>

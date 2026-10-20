@@ -9,5 +9,6 @@ import { SalaryService } from "./salary.service";
   controllers: [SalaryController],
   imports: [AuthModule, PrismaModule],
   providers: [SalaryCalculator, SalaryService],
+  exports: [SalaryCalculator],
 })
 export class SalaryModule {}

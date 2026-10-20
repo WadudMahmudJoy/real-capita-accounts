@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,7 +13,6 @@ import {
   type AttendanceHistoryStatus,
 } from "@/lib/attendance-api";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -326,9 +326,9 @@ export function AttendanceHistoryDetail({
           The attendance history for this employee and date was not found.
         </Notice>
         <div className="mt-4">
-          <Button onClick={onClose} variant="secondary">
+          <PermissionButton onClick={onClose} variant="secondary">
             Close
-          </Button>
+          </PermissionButton>
         </div>
       </Card>
     );
@@ -339,12 +339,12 @@ export function AttendanceHistoryDetail({
       <Card>
         <Notice tone="error">{error}</Notice>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Button onClick={() => void load()} variant="secondary">
+          <PermissionButton onClick={() => void load()} variant="secondary">
             Try Again
-          </Button>
-          <Button onClick={onClose} variant="ghost">
+          </PermissionButton>
+          <PermissionButton onClick={onClose} variant="ghost">
             Close
-          </Button>
+          </PermissionButton>
         </div>
       </Card>
     );
@@ -358,9 +358,9 @@ export function AttendanceHistoryDetail({
           title="Nothing recorded"
         />
         <div className="mt-4">
-          <Button onClick={onClose} variant="secondary">
+          <PermissionButton onClick={onClose} variant="secondary">
             Close
-          </Button>
+          </PermissionButton>
         </div>
       </Card>
     );
@@ -373,9 +373,9 @@ export function AttendanceHistoryDetail({
     <Card>
       <CardHeader
         actions={
-          <Button onClick={onClose} variant="secondary">
+          <PermissionButton onClick={onClose} variant="secondary">
             Close
-          </Button>
+          </PermissionButton>
         }
         description={`${detail.employee.employeeCode}${detail.employee.department ? ` · ${detail.employee.department.name}` : ""}`}
         title={`${detail.employee.fullName} — ${businessDateLabel(businessDate)}`}
@@ -419,13 +419,13 @@ export function AttendanceHistoryDetail({
       <div className="mt-5 flex flex-wrap gap-3">
         {canCorrect ? (
           <>
-            <Button onClick={openCorrection}>Correct Attendance</Button>
-            <Button onClick={openVoidDialog} variant="danger">
+            <PermissionButton permission="attendance.edit" onClick={openCorrection}>Correct Attendance</PermissionButton>
+            <PermissionButton permission="attendance.edit" onClick={openVoidDialog} variant="danger">
               Mark Attendance Not Applicable
-            </Button>
+            </PermissionButton>
           </>
         ) : null}
-        {canRestore ? <Button onClick={openRestoreDialog}>Restore Attendance</Button> : null}
+        {canRestore ? <PermissionButton permission="attendance.edit" onClick={openRestoreDialog}>Restore Attendance</PermissionButton> : null}
       </div>
       <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         History timeline

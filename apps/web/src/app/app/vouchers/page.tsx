@@ -1,4 +1,5 @@
 "use client";
+import {Permit} from "../_components/permission-controls";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -179,12 +180,12 @@ export default function VouchersPage() {
           <Card>
             <CardHeader
               actions={
-                <Link href="/app/vouchers/new">
+                <Permit code="vouchers.create"><Link href="/app/vouchers/new">
                   <Button>
                     <Plus aria-hidden="true" className="size-4" />
                     New voucher
                   </Button>
-                </Link>
+                </Link></Permit>
               }
               description="Filter the voucher list by type, status, fiscal year, or accounting period."
               title="Filters"

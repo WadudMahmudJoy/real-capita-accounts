@@ -1,8 +1,9 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import type { Company } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Button, StatusBadge } from "../../_components/ui";
+import { StatusBadge } from "../../_components/ui";
 
 type OfficeListProps = {
   companies: Company[];
@@ -61,15 +62,15 @@ function OfficeCard({
       </div>
 
       <div className="mt-auto flex flex-wrap items-center gap-2">
-        <Button
+        <PermissionButton
           disabled={isSwitching}
-          onClick={() => onEdit(company)}
+          permission="company.manage" onClick={() => onEdit(company)}
           type="button"
           variant="secondary"
         >
           Edit
-        </Button>
-        <Button
+        </PermissionButton>
+        <PermissionButton
           disabled={!canSwitch || isSwitching}
           onClick={() => onSwitch(company)}
           title={
@@ -85,7 +86,7 @@ function OfficeCard({
             : isSwitching
               ? "Switching..."
               : "Switch"}
-        </Button>
+        </PermissionButton>
       </div>
     </div>
   );

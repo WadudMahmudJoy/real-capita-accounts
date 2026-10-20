@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,6 @@ import {
   type UpdateCompanyInput,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   Field,
@@ -344,13 +344,13 @@ export function OfficeEditor({
       {basicSuccess ? <Notice tone="success">{basicSuccess}</Notice> : null}
 
       <div className="flex items-center gap-3">
-        <Button disabled={isSavingBasic} type="submit">
+        <PermissionButton disabled={isSavingBasic} permission="company.manage" type="submit">
           {isSavingBasic
             ? "Saving..."
             : isCreating
               ? "Create office"
               : "Save basic info"}
-        </Button>
+        </PermissionButton>
       </div>
     </form>
   );
@@ -461,13 +461,13 @@ export function OfficeEditor({
       ) : null}
 
       <div className="flex items-center gap-3">
-        <Button
+        <PermissionButton
           disabled={isSavingBranding}
-          onClick={() => void handleBrandingSubmit()}
+          permission="company.manage" onClick={() => void handleBrandingSubmit()}
           type="button"
         >
           {isSavingBranding ? "Saving..." : "Save branding settings"}
-        </Button>
+        </PermissionButton>
       </div>
     </div>
   );
@@ -558,13 +558,13 @@ export function OfficeEditor({
       {printSuccess ? <Notice tone="success">{printSuccess}</Notice> : null}
 
       <div className="flex items-center gap-3">
-        <Button
+        <PermissionButton
           disabled={isSavingPrint}
-          onClick={() => void handlePrintSubmit()}
+          permission="company.manage" onClick={() => void handlePrintSubmit()}
           type="button"
         >
           {isSavingPrint ? "Saving..." : "Save print settings"}
-        </Button>
+        </PermissionButton>
       </div>
     </div>
   );
@@ -579,9 +579,9 @@ export function OfficeEditor({
         }
         title={isCreating ? "Add office" : "Edit office profile"}
         actions={
-          <Button onClick={onCancel} type="button" variant="ghost">
+          <PermissionButton onClick={onCancel} type="button" variant="ghost">
             Close
-          </Button>
+          </PermissionButton>
         }
       />
 

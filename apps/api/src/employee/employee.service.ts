@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -316,6 +317,8 @@ export class EmployeeService {
         return safeDetail(employee);
       });
     } catch (error) {
+      const databaseError=(error??{}) as {code?:string;cause?:{originalCode?:string};meta?:{driverAdapterError?:{cause?:{originalCode?:string}}}};
+      if([databaseError.code,databaseError.cause?.originalCode,databaseError.meta?.driverAdapterError?.cause?.originalCode].includes('42501'))throw new ForbiddenException('Protected personnel identity requires separately authorized administration.');
       throwConflictOnUniqueConstraint(
         error,
         "National ID or official email is already assigned to another employee.",

@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +12,6 @@ import {
   type AttendancePolicy,
 } from "@/lib/attendance-api";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -248,9 +248,9 @@ export function SettingsRulesPanel() {
       <CardHeader
         actions={
           initialPolicyAvailable ? (
-            <Button onClick={openCreateForm}>Create Initial Rules</Button>
+            <PermissionButton permission="attendance.manage" onClick={openCreateForm}>Create Initial Rules</PermissionButton>
           ) : currentPolicy ? (
-            <Button onClick={openReplaceForm}>Replace Rules</Button>
+            <PermissionButton permission="attendance.manage" onClick={openReplaceForm}>Replace Rules</PermissionButton>
           ) : null
         }
         description="Grace minutes control how attendance is evaluated on working days. Changes take effect from their effective date."
@@ -302,14 +302,14 @@ export function SettingsRulesPanel() {
                   ) : null}
                 </div>
                 {phase === "scheduled" ? (
-                  <Button
+                  <PermissionButton
                     className="self-start sm:self-auto"
                     disabled={actionPending}
-                    onClick={() => openCancelDialog(policy)}
+                    permission="attendance.manage" onClick={() => openCancelDialog(policy)}
                     variant="danger"
                   >
                     Cancel Future Rules
-                  </Button>
+                  </PermissionButton>
                 ) : null}
               </li>
             );

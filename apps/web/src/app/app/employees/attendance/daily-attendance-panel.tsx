@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../../_components/permission-controls";
 
 import { useMemo } from "react";
 import type { Department } from "@/lib/api";
@@ -8,7 +9,6 @@ import type {
   AttendanceNeedsReviewRow,
 } from "@/lib/attendance-api";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -147,9 +147,9 @@ export function DailyAttendancePanel({
         <div className="flex flex-col gap-3">
           <Notice tone="error">{error}</Notice>
           <div>
-            <Button onClick={onReload} variant="secondary">
+            <PermissionButton onClick={onReload} variant="secondary">
               Try Again
-            </Button>
+            </PermissionButton>
           </div>
         </div>
       ) : null}
@@ -201,13 +201,13 @@ export function DailyAttendancePanel({
                       <span className="text-sm text-muted-foreground">
                         {`${punchTimeLabel(entry.checkInAt)} – ${punchTimeLabel(entry.checkOutAt)}`}
                       </span>
-                      <Button
+                      <PermissionButton
                         disabled={actionPending}
-                        onClick={() => onDiscardNeedsReview(entry)}
+                        permission="attendance.edit" onClick={() => onDiscardNeedsReview(entry)}
                         variant="danger"
                       >
                         Discard Entry
-                      </Button>
+                      </PermissionButton>
                     </div>
                   </li>
                 ))}
@@ -272,19 +272,19 @@ export function DailyAttendancePanel({
           )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <Button
+            <PermissionButton
               disabled={!editable || actionPending || !hasDraftsToSave}
-              onClick={onSave}
+              permission="attendance.edit" onClick={onSave}
               variant="secondary"
             >
               Save Attendance
-            </Button>
-            <Button
+            </PermissionButton>
+            <PermissionButton
               disabled={!finalizeAllowed || actionPending}
-              onClick={onFinalize}
+              permission="attendance.approve" onClick={onFinalize}
             >
               Finalize Day
-            </Button>
+            </PermissionButton>
           </div>
         </div>
       ) : null}
