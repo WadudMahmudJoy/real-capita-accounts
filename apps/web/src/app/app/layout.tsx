@@ -1,6 +1,11 @@
 "use client";
+import {WorkspacePermissions} from './_components/permission-controls';
+import {workspacePermission} from '@/lib/workspace-permissions';
+import {authorityAccess} from '@/lib/authority-api';
+import {userAccess,type UserAccess} from '@/lib/hr-admin-api';
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -8,6 +13,7 @@ import {
   BarChart3,
   BookText,
   Building2,
+  Calculator,
   CalendarClock,
   CalendarRange,
   Coins,
@@ -21,7 +27,6 @@ import {
   ReceiptText,
   Scale,
   ScrollText,
-  ShieldCheck,
   Smartphone,
   Users,
   Wallet,
@@ -36,6 +41,10 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Button, LoadingPanel, Notice } from "./_components/ui";
+import { OfficeSwitcher } from "./_components/OfficeSwitcher";
+import { OfficeThemeShell } from "./_components/OfficeThemeShell";
+import { ModulePreviewLinks } from "./_components/module-preview-links";
+import { isModulePreviewPath } from "./_lib/module-previews";
 
 type NavLink = {
   href: string;
@@ -128,6 +137,48 @@ const customerBookingLinks: NavLink[] = [
   },
 ];
 
+const hrSalaryLinks: NavLink[] = [
+  {href:"/app/leave-categories",icon:CalendarRange,label:"Leave Categories",match:pathname=>pathname.startsWith("/app/leave-categories")},
+  {href:"/app/leave-apply",icon:CalendarRange,label:"Leave Apply",match:pathname=>pathname.startsWith("/app/leave-apply")},
+  {href:"/app/leave-requests",icon:ScrollText,label:"Apply Leave List",match:pathname=>pathname.startsWith("/app/leave-requests")},
+  {
+    href: "/app/payroll-runs",
+    icon: FileBarChart,
+    label: "Payroll Runs",
+    match: (pathname) => pathname.startsWith("/app/payroll-runs"),
+  },
+  {
+    href: "/app/employees",
+    icon: Users,
+    label: "Employees",
+    match: (pathname) => pathname === "/app/employees" || /^\/app\/employees\/(?!attendance|work-schedules)[^/]+$/.test(pathname),
+  },
+  {
+    href: "/app/users",
+    icon: Users,
+    label: "Users",
+    match: (pathname) => pathname.startsWith("/app/users"),
+  },
+  {
+    href: "/app/employees/attendance",
+    icon: CalendarClock,
+    label: "Employee Attendance",
+    match: (pathname) => pathname.startsWith("/app/employees/attendance"),
+  },
+  {
+    href: "/app/salary-structures",
+    icon: Coins,
+    label: "Salary Structures",
+    match: (pathname) => pathname.startsWith("/app/salary-structures"),
+  },
+  {
+    href: "/app/salary-preview",
+    icon: Calculator,
+    label: "Salary Preview",
+    match: (pathname) => pathname.startsWith("/app/salary-preview"),
+  },
+];
+
 const reportLinks: NavLink[] = [
   {
     href: "/app/reports/ledger",
@@ -213,6 +264,9 @@ export default function AppLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [activated,setActivated]=useState(false);
+  const [authority,setAuthority]=useState<string[]>([]);
+  const [access,setAccess]=useState<UserAccess|null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -226,6 +280,10 @@ export default function AppLayout({
     async function loadUser() {
       try {
         const currentUser = await getCurrentUser(controller.signal);
+        if(!currentUser.roles.some(r=>r.code==='ACCOUNTANT'))setAccess(await userAccess());
+        const effective=await authorityAccess();
+        setActivated(effective.activated);
+        setAuthority(effective.activated?(effective.allowedPermissions??[]):effective.permissions);
         setUser(currentUser);
         setStatus("ready");
       } catch (caught) {
@@ -246,7 +304,7 @@ export default function AppLayout({
     void loadUser();
 
     return () => controller.abort();
-  }, [router]);
+  }, [router,pathname]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -287,27 +345,43 @@ export default function AppLayout({
     );
   }
 
+  const previewRoute = isModulePreviewPath(pathname);
+  const visible=(href:string)=>!activated||Boolean(workspacePermission(href)&&authority.includes(workspacePermission(href)!));
+  if(activated){
+    const links=[{href:'/app',label:'Dashboard'}, {href:'/app/roles',label:'Role Management'},...primaryLinks,...customerBookingLinks,...hrSalaryLinks,...reportLinks].filter(l=>visible(l.href));
+    const allowed=previewRoute||visible(pathname);
+    return <WorkspacePermissions.Provider value={authority}><main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav aria-label="Authorized workflows" className="flex flex-wrap gap-4">{links.map(l=><Link key={l.href} href={l.href}>{l.label}</Link>)}</nav><ModulePreviewLinks pathname={pathname} />{allowed?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main></WorkspacePermissions.Provider>;
+  }
+  if(!user.roles.some(r=>r.code==='ACCOUNTANT')){
+    const leave=Boolean(access?.employee||access?.hrAdmin),permitted=previewRoute||(pathname==='/app/roles'&&authority.includes('roles.view'))||pathname==='/app/users'||(leave&&['/app/leave-apply','/app/leave-requests'].includes(pathname))||(access?.hrAdmin&&pathname==='/app/leave-categories');
+    return <main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav className="flex flex-wrap gap-4"><Link href="/app/users">Users</Link>{authority.includes('roles.view')&&<Link href="/app/roles">Role Management</Link>}{leave&&<><Link href="/app/leave-apply">Leave Apply</Link><Link href="/app/leave-requests">Apply Leave List</Link></>}{access?.hrAdmin&&<Link href="/app/leave-categories">Leave Categories</Link>}</nav><ModulePreviewLinks pathname={pathname} />{pathname==='/app'?<Notice tone="info">Welcome to your Real Capita workspace. Choose an authorized workflow above.</Notice>:permitted?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main>;
+  }
   const roleNames = user.roles.map((role) => role.name).join(", ");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full flex-col px-5 py-5 sm:px-8">
-        <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
+    <OfficeThemeShell>
+      <header className="flex flex-col gap-4 border-b border-border bg-card pb-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <ShieldCheck aria-hidden="true" className="size-5" />
-            </div>
+            <Image
+              alt=""
+              className="size-10 object-contain"
+              height={1641}
+              priority
+              src="/brand/real-capita-group-mark.png"
+              width={1618}
+            />
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Accounting foundation
+              <p className="text-sm font-bold tracking-wide text-heading">
+                REAL CAPITA GROUP
               </p>
-              <h1 className="text-lg font-semibold leading-tight">
-                Real Capita Accounting &amp; Project Finance System
-              </h1>
+              <p className="text-sm leading-tight text-muted-foreground">
+                Accounting &amp; Project Finance System
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            <OfficeSwitcher />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-foreground">
                 {user.fullName}
@@ -315,6 +389,7 @@ export default function AppLayout({
               <p className="text-xs text-muted-foreground">{roleNames}</p>
             </div>
             <Button
+              className="border-border-strong bg-card hover:border-primary/30 hover:bg-accent"
               disabled={isLoggingOut}
               onClick={handleLogout}
               variant="secondary"
@@ -325,12 +400,14 @@ export default function AppLayout({
           </div>
         </header>
 
-        <div className="grid flex-1 gap-8 py-6 lg:grid-cols-[240px_1fr]">
+        <div className="grid flex-1 gap-8 py-6 lg:min-h-0 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-0">
           <nav
             aria-label="Accounting navigation"
-            className="flex flex-col gap-6 border-b border-border pb-6 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6"
+            className="app-sidebar flex flex-col gap-6 border-b border-border pb-6 lg:w-[240px] lg:overflow-y-auto lg:overscroll-contain lg:rounded-xl lg:border-0 lg:bg-[linear-gradient(180deg,var(--sidebar-blue)_0%,var(--sidebar-teal)_52%,var(--sidebar-green)_100%)] lg:px-3 lg:py-3"
           >
+            <ModulePreviewLinks pathname={pathname} sidebar />
             <div className="flex flex-col gap-1">
+              {authority.includes('roles.view')&&<Link className="rounded-lg px-3 py-2 text-sm font-medium" href="/app/roles">Role Management</Link>}
               {primaryLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = link.match(pathname);
@@ -339,10 +416,10 @@ export default function AppLayout({
                   <Link
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 focus-visible:outline-none lg:focus-visible:ring-2 lg:focus-visible:ring-brand-light/70 lg:focus-visible:ring-inset motion-reduce:transform-none motion-reduce:transition-none",
                       isActive
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                        ? "bg-secondary text-foreground lg:bg-white/15 lg:text-brand-light lg:shadow-[inset_3px_0_0_var(--brand-green),0_6px_18px_rgba(8,67,75,0.14)]"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground lg:text-brand-light/90 lg:hover:translate-x-0.5 lg:hover:bg-white/10 lg:hover:text-white lg:hover:shadow-[0_5px_14px_rgba(8,67,75,0.12)]",
                     )}
                     href={link.href}
                     key={link.href}
@@ -355,7 +432,7 @@ export default function AppLayout({
             </div>
 
             <div className="flex flex-col gap-1">
-              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:text-sidebar-muted">
                 Customers &amp; Bookings
               </p>
               {customerBookingLinks.map((link) => {
@@ -366,10 +443,10 @@ export default function AppLayout({
                   <Link
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 focus-visible:outline-none lg:focus-visible:ring-2 lg:focus-visible:ring-brand-light/70 lg:focus-visible:ring-inset motion-reduce:transform-none motion-reduce:transition-none",
                       isActive
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                        ? "bg-secondary text-foreground lg:bg-white/15 lg:text-brand-light lg:shadow-[inset_3px_0_0_var(--brand-green),0_6px_18px_rgba(8,67,75,0.14)]"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground lg:text-brand-light/90 lg:hover:translate-x-0.5 lg:hover:bg-white/10 lg:hover:text-white lg:hover:shadow-[0_5px_14px_rgba(8,67,75,0.12)]",
                     )}
                     href={link.href}
                     key={link.href}
@@ -382,7 +459,34 @@ export default function AppLayout({
             </div>
 
             <div className="flex flex-col gap-1">
-              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:text-sidebar-muted">
+                HR &amp; Salary
+              </p>
+              {hrSalaryLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.match(pathname);
+
+                return (
+                  <Link
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 focus-visible:outline-none lg:focus-visible:ring-2 lg:focus-visible:ring-brand-light/70 lg:focus-visible:ring-inset motion-reduce:transform-none motion-reduce:transition-none",
+                      isActive
+                        ? "bg-secondary text-foreground lg:bg-white/15 lg:text-brand-light lg:shadow-[inset_3px_0_0_var(--brand-green),0_6px_18px_rgba(8,67,75,0.14)]"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground lg:text-brand-light/90 lg:hover:translate-x-0.5 lg:hover:bg-white/10 lg:hover:text-white lg:hover:shadow-[0_5px_14px_rgba(8,67,75,0.12)]",
+                    )}
+                    href={link.href}
+                    key={link.href}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:text-sidebar-muted">
                 Reports
               </p>
               {reportLinks.map((link) => {
@@ -393,10 +497,10 @@ export default function AppLayout({
                   <Link
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition duration-200 focus-visible:outline-none lg:focus-visible:ring-2 lg:focus-visible:ring-brand-light/70 lg:focus-visible:ring-inset motion-reduce:transform-none motion-reduce:transition-none",
                       isActive
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                        ? "bg-secondary text-foreground lg:bg-white/15 lg:text-brand-light lg:shadow-[inset_3px_0_0_var(--brand-green),0_6px_18px_rgba(8,67,75,0.14)]"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground lg:text-brand-light/90 lg:hover:translate-x-0.5 lg:hover:bg-white/10 lg:hover:text-white lg:hover:shadow-[0_5px_14px_rgba(8,67,75,0.12)]",
                     )}
                     href={link.href}
                     key={link.href}
@@ -409,9 +513,10 @@ export default function AppLayout({
             </div>
           </nav>
 
-          <main className="min-w-0">{children}</main>
+          <main className={cn("min-w-0 lg:overflow-y-auto lg:pl-8", previewRoute && "order-first lg:order-none")}>
+            {children}
+          </main>
         </div>
-      </div>
-    </div>
+    </OfficeThemeShell>
   );
 }

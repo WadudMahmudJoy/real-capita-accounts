@@ -32,17 +32,50 @@ export type AccountClassCode =
   | "INCOME"
   | "EXPENSE";
 
+export type CompanyBackgroundMode = "DEFAULT_PREMIUM" | "CUSTOM";
+
+export type CompanyMediaKind =
+  | "office-logo"
+  | "custom-background"
+  | "print-logo";
+
 export type Company = {
   id: string;
-  singletonKey: string;
+  singletonKey: string | null;
   name: string;
   legalName: string | null;
   address: string | null;
   phone: string | null;
   email: string | null;
   currency: string;
+  isActive: boolean;
+  officeLogoPath: string | null;
+  brandAccentColor: string | null;
+  backgroundMode: CompanyBackgroundMode;
+  customBackgroundPath: string | null;
+  printLogoPath: string | null;
+  printHeaderName: string | null;
+  printFooterText: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** GET /company/list — every office plus the caller's session selection. */
+export type CompanyListResponse = {
+  activeCompanyId: string | null;
+  companies: Company[];
+};
+
+export type CompanySwitchResponse = {
+  status: "ok";
+  activeCompanyId: string;
+  company: Company;
+};
+
+export type CompanyMediaResponse = {
+  status: "ok";
+  kind: CompanyMediaKind;
+  company: Company;
 };
 
 export type FiscalYear = {
@@ -375,6 +408,370 @@ export type ReceiptAllocationDeleteResult = {
 };
 
 // ---------------------------------------------------------------------------
+// Salary Foundation resource types (Phase 1)
+// ---------------------------------------------------------------------------
+
+export type SalaryConfigurationStatus = "DRAFT" | "APPROVED" | "INACTIVE";
+
+export type BloodGroup =
+  | "A_POSITIVE"
+  | "A_NEGATIVE"
+  | "B_POSITIVE"
+  | "B_NEGATIVE"
+  | "AB_POSITIVE"
+  | "AB_NEGATIVE"
+  | "O_POSITIVE"
+  | "O_NEGATIVE";
+
+export type DepartmentSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type Department = DepartmentSummary & {
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count: { employees: number };
+};
+
+export type DepartmentInput = {
+  code: string;
+  name: string;
+  description?: string | null;
+};
+
+export type DepartmentUpdateInput = {
+  name?: string;
+  description?: string | null;
+  isActive?: boolean;
+};
+
+export type EmployeeListItem = {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  department: DepartmentSummary | null;
+  mobileNumberMasked: string | null;
+  joiningDate: string;
+  isActive: boolean;
+};
+
+export type WorkScheduleDayOfWeek =
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY"
+  | "SUNDAY";
+
+export type WorkScheduleDay = {
+  dayOfWeek: WorkScheduleDayOfWeek;
+  isWorkingDay: boolean;
+  startMinuteOfDay: number | null;
+  endMinuteOfDay: number | null;
+  unpaidBreakMinutes: number;
+  crossesMidnight: boolean;
+};
+
+export type WorkScheduleDefinition = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  days: WorkScheduleDay[];
+  everAssigned: boolean;
+};
+
+export type WorkScheduleAssignment = {
+  id: string;
+  scope: "COMPANY_DEFAULT" | "EMPLOYEE_OVERRIDE";
+  employeeId: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  changeReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  cancelledAt: string | null;
+  replacesAssignmentId: string | null;
+  workSchedule: Omit<
+    WorkScheduleDefinition,
+    "createdAt" | "updatedAt" | "everAssigned"
+  >;
+};
+
+export type EffectiveWorkSchedule =
+  | {
+      kind: "NOT_CONFIGURED";
+      code: "WORK_SCHEDULE_NOT_CONFIGURED";
+      businessDate: string;
+    }
+  | {
+      kind: "RESOLVED";
+      businessDate: string;
+      assignmentId: string;
+      source: "COMPANY_DEFAULT" | "EMPLOYEE_OVERRIDE";
+      workScheduleId: string;
+      code: string;
+      name: string;
+      dayOfWeek: WorkScheduleDayOfWeek;
+      isWorkingDay: boolean;
+      startMinuteOfDay: number | null;
+      endMinuteOfDay: number | null;
+      crossesMidnight: boolean;
+      unpaidBreakMinutes: number;
+      grossScheduledMinutes: number;
+      expectedWorkMinutes: number;
+      timeZone: "Asia/Dhaka";
+    };
+
+export type WorkScheduleDefinitionInput = {
+  code?: string;
+  name: string;
+  description?: string | null;
+  days: WorkScheduleDay[];
+};
+
+export type UpdateWorkScheduleInput = {
+  name?: string;
+  description?: string | null;
+  isActive?: boolean;
+  days?: WorkScheduleDay[];
+};
+
+export type CreateWorkScheduleAssignmentInput = {
+  scope: "COMPANY_DEFAULT" | "EMPLOYEE_OVERRIDE";
+  employeeId?: string | null;
+  workScheduleId?: string;
+  newSchedule?: WorkScheduleDefinitionInput;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  changeReason?: string | null;
+};
+
+export type Employee = {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  bengaliName: string | null;
+  dateOfBirth: string | null;
+  hasNationalId: boolean;
+  nationalIdMasked: string | null;
+  bloodGroup: BloodGroup | null;
+  mobileNumber: string | null;
+  alternateMobileNumber: string | null;
+  personalEmail: string | null;
+  officialEmail: string | null;
+  presentAddress: string | null;
+  permanentAddress: string | null;
+  designation: string;
+  departmentId: string | null;
+  department: (DepartmentSummary & { isActive: boolean }) | null;
+  joiningDate: string;
+  confirmationDate: string | null;
+  separationDate: string | null;
+  separationReason: string | null;
+  emergencyContactName: string | null;
+  emergencyContactRelationship: string | null;
+  emergencyContactMobile: string | null;
+  emergencyContactAddress: string | null;
+  isActive: boolean;
+  _count: {
+    salaryAssignments: number;
+    paymentProfiles: number;
+  };
+};
+
+export type EmployeeInput = {
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  departmentId: string;
+  joiningDate: string;
+  mobileNumber: string;
+  bengaliName?: string | null;
+  dateOfBirth?: string | null;
+  nationalId?: string | null;
+  bloodGroup?: BloodGroup | null;
+  alternateMobileNumber?: string | null;
+  personalEmail?: string | null;
+  officialEmail?: string | null;
+  presentAddress?: string | null;
+  permanentAddress?: string | null;
+  confirmationDate?: string | null;
+  separationDate?: string | null;
+  separationReason?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactRelationship?: string | null;
+  emergencyContactMobile?: string | null;
+  emergencyContactAddress?: string | null;
+  isActive?: boolean;
+};
+
+export type EmployeeUpdateInput = Partial<Omit<EmployeeInput, "employeeCode">>;
+
+export type EmployeeListFilters = {
+  includeInactive?: boolean;
+  includeDeleted?: boolean;
+  search?: string;
+  departmentId?: string;
+  status?: "ACTIVE" | "INACTIVE" | "ALL";
+};
+
+export type SalaryStructureComponent = {
+  id?: string;
+  salaryStructureId?: string;
+  code: string;
+  name: string;
+  percentage: string;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SalaryStructure = {
+  id: string;
+  code: string;
+  version: number;
+  name: string;
+  description: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  status: SalaryConfigurationStatus;
+  createdById: string;
+  approvedById: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  components?: SalaryStructureComponent[];
+};
+
+export type SalaryStructureInput = {
+  code: string;
+  name: string;
+  description?: string | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  components: Array<Pick<SalaryStructureComponent, "code" | "name" | "percentage" | "displayOrder">>;
+};
+
+export type SalaryStructureUpdateInput = Omit<
+  Partial<SalaryStructureInput>,
+  "code"
+>;
+
+export type EmployeeSalaryAssignment = {
+  id: string;
+  employeeId: string;
+  salaryStructureId: string;
+  grossSalary: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  status: SalaryConfigurationStatus;
+  changeReason: string | null;
+  createdById: string;
+  approvedById: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  salaryStructure?: SalaryStructure;
+};
+
+export type SalaryAssignmentInput = {
+  salaryStructureId: string;
+  grossSalary: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  changeReason?: string | null;
+};
+
+export type EmployeePaymentProfile = {
+  id: string;
+  employeeId: string;
+  selectedBankPercentage: string;
+  policyCashShare?: string;
+  bankName: string | null;
+  accountName: string | null;
+  accountNumber: string | null;
+  branchName: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  status: SalaryConfigurationStatus;
+  changeReason: string | null;
+  createdById: string;
+  approvedById: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaymentProfileInput = {
+  selectedBankPercentage?: string;
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumber?: string | null;
+  branchName?: string | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  changeReason?: string | null;
+};
+
+export type OtherApprovedDeductionInput = {
+  amount: string;
+  description: string;
+  approvalReference?: string;
+};
+
+export type SalaryPreviewInput = {
+  grossSalary: string;
+  salaryStructureId?: string;
+  components?: Array<Pick<SalaryStructureComponent, "code" | "name" | "percentage" | "displayOrder">>;
+  attendanceDeduction?: string;
+  providentFundDeduction?: string;
+  loanOrSalaryAdvanceDeduction?: string;
+  aitDeduction?: string;
+  otherApprovedDeductions?: OtherApprovedDeductionInput[];
+  selectedBankPercentage: string;
+};
+
+export type SalaryPreviewResult = {
+  grossSalary: string;
+  earningComponents: Array<{
+    code: string;
+    name: string;
+    percentage: string;
+    displayOrder: number;
+    amount: string;
+  }>;
+  basic?: string;
+  houseRent?: string;
+  conveyance?: string;
+  totalEarnings: string;
+  attendanceDeduction: string;
+  providentFundDeduction: string;
+  loanOrSalaryAdvanceDeduction: string;
+  aitDeduction: string;
+  otherApprovedDeductions: OtherApprovedDeductionInput[];
+  totalDeductions: string;
+  netPay: string;
+  selectedBankPercentage: string;
+  policyCashShare: string;
+  maximumAllowedBankPercentage: string;
+  bankPay: string;
+  cashPay: string;
+  reconciliationDifference: string;
+  warnings: string[];
+  roundingPolicy: string;
+};
+
+// ---------------------------------------------------------------------------
 // Voucher resource types (Phase 2C)
 // ---------------------------------------------------------------------------
 
@@ -417,9 +814,30 @@ export type VoucherLine = {
   cashBankAccount?: CashBankAccount | null;
 };
 
+/**
+ * Narrow document-company summary embedded on voucher detail responses.
+ * Mirrors the backend voucher-relation select: only the fields the premium
+ * print template consumes. `printLogoPath` is a presence signal for the
+ * public company media endpoint — never a browser URL.
+ */
+export type VoucherCompanySummary = {
+  id: string;
+  name: string;
+  legalName: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  currency: string;
+  printLogoPath: string | null;
+  printHeaderName: string | null;
+  printFooterText: string | null;
+  updatedAt: string;
+};
+
 export type Voucher = {
   id: string;
   companyId: string;
+  company?: VoucherCompanySummary;
   fiscalYearId: string;
   accountingPeriodId: string;
   voucherType: VoucherType;
@@ -478,6 +896,17 @@ export type CompanyInput = {
   phone?: string;
   email?: string;
   currency?: string;
+};
+
+/**
+ * PATCH /company/:id payload: the Basic Info fields plus the D7A/D7B
+ * branding fields. `null` explicitly clears the nullable branding values.
+ */
+export type UpdateCompanyInput = Partial<CompanyInput> & {
+  brandAccentColor?: string | null;
+  backgroundMode?: CompanyBackgroundMode;
+  printHeaderName?: string | null;
+  printFooterText?: string | null;
 };
 
 export type CreateFiscalYearInput = {
@@ -604,7 +1033,7 @@ export type UpdateVoucherInput = {
 export class ApiError extends Error {
   readonly status: number;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, readonly isOutcomeUnknown = false, readonly reconciliationId?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -656,6 +1085,9 @@ type ApiFetchOptions = {
  *
  * - Always sends `credentials: "include"` so the HttpOnly session cookie flows.
  * - Never reads or writes auth tokens in localStorage.
+ * - Serialises plain objects as JSON with an explicit Content-Type, but passes
+ *   `FormData` bodies through untouched: the browser must derive the multipart
+ *   boundary itself, so no Content-Type header is set for multipart requests.
  * - Throws a typed {@link ApiError} on connection failure or non-2xx response so
  *   callers can present clear auth/connection messages.
  */
@@ -665,14 +1097,19 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { method = "GET", body, signal } = options;
   const hasBody = body !== undefined;
+  const isFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
 
   let response: Response;
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      body: hasBody ? JSON.stringify(body) : undefined,
+      body: hasBody ? (isFormData ? body : JSON.stringify(body)) : undefined,
       credentials: "include",
-      headers: hasBody ? { "Content-Type": "application/json" } : undefined,
+      headers:
+        hasBody && !isFormData
+          ? { "Content-Type": "application/json" }
+          : undefined,
       method,
       signal,
     });
@@ -689,7 +1126,13 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    throw new ApiError(await readApiError(response), response.status);
+    let isOutcomeUnknown = false, reconciliationId: string | undefined;
+    try {
+      const details = await response.clone().json() as {status?: unknown; reconciliationId?: unknown};
+      isOutcomeUnknown = details.status === 'OUTCOME_UNKNOWN';
+      if (typeof details.reconciliationId === 'string' && /^[a-f0-9]{64}$/.test(details.reconciliationId)) reconciliationId = details.reconciliationId;
+    } catch { /* Preserve the existing sanitized error-message fallback. */ }
+    throw new ApiError(await readApiError(response), response.status, isOutcomeUnknown, reconciliationId);
   }
 
   if (response.status === 204) {
@@ -722,9 +1165,69 @@ export function createCompany(input: CompanyInput): Promise<Company> {
 
 export function updateCompany(
   id: string,
-  input: Partial<CompanyInput>,
+  input: UpdateCompanyInput,
 ): Promise<Company> {
   return apiFetch<Company>(`/company/${id}`, { body: input, method: "PATCH" });
+}
+
+/**
+ * Every office plus the caller's current session selection
+ * (`GET /company/list`).
+ */
+export function getCompanies(
+  signal?: AbortSignal,
+): Promise<CompanyListResponse> {
+  return apiFetch<CompanyListResponse>("/company/list", { signal });
+}
+
+/** Explicit session switch to another office (`POST /company/:id/switch`). */
+export function switchCompany(companyId: string): Promise<CompanySwitchResponse> {
+  return apiFetch<CompanySwitchResponse>(`/company/${companyId}/switch`, {
+    method: "POST",
+  });
+}
+
+/**
+ * Uploads a branding image for one of the closed media kinds through the
+ * D7B multipart endpoint. The FormData body is transported without a manual
+ * Content-Type so the browser sets the multipart boundary itself.
+ */
+export function uploadCompanyMedia(
+  companyId: string,
+  kind: CompanyMediaKind,
+  file: File,
+): Promise<CompanyMediaResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<CompanyMediaResponse>(
+    `/company/${companyId}/media/${kind}`,
+    { body: formData, method: "POST" },
+  );
+}
+
+/** Removes a previously uploaded branding image (`DELETE /company/:id/media/:kind`). */
+export function removeCompanyMedia(
+  companyId: string,
+  kind: CompanyMediaKind,
+): Promise<CompanyMediaResponse> {
+  return apiFetch<CompanyMediaResponse>(
+    `/company/${companyId}/media/${kind}`,
+    { method: "DELETE" },
+  );
+}
+
+/**
+ * Public read URL for a company media asset. The optional `revision` appends
+ * a cache-busting query so replaced images (publicly cached for a short
+ * window) are re-fetched immediately after upload/remove mutations.
+ */
+export function companyMediaUrl(
+  companyId: string,
+  kind: CompanyMediaKind,
+  revision?: number,
+): string {
+  const base = `${API_BASE_URL}/company-media/${companyId}/${kind}`;
+  return revision === undefined ? base : `${base}?v=${revision}`;
 }
 
 export function getFiscalYears(signal?: AbortSignal): Promise<FiscalYear[]> {
@@ -1090,6 +1593,311 @@ export function deleteReceiptAllocation(
 }
 
 // ---------------------------------------------------------------------------
+// Salary Foundation resource helpers (Phase 1)
+// ---------------------------------------------------------------------------
+
+function buildEmployeeQuery(filters?: EmployeeListFilters): string {
+  if (!filters) return "";
+  const params = new URLSearchParams();
+  if (typeof filters.includeInactive === "boolean") {
+    params.set("includeInactive", String(filters.includeInactive));
+  }
+  if (typeof filters.includeDeleted === "boolean") {
+    params.set("includeDeleted", String(filters.includeDeleted));
+  }
+  if (filters.search) params.set("search", filters.search);
+  if (filters.departmentId) params.set("departmentId", filters.departmentId);
+  if (filters.status) params.set("status", filters.status);
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+export function getEmployees(
+  filters?: EmployeeListFilters,
+  signal?: AbortSignal,
+): Promise<EmployeeListItem[]> {
+  return apiFetch<EmployeeListItem[]>(`/employees${buildEmployeeQuery(filters)}`, {
+    signal,
+  });
+}
+
+export function getWorkSchedules(
+  includeInactive = false,
+  signal?: AbortSignal,
+) {
+  return apiFetch<WorkScheduleDefinition[]>(
+    `/work-schedules?includeInactive=${includeInactive}`,
+    { signal },
+  );
+}
+
+export function getWorkSchedule(id: string, signal?: AbortSignal) {
+  return apiFetch<WorkScheduleDefinition>(
+    `/work-schedules/${encodeURIComponent(id)}`,
+    { signal },
+  );
+}
+
+export function createWorkSchedule(input: WorkScheduleDefinitionInput) {
+  return apiFetch<WorkScheduleDefinition>("/work-schedules", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function getEffectiveWorkSchedule(
+  businessDate: string,
+  employeeId?: string,
+  signal?: AbortSignal,
+) {
+  const query = new URLSearchParams({ businessDate });
+  if (employeeId) query.set("employeeId", employeeId);
+  return apiFetch<EffectiveWorkSchedule>(`/work-schedules/effective?${query}`, {
+    signal,
+  });
+}
+
+export function getWorkScheduleAssignments(
+  employeeId?: string,
+  signal?: AbortSignal,
+) {
+  const query = employeeId ? `?employeeId=${encodeURIComponent(employeeId)}` : "";
+  return apiFetch<WorkScheduleAssignment[]>(
+    `/work-schedules/assignments${query}`,
+    { signal },
+  );
+}
+
+export function createWorkScheduleAssignment(
+  input: CreateWorkScheduleAssignmentInput,
+) {
+  return apiFetch<WorkScheduleAssignment>("/work-schedules/assignments", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateWorkSchedule(
+  id: string,
+  input: UpdateWorkScheduleInput,
+) {
+  return apiFetch<WorkScheduleDefinition>(
+    `/work-schedules/${encodeURIComponent(id)}`,
+    { body: input, method: "PATCH" },
+  );
+}
+
+export function replaceWorkScheduleAssignment(
+  id: string,
+  input: {
+    effectiveFrom: string;
+    workScheduleId?: string;
+    newSchedule?: WorkScheduleDefinitionInput;
+    changeReason: string;
+    expectedUpdatedAt: string;
+  },
+) {
+  return apiFetch<WorkScheduleAssignment>(
+    `/work-schedules/assignments/${encodeURIComponent(id)}/replace`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function endWorkScheduleAssignment(
+  id: string,
+  input: {
+    effectiveTo: string;
+    changeReason: string;
+    expectedUpdatedAt: string;
+  },
+) {
+  return apiFetch<WorkScheduleAssignment>(
+    `/work-schedules/assignments/${encodeURIComponent(id)}/end`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function cancelWorkScheduleAssignment(
+  id: string,
+  input: { changeReason: string; expectedUpdatedAt: string },
+) {
+  return apiFetch<WorkScheduleAssignment>(
+    `/work-schedules/assignments/${encodeURIComponent(id)}/cancel`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function getEmployee(
+  id: string,
+  signal?: AbortSignal,
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${id}`, { signal });
+}
+
+export function createEmployee(input: EmployeeInput): Promise<Employee> {
+  return apiFetch<Employee>("/employees", { body: input, method: "POST" });
+}
+
+export function updateEmployee(
+  id: string,
+  input: EmployeeUpdateInput,
+): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getDepartments(signal?: AbortSignal): Promise<Department[]> {
+  return apiFetch<Department[]>("/departments", { signal });
+}
+
+export function createDepartment(
+  input: DepartmentInput,
+): Promise<Department> {
+  return apiFetch<Department>("/departments", { body: input, method: "POST" });
+}
+
+export function updateDepartment(
+  id: string,
+  input: DepartmentUpdateInput,
+): Promise<Department> {
+  return apiFetch<Department>(`/departments/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function getSalaryStructures(
+  signal?: AbortSignal,
+): Promise<SalaryStructure[]> {
+  return apiFetch<SalaryStructure[]>("/salary-structures", { signal });
+}
+
+export function getSalaryStructure(
+  id: string,
+  signal?: AbortSignal,
+): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}`, { signal });
+}
+
+export function createSalaryStructure(
+  input: SalaryStructureInput,
+): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>("/salary-structures", {
+    body: input,
+    method: "POST",
+  });
+}
+
+export function updateSalaryStructure(
+  id: string,
+  input: SalaryStructureUpdateInput,
+): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function approveSalaryStructure(id: string): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}/approve`, {
+    method: "POST",
+  });
+}
+
+export function inactivateSalaryStructure(id: string): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(`/salary-structures/${id}/inactivate`, {
+    method: "POST",
+  });
+}
+
+export function getSalaryAssignments(
+  employeeId: string,
+  signal?: AbortSignal,
+): Promise<EmployeeSalaryAssignment[]> {
+  return apiFetch<EmployeeSalaryAssignment[]>(
+    `/employees/${employeeId}/salary-assignments`,
+    { signal },
+  );
+}
+
+export function createSalaryAssignment(
+  employeeId: string,
+  input: SalaryAssignmentInput,
+): Promise<EmployeeSalaryAssignment> {
+  return apiFetch<EmployeeSalaryAssignment>(
+    `/employees/${employeeId}/salary-assignments`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function updateSalaryAssignment(
+  id: string,
+  input: Partial<SalaryAssignmentInput>,
+): Promise<EmployeeSalaryAssignment> {
+  return apiFetch<EmployeeSalaryAssignment>(`/salary-assignments/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function approveSalaryAssignment(
+  id: string,
+): Promise<EmployeeSalaryAssignment> {
+  return apiFetch<EmployeeSalaryAssignment>(`/salary-assignments/${id}/approve`, {
+    method: "POST",
+  });
+}
+
+export function getPaymentProfiles(
+  employeeId: string,
+  signal?: AbortSignal,
+): Promise<EmployeePaymentProfile[]> {
+  return apiFetch<EmployeePaymentProfile[]>(
+    `/employees/${employeeId}/payment-profiles`,
+    { signal },
+  );
+}
+
+export function createPaymentProfile(
+  employeeId: string,
+  input: PaymentProfileInput,
+): Promise<EmployeePaymentProfile> {
+  return apiFetch<EmployeePaymentProfile>(
+    `/employees/${employeeId}/payment-profiles`,
+    { body: input, method: "POST" },
+  );
+}
+
+export function updatePaymentProfile(
+  id: string,
+  input: Partial<PaymentProfileInput>,
+): Promise<EmployeePaymentProfile> {
+  return apiFetch<EmployeePaymentProfile>(`/payment-profiles/${id}`, {
+    body: input,
+    method: "PATCH",
+  });
+}
+
+export function approvePaymentProfile(
+  id: string,
+): Promise<EmployeePaymentProfile> {
+  return apiFetch<EmployeePaymentProfile>(`/payment-profiles/${id}/approve`, {
+    method: "POST",
+  });
+}
+
+export function previewSalary(
+  input: SalaryPreviewInput,
+): Promise<SalaryPreviewResult> {
+  return apiFetch<SalaryPreviewResult>("/salary-calculations/preview", {
+    body: input,
+    method: "POST",
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Voucher resource helpers (Phase 2C)
 // ---------------------------------------------------------------------------
 
@@ -1186,12 +1994,25 @@ export type ReportType =
   | "PROJECT_FINANCIAL_SUMMARY"
   | "COST_CENTER_SUMMARY";
 
-/** Company summary embedded on the report fiscal year. */
+/**
+ * Company summary embedded on the report fiscal year. Carries the owner
+ * company's document-branding fields so report printing derives branding
+ * from the fiscal year's owning company — never the active office.
+ * `printLogoPath` is a presence signal for the public company media
+ * endpoint — never a browser URL.
+ */
 export type ReportCompanySummary = {
   id: string;
   name: string;
   legalName: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
   currency: string;
+  printLogoPath: string | null;
+  printHeaderName: string | null;
+  printFooterText: string | null;
+  updatedAt: string;
 };
 
 export type ReportFiscalYearSummary = {

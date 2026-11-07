@@ -29,7 +29,9 @@ export class RolesGuard implements CanActivate {
     );
     const hasRequiredRole = requiredRoles.some((role) => userRoles.has(role));
 
-    if (!hasRequiredRole) {
+    const globalEmployeeGrant = request.businessPermission?.startsWith('employees.') || request.businessPermission?.startsWith('departments.');
+    const protectedHrAttendance = request.hrAttendanceAuthorized === true && request.businessPermission?.startsWith('attendance.');
+    if (!hasRequiredRole && !globalEmployeeGrant && !protectedHrAttendance) {
       throw new ForbiddenException("You do not have access to this resource.");
     }
 

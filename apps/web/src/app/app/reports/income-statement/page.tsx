@@ -312,7 +312,8 @@ function IncomeStatementPrint({
   meta: { label: string; value: string }[];
 }) {
   return (
-    <ReportPrintFrame meta={meta} title="Income Statement">
+    <ReportPrintFrame
+          ownerCompany={report.fiscalYear.company} meta={meta} title="Income Statement">
       <PrintSection section={report.income} title="Income" totalLabel="Total income" />
       <div className="h-3" />
       <PrintSection

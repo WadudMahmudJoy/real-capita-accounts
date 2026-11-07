@@ -12,15 +12,18 @@ import { UpdateAccountingPeriodDto } from "./dto/update-accounting-period.dto";
 export class AccountingPeriodService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  // Accounting periods are owned indirectly through their fiscal year, so the
+  // list is constrained to fiscal years owned by the active company.
+  findAll(companyId: string) {
     return this.prisma.accountingPeriod.findMany({
       include: { fiscalYear: true },
       orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+      where: { fiscalYear: { companyId } },
     });
   }
 
-  async create(dto: CreateAccountingPeriodDto) {
-    const fiscalYear = await this.findFiscalYear(dto.fiscalYearId);
+  async create(companyId: string, dto: CreateAccountingPeriodDto) {
+    const fiscalYear = await this.findFiscalYear(companyId, dto.fiscalYearId);
     const startDate = parseIsoDate(dto.startDate, "startDate");
     const endDate = parseIsoDate(dto.endDate, "endDate");
 
@@ -44,18 +47,20 @@ export class AccountingPeriodService {
     });
   }
 
-  async update(id: string, dto: UpdateAccountingPeriodDto) {
-    const existing = await this.prisma.accountingPeriod.findUnique({
+  async update(companyId: string, id: string, dto: UpdateAccountingPeriodDto) {
+    const existing = await this.prisma.accountingPeriod.findFirst({
       include: { fiscalYear: true },
-      where: { id },
+      where: { id, fiscalYear: { companyId } },
     });
 
     if (!existing) {
       throw new NotFoundException("Accounting period was not found.");
     }
 
+    // A period can never move to another company's fiscal year: both the
+    // current parent and any new parent must belong to the active company.
     const fiscalYear = dto.fiscalYearId
-      ? await this.findFiscalYear(dto.fiscalYearId)
+      ? await this.findFiscalYear(companyId, dto.fiscalYearId)
       : existing.fiscalYear;
     const startDate = dto.startDate
       ? parseIsoDate(dto.startDate, "startDate")
@@ -85,9 +90,9 @@ export class AccountingPeriodService {
     });
   }
 
-  private async findFiscalYear(id: string) {
-    const fiscalYear = await this.prisma.fiscalYear.findUnique({
-      where: { id },
+  private async findFiscalYear(companyId: string, id: string) {
+    const fiscalYear = await this.prisma.fiscalYear.findFirst({
+      where: { id, companyId },
     });
 
     if (!fiscalYear) {

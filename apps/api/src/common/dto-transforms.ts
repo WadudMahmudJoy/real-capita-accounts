@@ -11,19 +11,28 @@ export const TrimUppercase = () =>
     typeof value === "string" ? value.trim().toUpperCase() : value,
   );
 
-export const ParseBooleanQuery = () =>
+export const TrimToNull = () =>
   Transform(({ value }: TransformFnParams): unknown => {
-    if (value === undefined || value === true || value === false) {
-      return value;
-    }
-
-    if (value === "true") {
-      return true;
-    }
-
-    if (value === "false") {
-      return false;
-    }
-
-    return value;
+    if (typeof value !== "string") return value;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
   });
+
+export const TrimLowercaseToNull = () =>
+  Transform(({ value }: TransformFnParams): unknown => {
+    if (typeof value !== "string") return value;
+    const trimmed = value.trim().toLowerCase();
+    return trimmed.length > 0 ? trimmed : null;
+  });
+
+export const parseBooleanQueryValue = (value: unknown): unknown => {
+  if (value === undefined || value === true || value === false) return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+};
+
+export const ParseBooleanQuery = () =>
+  Transform(({ value }: TransformFnParams): unknown =>
+    parseBooleanQueryValue(value),
+  );

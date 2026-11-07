@@ -1,4 +1,5 @@
 "use client";
+import {PermissionButton} from "../_components/permission-controls";
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +16,6 @@ import {
   type FiscalYear,
 } from "@/lib/api";
 import {
-  Button,
   Card,
   CardHeader,
   EmptyState,
@@ -233,9 +233,9 @@ export default function AccountingPeriodsPage() {
             <CardHeader
               actions={
                 isEditing ? (
-                  <Button onClick={startCreate} variant="ghost">
+                  <PermissionButton permission="accounting.manage" onClick={startCreate} variant="ghost">
                     Cancel edit
-                  </Button>
+                  </PermissionButton>
                 ) : null
               }
               description={
@@ -348,13 +348,13 @@ export default function AccountingPeriodsPage() {
               ) : null}
 
               <div className="flex items-center gap-3">
-                <Button disabled={isSaving || !hasFiscalYears} type="submit">
+                <PermissionButton disabled={isSaving || !hasFiscalYears} permission="accounting.manage" type="submit">
                   {isSaving
                     ? "Saving..."
                     : isEditing
                       ? "Save changes"
                       : "Create period"}
-                </Button>
+                </PermissionButton>
               </div>
             </form>
           </Card>
@@ -408,13 +408,13 @@ export default function AccountingPeriodsPage() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end">
-                            <Button
-                              onClick={() => startEdit(period)}
+                            <PermissionButton
+                              permission="accounting.manage" onClick={() => startEdit(period)}
                               variant="ghost"
                             >
                               <Pencil aria-hidden="true" className="size-4" />
                               Edit
-                            </Button>
+                            </PermissionButton>
                           </div>
                         </td>
                       </tr>

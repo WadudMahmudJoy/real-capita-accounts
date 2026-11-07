@@ -1,5 +1,97 @@
 # Real Capita Accounting & Project Finance System Handoff
 
+## Final HR and payroll closeout - 2026-11-07
+
+Read [the consolidated report](hr-admin/hr-payroll-final-closeout.md). Technical
+functional fixes and isolated acceptance are complete; genuine operations PARTIAL.
+Payroll preview no longer needs company-directory access; Users/Roles preserve
+safe private outcomes and current revisions; independently approved HR plus current
+MD-delegated attendance scope can operate attendance without financial authority.
+Source/affected-area browser, PostgreSQL, quality and production web-build evidence
+is in the report. Salary-dev remains18 migrations (18/19 deployed,15/20 absent),
+PostgreSQL17.11; migration20 hash f84a86e2acdef437cae5dc9fb36a418e82ad63b338d7c30032906720a0a1d4be unchanged.
+No genuine email/activation/payroll transaction, live deployment or Git mutation.
+DRAFT correction remains safely deferred; private enrollment/identity evidence,
+second genuine ACCOUNTANT checker and owner deployment/activation authorization
+remain prerequisites. Preserve all uncommitted work on Joy. Stop after this report.
+
+
+## Sprint 7H-B - focused gateway timeout and ambiguity correction
+
+PASS for source/isolated scope; read [acceptance](hr-admin/sprint7hb-gateway-timeout-acceptance.md).
+Gateway mutation deadline 120s (absolute), readiness/preparation 15s; provider remains 10s.
+Mutation response loss now returns OUTCOME_UNKNOWN/non-retryable with an optional
+nonce digest, never a claim that no authority changed. Real mTLS tests cover delayed
+provider, interruption/truncation, lost acknowledgment, continued worker completion,
+duplicate rejection and a committed authority operation. Authorized read-only
+nonce/audit/request reconciliation is documented; no automatic mutation retry.
+PostgreSQL 17: 374 onboarding assertions including 78 real gateway/mTLS checks, plus 44
+HR-to-MD; API boundary 30, access 41 and payroll doubles 8 passed. MD/AGM/HR rules,
+executor/broker and all 20 SQL migration files preserved. Migration20 SHA256 unchanged:
+f84a86e2acdef437cae5dc9fb36a418e82ad63b338d7c30032906720a0a1d4be.
+No salary-dev access/write, deployment, real email, genuine activation or Git mutation.
+Migration15 deferred; 20 unapplied outside disposable tests. Prior work preserved on Joy.
+Stop after this fix; no next sprint or deployment is authorized.
+
+
+## Sprint 7H-A - invitation delivery source fix and isolated acceptance
+
+Focused verdict PASS; see [acceptance and exact changed files](hr-admin/sprint7ha-invitation-delivery-acceptance.md).
+Issuance now commits and releases before delivery. ISSUED claim eligibility is
+independent of append-only delivery outcomes. Unknown delivery/bookkeeping failure
+never automatically cancels a link. Reissue requires explicit audited cancellation
+and fresh independent approval. CANCEL requires INITIAL_REGISTRAR assurance;
+before the first MD mandate only the issuing registrar may cancel their own
+invitation, afterwards a live MD is required. API preserves delivery classification.
+Migration20 source SHA256: f84a86e2acdef437cae5dc9fb36a418e82ad63b338d7c30032906720a0a1d4be.
+Prior checksum superseded. All 19 earlier migration files preserved exactly.
+PostgreSQL17: 296 onboarding assertions (64 delivery/recovery) plus 44 HR-to-MD;
+API boundary 30, access 41, payroll transaction doubles 8 passed. No real email,
+salary-dev/protected database access, genuine activation or deployment. Migration15
+deferred; 20 unapplied on salary-dev. Accumulated 7F/7G work preserved on Joy.
+No Git commit/push or next sprint. Review ZIP outside Git; see acceptance report.
+
+
+## Sprint 7G — independent source review only
+
+Read [Sprint 7G reconciliation and acceptance](hr-admin/sprint7g-source-review-acceptance.md).
+Source is READY FOR INDEPENDENT SOURCE REVIEW; operational verdict remains PARTIAL.
+The comparison identified differences limited to login metadata. Roles, permissions,
+active status, password metadata and Employee bindings are unchanged. Operator/approved-purpose
+attribution remains UNRESOLVED. No salary-dev record was changed or reconciled.
+Migration 20 was corrected only in source for legacy/expired specialized grants;
+private startup now rejects column-only writes and executable environment injection.
+Fresh isolated upgrade, security, browser and compatibility acceptance is recorded.
+Salary-dev still has 18 migrations; 15 deferred and 20 unapplied, 18/19 not rerun.
+No genuine activation, deployment, Git commit/push or next sprint is authorized.
+Detailed reconciliation evidence and the independent review archive are retained privately.
+Earlier sections are historical and do not override these boundaries.
+
+## Sprint 7F — stop after secure onboarding implementation
+
+Continue on `Joy` with accumulated uncommitted work preserved. Secure claiming,
+independent company MD onboarding, private signed execution, specialized MD approval,
+bounded Role Management and recovery controls are implemented in source. Read the
+[Sprint 7F acceptance/readiness report](hr-admin/sprint7f-onboarding-acceptance.md)
+and [implementation record](hr-admin/sprint7f-implementation-plan.md) before further
+work. The evidence register contains completed checks and the final technical record.
+
+Salary-dev retains migrations 18/19 and 18 successful applied migrations. Migration
+20 is unapplied; migration 15 remains deferred. No genuine MD/AGM/HR identity proof,
+Employee binding, provider/private OS/database setup or activation was performed.
+Initial registrar access requires a genuine authenticated ERP session and independent
+signed evidence. Salam's independent company appointment authority must be verified
+separately from subsequent MD delegation. Email claiming alone leaves an account
+inactive until independent identity verification. Own specialized requests are pending
+until independent MD approval. Non-MD replacement transfers no privileges; independent
+MD recovery revokes the root but cannot establish a replacement MD. Stop after Sprint
+7F. No automatic deployment, next sprint, Git operation or business transaction is
+authorized by this handoff. Earlier sprint sections below remain history.
+
+## Sprint 7E — stop after controlled deployment
+
+On Joy, migrations 20261018000000_md_authority_foundation and 20261019000000_leave_hr_md_workflow were actually applied, in order, only to localhost:55532/real_capita_accounts_salary_dev. Final count 18 successful matching migrations; 20261015000000_payroll_confirmation_evidence remains pending. Fresh outside-Git backup/restoration, unchanged business fingerprints, bounded grants, restricted smoke and isolated authority/leave acceptance passed. Operational readiness remains PARTIAL: no genuine MD/AGM/HR onboarding, verifier/private executor or real-user acceptance. Reviewed 7D source/SQL remains intact. Accumulated uncommitted changes preserved; no commit/push/pull/merge or next sprint. Read [Sprint 7E acceptance](hr-admin/sprint7e-deployment-acceptance.md) for exact checksums, evidence, verifier deviations and remaining prerequisites.
+
 ## Current Phase
 
 - **Phase 2M-3E AGM-ready polish and final hardening is implemented in this session.**

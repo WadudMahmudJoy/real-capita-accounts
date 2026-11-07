@@ -25,7 +25,14 @@ type FiscalYearSummary = {
     id: string;
     name: string;
     legalName: string | null;
+    address: string | null;
+    phone: string | null;
+    email: string | null;
     currency: string;
+    printLogoPath: string | null;
+    printHeaderName: string | null;
+    printFooterText: string | null;
+    updatedAt: Date;
   };
 };
 
@@ -173,14 +180,14 @@ const ZERO = new Prisma.Decimal(0);
 export class ReportService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getLedger(query: ReportQueryDto) {
+  async getLedger(companyId: string, query: ReportQueryDto) {
     if (!query.ledgerAccountId) {
       throw new BadRequestException(
         "ledgerAccountId is required for the ledger report.",
       );
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const ledgerAccount = await this.findLedgerAccount(query.ledgerAccountId);
     const baseWhere = this.buildLineFilter(query, {
       ledgerAccountId: ledgerAccount.id,
@@ -285,14 +292,14 @@ export class ReportService {
     };
   }
 
-  async getProjectLedger(query: ReportQueryDto) {
+  async getProjectLedger(companyId: string, query: ReportQueryDto) {
     if (!query.projectId) {
       throw new BadRequestException(
         "projectId is required for the project ledger report.",
       );
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const project = context.project!;
 
     const baseWhere = this.buildProjectLedgerLineFilter(query);
@@ -381,31 +388,34 @@ export class ReportService {
     };
   }
 
-  getCashBook(query: ReportQueryDto) {
+  getCashBook(companyId: string, query: ReportQueryDto) {
     return this.getCashBankBook(
+      companyId,
       query,
       CashBankAccountType.CASH,
       "CASH_BOOK",
     );
   }
 
-  getBankBook(query: ReportQueryDto) {
+  getBankBook(companyId: string, query: ReportQueryDto) {
     return this.getCashBankBook(
+      companyId,
       query,
       CashBankAccountType.BANK,
       "BANK_BOOK",
     );
   }
 
-  getMfsBook(query: ReportQueryDto) {
+  getMfsBook(companyId: string, query: ReportQueryDto) {
     return this.getCashBankBook(
+      companyId,
       query,
       CashBankAccountType.MFS,
       "MFS_BOOK",
     );
   }
 
-  async getProjectFundMovement(query: ReportQueryDto) {
+  async getProjectFundMovement(companyId: string, query: ReportQueryDto) {
     if (!query.projectId) {
       throw new BadRequestException(
         "projectId is required for the project fund movement report.",
@@ -420,7 +430,7 @@ export class ReportService {
       query.endDate = query.dateTo;
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const project = context.project!;
 
     // Build the query where inputs
@@ -668,14 +678,14 @@ export class ReportService {
     };
   }
 
-  async getProjectCost(query: ReportQueryDto) {
+  async getProjectCost(companyId: string, query: ReportQueryDto) {
     if (!query.projectId) {
       throw new BadRequestException(
         "projectId is required for the project cost report.",
       );
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const project = context.project!;
 
     const lineWhere = this.buildProjectCostLineFilter(query);
@@ -1063,14 +1073,14 @@ export class ReportService {
     };
   }
 
-  async getCostCenterSummary(query: ReportQueryDto) {
+  async getCostCenterSummary(companyId: string, query: ReportQueryDto) {
     if (!query.projectId) {
       throw new BadRequestException(
         "projectId is required for the cost center summary report.",
       );
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const project = context.project!;
 
     const lineWhere = this.buildProjectCostLineFilter(query);
@@ -1313,14 +1323,14 @@ export class ReportService {
     };
   }
 
-  async getProjectFinancialSummary(query: ReportQueryDto) {
+  async getProjectFinancialSummary(companyId: string, query: ReportQueryDto) {
     if (!query.projectId) {
       throw new BadRequestException(
         "projectId is required for the project financial summary report.",
       );
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const project = context.project!;
 
     const lineWhere = this.buildProjectCostLineFilter(query);
@@ -1704,14 +1714,14 @@ export class ReportService {
     };
   }
 
-  async getTrialBalance(query: ReportQueryDto) {
+  async getTrialBalance(companyId: string, query: ReportQueryDto) {
     if (query.ledgerAccountId || query.cashBankAccountId) {
       throw new BadRequestException(
         "ledgerAccountId and cashBankAccountId are not supported for the trial balance report.",
       );
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const baseWhere = this.buildLineFilter(query, {});
     const [openingByLedger, periodByLedger] = await Promise.all([
       this.sumDebitCreditByLedger(
@@ -1858,7 +1868,7 @@ export class ReportService {
     };
   }
 
-  async getIncomeStatement(query: ReportQueryDto) {
+  async getIncomeStatement(companyId: string, query: ReportQueryDto) {
     if (query.ledgerAccountId || query.cashBankAccountId) {
       throw new BadRequestException(
         "ledgerAccountId and cashBankAccountId are not supported for the income statement report.",
@@ -1871,7 +1881,7 @@ export class ReportService {
       );
     }
 
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const baseWhere = this.buildLineFilter(query, {});
     const periodByLedger = await this.sumDebitCreditByLedger(
       baseWhere,
@@ -2002,7 +2012,7 @@ export class ReportService {
     };
   }
 
-  async getBalanceSheet(query: ReportQueryDto) {
+  async getBalanceSheet(companyId: string, query: ReportQueryDto) {
     if (query.ledgerAccountId || query.cashBankAccountId) {
       throw new BadRequestException(
         "ledgerAccountId and cashBankAccountId are not supported for the balance sheet report.",
@@ -2015,7 +2025,7 @@ export class ReportService {
       );
     }
 
-    const context = await this.resolveBalanceSheetContext(query);
+    const context = await this.resolveBalanceSheetContext(companyId, query);
     const baseWhere = this.buildLineFilter(query, {});
     const allMovements = await this.sumDebitCreditByLedger(
       baseWhere,
@@ -2204,11 +2214,12 @@ export class ReportService {
   }
 
   private async getCashBankBook(
+    companyId: string,
     query: ReportQueryDto,
     accountType: CashBankAccountType,
     reportType: Extract<ReportType, "CASH_BOOK" | "BANK_BOOK" | "MFS_BOOK">,
   ) {
-    const context = await this.resolveReportContext(query);
+    const context = await this.resolveReportContext(companyId, query);
     const { cashBankAccount, ledgerAccount } =
       await this.validateCashBankBookFilters(query, accountType);
     const baseWhere = this.buildLineFilter(query, {
@@ -2310,11 +2321,36 @@ export class ReportService {
   }
 
   private async resolveReportContext(
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<ReportContext> {
-    const fiscalYear = await this.prisma.fiscalYear.findUnique({
-      include: { company: true },
-      where: { id: query.fiscalYearId },
+    // Ownership lives inside the query itself: the fiscal year must exist
+    // AND belong to the trusted active Company. A foreign company's fiscal
+    // year is indistinguishable from a missing one (NotFound anti-leak).
+    // The company relation is narrowed to the document-branding fields the
+    // report payload needs.
+    const fiscalYear = await this.prisma.fiscalYear.findFirst({
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            legalName: true,
+            address: true,
+            phone: true,
+            email: true,
+            currency: true,
+            printLogoPath: true,
+            printHeaderName: true,
+            printFooterText: true,
+            updatedAt: true,
+          },
+        },
+      },
+      where: {
+        companyId,
+        id: query.fiscalYearId,
+      },
     });
 
     if (!fiscalYear) {
@@ -2425,11 +2461,34 @@ export class ReportService {
   }
 
   private async resolveBalanceSheetContext(
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<BalanceSheetContext> {
-    const fiscalYear = await this.prisma.fiscalYear.findUnique({
-      include: { company: true },
-      where: { id: query.fiscalYearId },
+    // Same trusted ownership rule as resolveReportContext: the fiscal year
+    // must belong to the active Company or it does not resolve. The company
+    // relation carries the same document-branding field selection.
+    const fiscalYear = await this.prisma.fiscalYear.findFirst({
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            legalName: true,
+            address: true,
+            phone: true,
+            email: true,
+            currency: true,
+            printLogoPath: true,
+            printHeaderName: true,
+            printFooterText: true,
+            updatedAt: true,
+          },
+        },
+      },
+      where: {
+        companyId,
+        id: query.fiscalYearId,
+      },
     });
 
     if (!fiscalYear) {
