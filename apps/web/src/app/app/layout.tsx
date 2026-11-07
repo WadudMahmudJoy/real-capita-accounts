@@ -43,6 +43,8 @@ import { cn } from "@/lib/utils";
 import { Button, LoadingPanel, Notice } from "./_components/ui";
 import { OfficeSwitcher } from "./_components/OfficeSwitcher";
 import { OfficeThemeShell } from "./_components/OfficeThemeShell";
+import { ModulePreviewLinks } from "./_components/module-preview-links";
+import { isModulePreviewPath } from "./_lib/module-previews";
 
 type NavLink = {
   href: string;
@@ -343,15 +345,16 @@ export default function AppLayout({
     );
   }
 
+  const previewRoute = isModulePreviewPath(pathname);
   const visible=(href:string)=>!activated||Boolean(workspacePermission(href)&&authority.includes(workspacePermission(href)!));
   if(activated){
     const links=[{href:'/app',label:'Dashboard'}, {href:'/app/roles',label:'Role Management'},...primaryLinks,...customerBookingLinks,...hrSalaryLinks,...reportLinks].filter(l=>visible(l.href));
-    const allowed=visible(pathname);
-    return <WorkspacePermissions.Provider value={authority}><main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav aria-label="Authorized workflows" className="flex flex-wrap gap-4">{links.map(l=><Link key={l.href} href={l.href}>{l.label}</Link>)}</nav>{allowed?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main></WorkspacePermissions.Provider>;
+    const allowed=previewRoute||visible(pathname);
+    return <WorkspacePermissions.Provider value={authority}><main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav aria-label="Authorized workflows" className="flex flex-wrap gap-4">{links.map(l=><Link key={l.href} href={l.href}>{l.label}</Link>)}</nav><ModulePreviewLinks pathname={pathname} />{allowed?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main></WorkspacePermissions.Provider>;
   }
   if(!user.roles.some(r=>r.code==='ACCOUNTANT')){
-    const leave=Boolean(access?.employee||access?.hrAdmin),permitted=(pathname==='/app/roles'&&authority.includes('roles.view'))||pathname==='/app/users'||(leave&&['/app/leave-apply','/app/leave-requests'].includes(pathname))||(access?.hrAdmin&&pathname==='/app/leave-categories');
-    return <main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav className="flex flex-wrap gap-4"><Link href="/app/users">Users</Link>{authority.includes('roles.view')&&<Link href="/app/roles">Role Management</Link>}{leave&&<><Link href="/app/leave-apply">Leave Apply</Link><Link href="/app/leave-requests">Apply Leave List</Link></>}{access?.hrAdmin&&<Link href="/app/leave-categories">Leave Categories</Link>}</nav>{pathname==='/app'?<Notice tone="info">Welcome to your Real Capita workspace. Choose an authorized workflow above.</Notice>:permitted?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main>;
+    const leave=Boolean(access?.employee||access?.hrAdmin),permitted=previewRoute||(pathname==='/app/roles'&&authority.includes('roles.view'))||pathname==='/app/users'||(leave&&['/app/leave-apply','/app/leave-requests'].includes(pathname))||(access?.hrAdmin&&pathname==='/app/leave-categories');
+    return <main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 sm:p-8"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="font-bold">REAL CAPITA GROUP</h1><span>{user.fullName}</span><Button disabled={isLoggingOut} onClick={handleLogout}>Sign out</Button></header><nav className="flex flex-wrap gap-4"><Link href="/app/users">Users</Link>{authority.includes('roles.view')&&<Link href="/app/roles">Role Management</Link>}{leave&&<><Link href="/app/leave-apply">Leave Apply</Link><Link href="/app/leave-requests">Apply Leave List</Link></>}{access?.hrAdmin&&<Link href="/app/leave-categories">Leave Categories</Link>}</nav><ModulePreviewLinks pathname={pathname} />{pathname==='/app'?<Notice tone="info">Welcome to your Real Capita workspace. Choose an authorized workflow above.</Notice>:permitted?children:<Notice tone="error">This workflow requires separate authorization.</Notice>}</main>;
   }
   const roleNames = user.roles.map((role) => role.name).join(", ");
 
@@ -402,6 +405,7 @@ export default function AppLayout({
             aria-label="Accounting navigation"
             className="app-sidebar flex flex-col gap-6 border-b border-border pb-6 lg:w-[240px] lg:overflow-y-auto lg:overscroll-contain lg:rounded-xl lg:border-0 lg:bg-[linear-gradient(180deg,var(--sidebar-blue)_0%,var(--sidebar-teal)_52%,var(--sidebar-green)_100%)] lg:px-3 lg:py-3"
           >
+            <ModulePreviewLinks pathname={pathname} sidebar />
             <div className="flex flex-col gap-1">
               {authority.includes('roles.view')&&<Link className="rounded-lg px-3 py-2 text-sm font-medium" href="/app/roles">Role Management</Link>}
               {primaryLinks.map((link) => {
@@ -509,7 +513,7 @@ export default function AppLayout({
             </div>
           </nav>
 
-          <main className="min-w-0 lg:overflow-y-auto lg:pl-8">
+          <main className={cn("min-w-0 lg:overflow-y-auto lg:pl-8", previewRoute && "order-first lg:order-none")}>
             {children}
           </main>
         </div>
