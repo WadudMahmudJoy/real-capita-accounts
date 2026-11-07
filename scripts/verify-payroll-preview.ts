@@ -21,6 +21,7 @@ async function main() {
     f.profile.accountNumber = "PRIVATE_SENTINEL";
     const assessment = await f.readiness.assess(input());
     const p = new PayrollPreviewService(f.readiness as any), r = await p.preview(input());
+    assert(assessment.parent&&'name' in assessment.parent&&'currency' in assessment.parent);assert.equal(r.parent?.name,assessment.parent.name);assert.equal(r.parent?.currency,assessment.parent.currency);assert.equal((r.parent as any)?.legalName,undefined);
     assert.equal(r.status, "READY"); assert.equal(r.parent?.id, "parent"); assert.equal(r.employees.length, 1);
     assert.equal(r.employees[0].attendance.recordedDateCount, 31);
     for (const [field, amount] of Object.entries(r.financialTotals.amounts!)) assert.equal(amount, (assessment.candidateLines[0] as any)[field]);

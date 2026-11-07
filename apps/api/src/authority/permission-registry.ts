@@ -11,7 +11,7 @@ export const PERMISSION_REGISTRY=[
  ...['view','create','manage'].map(a=>operation(`users.${a}`,`${a} users`,'Users','PRIMARY','Explicit SYSTEM_ADMIN; protected elevation remains MD-routed')),
  ...['view','create','edit'].map(a=>operation(`employees.${a}`,`${a} global employees`,'Employee','GLOBAL_EMPLOYEE')),
  ...['view','create','edit'].map(a=>operation(`departments.${a}`,`${a} departments`,'Employee','GLOBAL_EMPLOYEE')),
- ...['view','edit','approve','manage'].map(a=>operation(`attendance.${a}`,`${a} attendance`,'Attendance','OFFICE','ACCOUNTANT; existing finalization/correction rules')),
+ ...['view','edit','approve','manage'].map(a=>operation(`attendance.${a}`,`${a} attendance`,'Attendance','OFFICE','ACCOUNTANT or independently approved HR_ADMIN; MD-delegated permission; existing office/finalization/correction rules')),
  ...['view','manage'].map(a=>operation(`schedules.${a}`,`${a} work schedules`,'Attendance','OFFICE','ACCOUNTANT')),
  ...['view','create','withdraw'].map(a=>operation(`leave.${a}`,`${a} permitted leave requests`,'Leave','SELF','Verified binding for own records; HR_ADMIN for other employees')),
  operation('leave.review','View HR leave review queue','Leave','PRIMARY','Explicit HR_ADMIN'),

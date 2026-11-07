@@ -2,34 +2,40 @@
 
 import Link from 'next/link';
 import {useEffect, useState} from 'react';
-import {collectOnboardingProof, onboardingCommand, onboardingStatus, type OnboardingStatus} from '@/lib/onboarding-api';
+import {collectOnboardingProof, onboardingCommand, onboardingStatus, onboardingResultMessage, type OnboardingStatus} from '@/lib/onboarding-api';
 import {Button, Card, Field, LoadingPanel, Notice, Select, TextInput} from '../../_components/ui';
+import {ApiError, toErrorMessage} from '@/lib/api';
 import {Permit} from '../../_components/permission-controls';
 
 const verified = (value: boolean) => value ? 'Verified' : 'Pending verification';
 
 export function OnboardingPanel() {
+  const [requiresReconciliation, setRequiresReconciliation] = useState(false);
   const [status, setStatus] = useState<OnboardingStatus | null>(null), [error, setError] = useState(''), [message, setMessage] = useState(''), [busy, setBusy] = useState(false);
   const [email, setEmail] = useState(''), [name, setName] = useState(''), [reason, setReason] = useState(''), [target, setTarget] = useState(''), [permission, setPermission] = useState('HR_ADMIN'), [expiry, setExpiry] = useState('');
   useEffect(() => {let live = true; void onboardingStatus().then(value => {if(live) setStatus(value);}).catch(() => {if(live) setError('Secure onboarding is unavailable. Deployment and private provider configuration must be verified before invitations or authority changes.');}); return () => {live = false;};}, []);
-  const enabled = Boolean(status?.installed && status.configured && !busy);
+  const enabled = Boolean(status?.installed && status.configured && !busy && !requiresReconciliation);
   async function run(command: string, payload: Record<string, unknown>) {
     if (!enabled) return;
     setBusy(true); setError(''); setMessage('');
     try {
       const proof = await collectOnboardingProof(command, payload);
-      await onboardingCommand(command, payload, proof);
+      const result = await onboardingCommand(command, payload, proof);
+      const outcome = onboardingResultMessage(result);
+      setRequiresReconciliation(outcome.reconcile);
+      setMessage(outcome.text);
       setStatus(await onboardingStatus());
-      setMessage('The protected operation completed. Review the resulting state and audit history.');
-    } catch {
-      setError('Operation unavailable, denied or expired. Complete independent verification through the configured private service, then refresh the current state before retrying. No authority is granted by a pending request.');
+
+    } catch (error) {
+      if (error instanceof ApiError && error.isOutcomeUnknown) setRequiresReconciliation(true);
+      setError(toErrorMessage(error));
       try {setStatus(await onboardingStatus());} catch { /* Preserve unavailable state. */ }
     } finally {setBusy(false);}
   }
   return <Card className="min-w-0 space-y-4"><h2 className="font-semibold text-lg">Leadership onboarding</h2>
     <p className="text-sm">Account control, employment identity and business authority are verified separately. Pending requests grant no permissions.</p>
     {error && <div role="alert"><Notice tone="error">{error}</Notice></div>}
-    {message && <div role="status"><Notice tone="success">{message}</Notice></div>}
+    {message && <div role="status"><Notice tone={requiresReconciliation ? "info" : "success"}>{message}</Notice></div>}
     {!status && !error && <LoadingPanel message="Checking secure onboarding readiness…"/>}
     {status && <>
       <p>Schema: {status.installed ? 'Installed' : 'Not deployed'} · Private provider: {status.configured ? 'Configured' : 'Unavailable'}</p>

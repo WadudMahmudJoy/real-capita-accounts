@@ -14,6 +14,6 @@ export async function onboardingPrivatePrivileges(db:any,writer:string){
  const role=(await db.query('SELECT rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls,rolinherit FROM pg_roles WHERE rolname=$1',[writer])).rows[0];assert(role&&Object.values(role).every(v=>v===false));
  assert.equal((await db.query('SELECT count(*)::int n FROM pg_auth_members WHERE member=$1::regrole',[writer])).rows[0].n,0);
  await db.query(`GRANT USAGE ON SCHEMA public TO "${writer}"`);
- await db.query(`GRANT EXECUTE ON FUNCTION onboarding_command(text,text,jsonb,jsonb),onboarding_claim_budget() TO "${writer}"`);
+ await db.query(`GRANT EXECUTE ON FUNCTION onboarding_command(text,text,jsonb,jsonb),onboarding_claim_budget(),onboarding_record_delivery(text,text) TO "${writer}"`);
  for(const t of [...onboardingTables,'users','roles','user_permissions','user_roles','employee_account_bindings'])assert.equal((await db.query("SELECT has_table_privilege($1,$2,'INSERT,UPDATE,DELETE,TRUNCATE') allowed",[writer,t])).rows[0].allowed,false);
 }

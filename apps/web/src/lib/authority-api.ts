@@ -1,6 +1,6 @@
 import {apiFetch} from './api';
 import {protectedOnboardingCommand} from './onboarding-api';
-export type AuthorityAccess={status:string;activated:boolean;permissions:string[];allowedPermissions?:string[];delegationCeiling:string[];registry:{code:string;label:string;module:string;scope:string;prerequisite:string;assignable:boolean}[];reason:string};
+export type AuthorityAccess={status:string;activated:boolean;permissions:string[];allowedPermissions?:string[];delegationCeiling:string[];delegations?:{id:string;version:number;expiresAt:string|null}[];registry:{code:string;label:string;module:string;scope:string;prerequisite:string;assignable:boolean}[];reason:string};
 export type ManagedRole={id:string;code:string;name:string;description:string|null;isActive:boolean;version:number;permissionCodes:string[]};
 export type AuthorityGrant={id:string;userId:string;version:number;expiresAt:string|null;revokedAt:string|null;role:{id:string;code:string}};
 export type AuthorityRequest={id:string;actorId:string;reviewerId:string|null;operation:string;payload:Record<string,unknown>;status:string;version:number;expectedVersion:number;reason:string;decisionReason:string|null;expiresAt:string};

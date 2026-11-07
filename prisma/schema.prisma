@@ -1679,7 +1679,7 @@ model OnboardingInvitation {
  userId String
  email String
  tokenHash String @unique
- status String @default("DELIVERED")
+ status String @default("ISSUED")
  createdById String?
  createdAt DateTime @default(now()) @db.Timestamptz(3)
  expiresAt DateTime @db.Timestamptz(3)

@@ -9,8 +9,8 @@ export async function businessAuthority(db:Prisma.TransactionClient,actor:string
  const state=await db.$queryRaw<{activated:boolean;permissions:string[]}[]>`SELECT EXISTS(SELECT 1 FROM authority_mandates WHERE kind='MD') activated, authority_effective(${actor}) permissions`;
  return {activated:state[0]?.activated===true,permissions:state[0]?.permissions??[]};
 }
-// Supplemental for specialized financial/HR authorization. Only the global
-// Employee master can replace the old ACCOUNTANT entry gate after activation.
+// Supplemental for specialized financial/HR authorization. The global Employee master and independently
+// approved HR attendance have bounded alternatives to the legacy ACCOUNTANT entry gate.
 export async function enforceBusinessPermission(db:Prisma.TransactionClient,actor:string,controller:string,handler:string,method:string){
  const code=routePermission(controller,handler,method);
  if(!code)return undefined;

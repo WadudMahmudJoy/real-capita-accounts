@@ -43,6 +43,7 @@ export type AuthenticatedRequest = Request & {
   cookies?: Record<string, string | undefined>;
   user: AuthenticatedUser;
   businessPermission?: string;
+  hrAttendanceAuthorized?: boolean;
 };
 
 export type RequestContext = {

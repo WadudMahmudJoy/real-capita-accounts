@@ -27,7 +27,7 @@ async function main(){
  assert.equal(await gateway.ready(),false);passed++;
  const pending=new OnboardingService({$queryRaw:async()=>[{installed:false}]} as unknown as PrismaService,gateway);
  const safe=await pending.status('synthetic');
- check(()=>assert.deepEqual([safe.installed,safe.configured,safe.canManage,safe.items.length],[false,false,false,0]));
+ check(()=>{assert(Array.isArray(safe.items));assert.deepEqual([safe.installed,safe.configured,safe.canManage,safe.items.length],[false,false,false,0]);});
  await assert.rejects(async()=>pending.execute({user:{id:'synthetic'}} as AuthenticatedRequest,{command:'INVITE',payload:{email:'person@example.test',name:'Synthetic',reason:'test'},proof:{}}));passed++;
  let received:Record<string,unknown>|undefined;
  const capturing={execute:async(value:Record<string,unknown>)=>{received=value;return {status:'ACCEPTED'};}} as unknown as OnboardingGateway;
@@ -42,6 +42,18 @@ async function main(){
  check(()=>assert.throws(()=>validateCommand({...replacement,payload:{...replacement.payload,privateDocument:'forbidden'}})));
  check(()=>assert.throws(()=>validateCommand({...replacement,payload:{...replacement.payload,evidenceDigest:'artifact://private-document'}})));
  check(()=>assert.throws(()=>validateCommand({...replacement,payload:{...replacement.payload,reason:''}})));
+ // Exercise the production gateway allowlist, including accepted mail whose
+ // bookkeeping failed. Mock only its private transport, never its result mapper.
+ const classified=new OnboardingGateway();classified.ready=async()=>true;
+ let privateResult:Record<string,unknown>={};
+ (classified as unknown as {send:()=>Promise<Record<string,unknown>>}).send=async()=>privateResult;
+ for(const deliveryStatus of ['ACCEPTED','UNKNOWN'])for(const deliveryRecorded of [true,false]){
+  privateResult={status:'ISSUED',invitationId:'synthetic-invitation',userId:'synthetic-user',email:'internal@example.invalid',capability:'synthetic-secret',deliveryStatus,deliveryRecorded,unreviewed:'internal'};
+  const result=await classified.execute({command:'INVITE'});
+  check(()=>assert.deepEqual(result,{status:'ISSUED',deliveryStatus,deliveryRecorded,...(deliveryStatus==='UNKNOWN'||!deliveryRecorded?{recovery:'RECONCILE_OR_EXPLICIT_CANCEL_AND_REISSUE'}:{}),invitationId:'synthetic-invitation',userId:'synthetic-user'}));
+ }
+ privateResult={status:'DELIVERED',deliveryStatus:'ACCEPTED',deliveryRecorded:true};await assert.rejects(()=>classified.execute({command:'INVITE'}),(error:{getResponse:()=>unknown})=>{const result=error.getResponse() as {status:string;retryable:boolean};return result.status==='OUTCOME_UNKNOWN'&&result.retryable===false;});passed++;
+ privateResult={status:'ISSUED',deliveryStatus:'DELIVERED',deliveryRecorded:true};await assert.rejects(()=>classified.execute({command:'INVITE'}),(error:{getResponse:()=>unknown})=>{const result=error.getResponse() as {status:string;retryable:boolean};return result.status==='OUTCOME_UNKNOWN'&&result.retryable===false;});passed++;
  console.log(`Onboarding API boundary: ${passed} PASS`);
 }
 main().catch(()=>{console.error('Onboarding API boundary verification failed.');process.exitCode=1;});

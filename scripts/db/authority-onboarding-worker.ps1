@@ -1,9 +1,20 @@
 param([Parameter(Mandatory=$true)][string]$Configuration,[switch]$ProvisionCredential)
 $ErrorActionPreference='Stop'
+function Get-PrivatePowerShellPath([string]$SystemDirectory,[string]$SystemRoot) {
+  $trustedRoot=[IO.Directory]::GetParent($SystemDirectory).FullName
+  if(-not [IO.Path]::IsPathRooted($SystemRoot) -or -not [string]::Equals([IO.Path]::GetFullPath($SystemRoot).TrimEnd('\'),$trustedRoot.TrimEnd('\'),[StringComparison]::OrdinalIgnoreCase)){throw 'Substituted Windows directory denied'}
+  return [IO.Path]::Combine($SystemDirectory,'WindowsPowerShell','v1.0','powershell.exe')
+}
+function Get-PrivateExecutableAllowedSids([string]$PackagePath,[string]$PinnedPowerShell,[string[]]$PrivateSids,[string]$TrustedInstallerSid) {
+  if([string]::Equals($PackagePath,$PinnedPowerShell,[StringComparison]::OrdinalIgnoreCase)){return @($PrivateSids)+@($TrustedInstallerSid)}
+  return @($PrivateSids)
+}
 try {
   $cfg=Get-Content -LiteralPath $Configuration -Raw | ConvertFrom-Json
   $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
   if($cfg.apiSid -notmatch '^S-1-5-' -or $cfg.executorSid -notmatch '^S-1-5-' -or $cfg.apiSid -eq $cfg.executorSid -or $sid -ne $cfg.executorSid){throw 'Distinct private identity required'}
+  # SystemDirectory comes from the OS API, not inherited executable-loading input.
+  $privatePowerShell=Get-PrivatePowerShellPath ([Environment]::SystemDirectory) $env:SystemRoot
   $root=[IO.Path]::GetFullPath($cfg.repository)
   $secret=[IO.Path]::GetFullPath($cfg.credentialFile)
   $allowed=@($cfg.executorSid,'S-1-5-18','S-1-5-32-544')
@@ -27,21 +38,25 @@ try {
   # package. Deploy an independently owned immutable release, not a writable
   # development checkout; never resolve privileged executables through PATH.
   if(-not [IO.Path]::IsPathRooted($cfg.nodeExecutable) -or -not [IO.Path]::IsPathRooted($cfg.tsxCliFile)){throw 'Pinned absolute executables required'}
-  $releaseItems=@((Get-Item -LiteralPath $root),(Get-Item -LiteralPath $cfg.nodeExecutable),(Get-Item -LiteralPath $cfg.tsxCliFile)) + @(Get-ChildItem -LiteralPath $root -Recurse -Force)
+  $releaseItems=@((Get-Item -LiteralPath $root),(Get-Item -LiteralPath $cfg.nodeExecutable),(Get-Item -LiteralPath $cfg.tsxCliFile),(Get-Item -LiteralPath $privatePowerShell)) + @(Get-ChildItem -LiteralPath $root -Recurse -Force)
+  $trustedInstallerSid=([Security.Principal.NTAccount]'NT SERVICE\TrustedInstaller').Translate([Security.Principal.SecurityIdentifier]).Value
   $writeMask=[Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership
   foreach($releaseItem in $releaseItems){
+    # Windows servicing owns the pinned OS binary; this exception does not apply
+    # to private configuration, credentials, or independently deployed packages.
+    $packageAllowed=Get-PrivateExecutableAllowedSids $releaseItem.FullName $privatePowerShell $allowed $trustedInstallerSid
     $ancestor=$releaseItem
     while($ancestor){
       if($ancestor.Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Executable reparse paths denied'}
       $acl=Get-Acl -LiteralPath $ancestor.FullName
       $ownerSid=if($acl.Owner -match '^S-1-'){$acl.Owner}else{([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value}
-      if($ownerSid -notin $allowed){throw 'Executable package owner denied'}
-      foreach($ace in $acl.Access){$aceSid=$ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value;if($ace.AccessControlType -eq 'Allow' -and $aceSid -notin $allowed -and ($ace.FileSystemRights -band $writeMask)){throw 'Executable package mutable by unrelated identity'}}
+      if($ownerSid -notin $packageAllowed){throw 'Executable package owner denied'}
+      foreach($ace in $acl.Access){$aceSid=$ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value;if($ace.AccessControlType -eq 'Allow' -and $aceSid -notin $packageAllowed -and ($ace.FileSystemRights -band $writeMask)){throw 'Executable package mutable by unrelated identity'}}
       $ancestor=if($ancestor -is [IO.DirectoryInfo]){$ancestor.Parent}else{$ancestor.Directory}
     }
   }
   foreach($name in @('PRIVATE_ONBOARDING_SECRET','DATABASE_URL','DATABASE_ADMIN_URL','MIGRATION_DATABASE_URL','RUNTIME_DATABASE_URL','PRIVATE_WORKER_DATABASE_URL','DB_MIGRATION_SECRET','DB_FINANCE_SECRET','DB_CONFIRMATION_SECRET')){if([Environment]::GetEnvironmentVariable($name,'Process')){throw 'Unexpected credentials in worker environment'}}
-  foreach($name in @('NODE_OPTIONS','NODE_PATH')){if([Environment]::GetEnvironmentVariable($name,'Process')){throw 'Node executable injection configuration denied'}}
+  foreach($name in @('NODE_OPTIONS','NODE_PATH','ESBUILD_BINARY_PATH')){if([Environment]::GetEnvironmentVariable($name,'Process')){throw 'Node executable injection configuration denied'}}
   if($ProvisionCredential){if(Test-Path -LiteralPath $secret){throw 'Existing credential cannot be replaced'};$value=Read-Host 'Private JSON: databaseUrl and resendApiKey (input suppressed)' -AsSecureString;$value | Export-Clixml -LiteralPath $secret;Write-Output 'Private DPAPI configuration stored; values suppressed';exit 0}
   $secure=Import-Clixml -LiteralPath $secret
   if($secure -isnot [Security.SecureString]){throw 'Expected DPAPI credential'}

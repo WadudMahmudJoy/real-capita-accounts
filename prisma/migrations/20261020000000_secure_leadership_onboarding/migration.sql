@@ -18,7 +18,7 @@ CREATE TABLE "onboarding_invitations" (
     "userId" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "tokenHash" TEXT NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'DELIVERED',
+    "status" TEXT NOT NULL DEFAULT 'ISSUED',
     "createdById" TEXT,
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "expiresAt" TIMESTAMPTZ(3) NOT NULL,
@@ -142,8 +142,8 @@ ALTER TABLE onboarding_authorizations ADD COLUMN "decisionReason" TEXT;
 ALTER TABLE onboarding_events ADD COLUMN reason TEXT;
 
 ALTER TABLE onboarding_identities ADD CONSTRAINT onboarding_identity_state CHECK(version>0 AND ("verifiedAt" IS NULL OR ("emailVerifiedAt" IS NOT NULL AND "employeeId" IS NOT NULL AND "verifiedById" IS NOT NULL AND COALESCE("evidenceDigest",'') ~ '^[0-9a-f]{64}$')));
-ALTER TABLE onboarding_invitations ADD CONSTRAINT onboarding_invitation_state CHECK("tokenHash" ~ '^[0-9a-f]{64}$' AND "expiresAt">"createdAt" AND status IN ('DELIVERED','CONSUMED','CANCELLED') AND ((status='DELIVERED' AND "consumedAt" IS NULL AND "cancelledAt" IS NULL) OR (status='CONSUMED' AND "consumedAt" IS NOT NULL AND "cancelledAt" IS NULL) OR (status='CANCELLED' AND "cancelledAt" IS NOT NULL AND "consumedAt" IS NULL)));
-CREATE UNIQUE INDEX onboarding_one_live_invitation ON onboarding_invitations("userId") WHERE status='DELIVERED';
+ALTER TABLE onboarding_invitations ADD CONSTRAINT onboarding_invitation_state CHECK("tokenHash" ~ '^[0-9a-f]{64}$' AND "expiresAt">"createdAt" AND status IN ('ISSUED','CONSUMED','CANCELLED') AND ((status='ISSUED' AND "consumedAt" IS NULL AND "cancelledAt" IS NULL) OR (status='CONSUMED' AND "consumedAt" IS NOT NULL AND "cancelledAt" IS NULL) OR (status='CANCELLED' AND "cancelledAt" IS NOT NULL AND "consumedAt" IS NULL)));
+CREATE UNIQUE INDEX onboarding_one_live_invitation ON onboarding_invitations("userId") WHERE status='ISSUED';
 ALTER TABLE onboarding_authorizations ADD CONSTRAINT onboarding_authorization_state CHECK(version>0 AND (kind='SPECIALIZED' OR "actorId"<>"targetUserId") AND kind IN ('ORGANIZATION','ATTESTATION','SPECIALIZED') AND state IN ('PENDING','APPROVED','REJECTED','CONSUMED','REVOKED') AND "expiresAt">"createdAt" AND length(btrim(reason))>0 AND (kind<>'SPECIALIZED' OR scope IN ('SYSTEM_ADMIN','ACCOUNTANT','HR_ADMIN')) AND (kind='SPECIALIZED' OR (scope IN ('INITIAL_MD','MD_RECOVERY') AND COALESCE("evidenceDigest",'') ~ '^[0-9a-f]{64}$')) AND (kind<>'ATTESTATION' OR ("parentId" IS NOT NULL AND "sessionId" IS NOT NULL)));
 ALTER TABLE onboarding_nonces ADD CONSTRAINT onboarding_nonce_contract CHECK("nonceHash" ~ '^[0-9a-f]{64}$' AND "payloadHash" ~ '^[0-9a-f]{64}$');
 ALTER TABLE onboarding_rates ADD CONSTRAINT onboarding_rate_positive CHECK(attempts>0);
@@ -155,7 +155,7 @@ CREATE TRIGGER onboarding_events_immutable BEFORE UPDATE OR DELETE ON onboarding
 CREATE TRIGGER onboarding_nonces_immutable BEFORE UPDATE OR DELETE ON onboarding_nonces FOR EACH ROW EXECUTE FUNCTION authority_immutable();
 CREATE FUNCTION onboarding_history_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog,public,pg_temp AS $$ BEGIN
  IF TG_TABLE_NAME='onboarding_invitations' THEN
- IF OLD.status<>'DELIVERED' OR NEW.status NOT IN ('CONSUMED','CANCELLED') OR (to_jsonb(OLD)-ARRAY['status','consumedAt','cancelledAt']) IS DISTINCT FROM (to_jsonb(NEW)-ARRAY['status','consumedAt','cancelledAt']) THEN RAISE EXCEPTION 'Immutable single-use invitation' USING ERRCODE='23514';END IF;
+ IF OLD.status<>'ISSUED' OR NEW.status NOT IN ('CONSUMED','CANCELLED') OR (to_jsonb(OLD)-ARRAY['status','consumedAt','cancelledAt']) IS DISTINCT FROM (to_jsonb(NEW)-ARRAY['status','consumedAt','cancelledAt']) THEN RAISE EXCEPTION 'Immutable single-use invitation' USING ERRCODE='23514';END IF;
  ELSE
  IF OLD.state IN ('REJECTED','REVOKED','CONSUMED') OR NEW.version<>OLD.version+1 OR (to_jsonb(OLD)-ARRAY['state','reviewerId','version','consumedAt','revokedAt','decisionReason']) IS DISTINCT FROM (to_jsonb(NEW)-ARRAY['state','reviewerId','version','consumedAt','revokedAt','decisionReason']) OR NEW.state=OLD.state THEN RAISE EXCEPTION 'Immutable authorization instruction' USING ERRCODE='23514';END IF;
  END IF;RETURN NEW;END $$;
@@ -165,7 +165,7 @@ CREATE FUNCTION onboarding_verified_personal(person text) RETURNS boolean LANGUA
  SELECT EXISTS(SELECT 1 FROM onboarding_identities i JOIN users u ON u.id=i."userId" JOIN employee_account_bindings b ON b."userId"=u.id AND b."employeeId"=i."employeeId" JOIN employees e ON e.id=i."employeeId" JOIN companies c ON c.id=i."companyId" WHERE i."userId"=person AND i."emailVerifiedAt" IS NOT NULL AND i."verifiedAt" IS NOT NULL AND b."unboundAt" IS NULL AND u."isActive" AND e."isActive" AND NOT e."isDeleted" AND c."singletonKey"='PRIMARY' AND c."isActive" AND EXISTS(SELECT 1 FROM onboarding_invitations v WHERE v."userId"=u.id AND v.status='CONSUMED' AND v.email=u.email)) $$;
 -- The caller is an independently isolated, signed-context private broker, never runtime.
 CREATE FUNCTION onboarding_command(actor text, command text, data jsonb, context jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp SET timezone='UTC' AS $$
-DECLARE parent text; target text; old_target text; rid text; nonce_hash text; inv onboarding_invitations; ident onboarding_identities; authz onboarding_authorizations; org onboarding_authorizations; att onboarding_authorizations; root_md authority_mandates; is_md boolean; assurance text; result jsonb; before_user jsonb; after_user jsonb; capability text; account_version int; ts timestamptz; limiter onboarding_rates; permission_name text;
+DECLARE parent text; target text; old_target text; rid text; nonce_hash text; inv onboarding_invitations; ident onboarding_identities; authz onboarding_authorizations; superseded onboarding_authorizations; org onboarding_authorizations; att onboarding_authorizations; root_md authority_mandates; is_md boolean; assurance text; result jsonb; before_user jsonb; after_user jsonb; capability text; account_version int; ts timestamptz; limiter onboarding_rates; permission_name text;
 BEGIN
  SELECT id INTO parent FROM companies WHERE "singletonKey"='PRIMARY' AND "isActive";IF parent IS NULL THEN RAISE EXCEPTION 'PRIMARY_UNAVAILABLE' USING ERRCODE='42501';END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('real_capita_authority:'||parent,0));
@@ -201,7 +201,9 @@ BEGIN
  ELSE RAISE EXCEPTION 'DUPLICATE_ACCOUNT' USING ERRCODE='23505';END IF;
  END IF;
  IF ident."emailVerifiedAt" IS NOT NULL OR EXISTS(SELECT 1 FROM users WHERE id=target AND "isActive") THEN RAISE EXCEPTION 'DUPLICATE_ACCOUNT' USING ERRCODE='23505';END IF;
- UPDATE onboarding_invitations SET status='CANCELLED',"cancelledAt"=clock_timestamp() WHERE "userId"=target AND status='DELIVERED';
+ -- Reissue is an explicit CANCEL followed by a separately authorized INVITE.
+ -- Even an expired/unknown-delivery invitation must never be silently superseded.
+ IF EXISTS(SELECT 1 FROM onboarding_invitations WHERE "userId"=target AND status='ISSUED') THEN RAISE EXCEPTION 'EXPLICIT_CANCELLATION_REQUIRED' USING ERRCODE='23505';END IF;
  ELSE
  target:=gen_random_uuid()::text;INSERT INTO users(id,email,"fullName","passwordHash","isActive","updatedAt") VALUES(target,data->>'email',data->>'name',data->>'passwordHash',false,clock_timestamp());
  INSERT INTO onboarding_identities("userId","companyId") VALUES(target,parent);
@@ -212,7 +214,7 @@ BEGIN
  ELSIF command='CLAIM' THEN
  IF assurance<>'EMAIL_CAPABILITY' OR data->>'tokenHash' !~ '^[0-9a-f]{64}$' OR data->>'passwordHash' !~ '^\$2[aby]\$' THEN RAISE EXCEPTION 'INVALID_CLAIM' USING ERRCODE='42501';END IF;
  SELECT * INTO inv FROM onboarding_invitations WHERE "tokenHash"=data->>'tokenHash' FOR UPDATE;
- IF NOT FOUND OR inv.status<>'DELIVERED' OR inv."expiresAt"<=clock_timestamp() THEN RAISE EXCEPTION 'INVALID_CLAIM' USING ERRCODE='42501';END IF;
+ IF NOT FOUND OR inv.status<>'ISSUED' OR inv."expiresAt"<=clock_timestamp() THEN RAISE EXCEPTION 'INVALID_CLAIM' USING ERRCODE='42501';END IF;
  target:=inv."userId";PERFORM id FROM users WHERE id=target AND email=inv.email AND NOT "isActive" FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'INVALID_CLAIM' USING ERRCODE='42501';END IF;
  UPDATE onboarding_invitations SET status='CONSUMED',"consumedAt"=clock_timestamp() WHERE id=inv.id;
  UPDATE onboarding_identities SET "emailVerifiedAt"=clock_timestamp(),version=version+1 WHERE "userId"=target AND "emailVerifiedAt" IS NULL;IF NOT FOUND THEN RAISE EXCEPTION 'ALREADY_VERIFIED' USING ERRCODE='23505';END IF;
@@ -271,12 +273,22 @@ BEGIN
  IF command='DECIDE_SPECIALIZED' AND data->>'decision'='REJECT' THEN UPDATE onboarding_authorizations SET state='REJECTED',"decisionReason"=data->>'reason',"reviewerId"=actor,version=version+1 WHERE id=authz.id;
  ELSE
  IF command='DECIDE_SPECIALIZED' AND (data->>'decision' IS DISTINCT FROM 'APPROVE' OR NOT onboarding_verified_personal(target)) THEN RAISE EXCEPTION 'VERIFIED_RECIPIENT_REQUIRED' USING ERRCODE='42501';END IF;
+  IF command='DECIDE_SPECIALIZED' THEN
+  -- A fresh independent approval replaces the previous instruction, retaining its
+  -- final history. Revoking that old request later must never remove this grant.
+  FOR superseded IN UPDATE onboarding_authorizations SET state='REVOKED',"decisionReason"=data->>'reason',"reviewerId"=actor,"revokedAt"=clock_timestamp(),version=version+1 WHERE "targetUserId"=target AND "companyId"=parent AND kind='SPECIALIZED' AND scope=authz.scope AND state='APPROVED' RETURNING * LOOP
+  INSERT INTO onboarding_events(id,"actorId","targetUserId",action,"recordId",reason) VALUES(gen_random_uuid()::text,actor,target,'SPECIALIZED_SUPERSEDED',superseded.id,'Replaced by approved request '||authz.id||': '||(data->>'reason'));
+  END LOOP;
+  END IF;
  IF authz.scope='ACCOUNTANT' THEN
  IF command='DECIDE_SPECIALIZED' THEN
- INSERT INTO user_roles(id,"userId","roleId") SELECT gen_random_uuid()::text,target,id FROM roles WHERE code='ACCOUNTANT';IF NOT FOUND THEN RAISE EXCEPTION 'ACCOUNTANT_CONFIGURATION_MISSING' USING ERRCODE='23514';END IF;
+  IF NOT EXISTS(SELECT 1 FROM roles WHERE code='ACCOUNTANT') THEN RAISE EXCEPTION 'ACCOUNTANT_CONFIGURATION_MISSING' USING ERRCODE='23514';END IF;
+  INSERT INTO user_roles(id,"userId","roleId") SELECT gen_random_uuid()::text,target,id FROM roles WHERE code='ACCOUNTANT' ON CONFLICT("userId","roleId") DO NOTHING;
  ELSE DELETE FROM user_roles WHERE "userId"=target AND "roleId" IN(SELECT id FROM roles WHERE code='ACCOUNTANT');END IF;
  ELSE
- IF command='DECIDE_SPECIALIZED' THEN INSERT INTO user_permissions(id,"userId",code,"grantedById",reason,"expiresAt") VALUES(gen_random_uuid()::text,target,authz.scope::"HrPermission",actor,'MD authorized request '||authz.id,authz."expiresAt");
+  IF command='DECIDE_SPECIALIZED' THEN
+  UPDATE user_permissions SET "revokedAt"=clock_timestamp(),"revokedById"=actor WHERE "userId"=target AND code=authz.scope::"HrPermission" AND "revokedAt" IS NULL;
+  INSERT INTO user_permissions(id,"userId",code,"grantedById",reason,"expiresAt") VALUES(gen_random_uuid()::text,target,authz.scope::"HrPermission",actor,'MD authorized request '||authz.id,authz."expiresAt");
  ELSE UPDATE user_permissions SET "revokedAt"=clock_timestamp(),"revokedById"=actor WHERE "userId"=target AND code=authz.scope::"HrPermission" AND "revokedAt" IS NULL;END IF;
  END IF;
  UPDATE onboarding_authorizations SET state=CASE WHEN command='DECIDE_SPECIALIZED' THEN 'APPROVED' ELSE 'REVOKED' END,"decisionReason"=data->>'reason',"reviewerId"=actor,"revokedAt"=CASE WHEN command='REVOKE_SPECIALIZED' THEN clock_timestamp() ELSE NULL END,version=version+1 WHERE id=authz.id;
@@ -316,8 +328,9 @@ BEGIN
  UPDATE authority_role_grants SET "revokedAt"=clock_timestamp(),version=version+1 WHERE "userId"=target AND "revokedAt" IS NULL;
  INSERT INTO user_admin_events(id,"actorId","targetUserId",action,snapshot) VALUES(gen_random_uuid()::text,actor,target,'SUSPEND',jsonb_build_object('before',before_user,'after',after_user));rid:=target;result:=jsonb_build_object('status','SUSPENDED');
  ELSIF command='CANCEL' THEN
- IF assurance<>'PRIVILEGED_ACTION' OR NOT is_md THEN RAISE EXCEPTION 'MD_REQUIRED' USING ERRCODE='42501';END IF;
- SELECT * INTO inv FROM onboarding_invitations WHERE id=data->>'invitationId' AND status='DELIVERED' FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'INVITATION_NOT_PENDING' USING ERRCODE='40001';END IF;
+ IF assurance<>'INITIAL_REGISTRAR' OR NOT (is_md OR NOT EXISTS(SELECT 1 FROM authority_mandates WHERE kind='MD')) THEN RAISE EXCEPTION 'MD_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT * INTO inv FROM onboarding_invitations WHERE id=data->>'invitationId' AND status='ISSUED' FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'INVITATION_NOT_PENDING' USING ERRCODE='40001';END IF;
+ IF NOT is_md AND inv."createdById" IS DISTINCT FROM actor THEN RAISE EXCEPTION 'ISSUING_REGISTRAR_REQUIRED' USING ERRCODE='42501';END IF;
  UPDATE onboarding_invitations SET status='CANCELLED',"cancelledAt"=clock_timestamp() WHERE id=inv.id;target:=inv."userId";rid:=inv.id;result:=jsonb_build_object('status','CANCELLED');
  ELSE RAISE EXCEPTION 'UNKNOWN_ONBOARDING_COMMAND' USING ERRCODE='42501';END IF;
  INSERT INTO onboarding_events(id,"actorId","targetUserId",action,"recordId",reason) VALUES(gen_random_uuid()::text,NULLIF(actor,''),target,command,rid,data->>'reason');
@@ -326,6 +339,18 @@ BEGIN
 END $$;
 REVOKE ALL ON onboarding_identities,onboarding_invitations,onboarding_authorizations,onboarding_events,onboarding_nonces,onboarding_rates FROM PUBLIC;
 REVOKE ALL ON FUNCTION onboarding_command(text,text,jsonb,jsonb),onboarding_verified_personal(text),onboarding_history_guard() FROM PUBLIC;
+
+-- Private broker bookkeeping only: bounded outcomes, no bearer/provider payloads,
+-- no invitation mutation and no dependency on a still-live actor/session/proof.
+CREATE FUNCTION onboarding_record_delivery(invitation_id text, outcome text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE inv onboarding_invitations;
+BEGIN
+ IF outcome IS NULL OR outcome NOT IN ('ACCEPTED','UNKNOWN') THEN RAISE EXCEPTION 'INVALID_DELIVERY_OUTCOME' USING ERRCODE='23514';END IF;
+ SELECT * INTO inv FROM onboarding_invitations WHERE id=invitation_id;
+ IF NOT FOUND THEN RAISE EXCEPTION 'UNKNOWN_INVITATION' USING ERRCODE='23514';END IF;
+ INSERT INTO onboarding_events(id,"actorId","targetUserId",action,"recordId",reason) VALUES(gen_random_uuid()::text,inv."createdById",inv."userId",'DELIVERY_'||outcome,inv.id,'PRIVATE_PROVIDER_ATTEMPT');
+END $$;
+REVOKE ALL ON FUNCTION onboarding_record_delivery(text,text) FROM PUBLIC;
 
 -- Preserve legacy pending audit markers; only fully verified new identity releases the block.
 CREATE OR REPLACE FUNCTION authority_command(actor text, command text, data jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$

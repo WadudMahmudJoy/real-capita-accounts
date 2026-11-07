@@ -11,7 +11,7 @@ type Money = Record<typeof monetaryFields[number], string>;
 // punches and payment credentials never cross this boundary.
 export interface PayrollPreviewResponseDto {
   period: { year: number; month: number; timeZone: string; startDate: string; endDateExclusive: string };
-  parent: { id: string; singletonKey: string } | null;
+  parent: { id: string; singletonKey: string; name?: string; currency?: string } | null;
   status: "READY" | "BLOCKED";
   readyForDraft: boolean;
   creationRequiresRevalidation: true;
@@ -40,7 +40,7 @@ export class PayrollPreviewService {
     return {
       period: { year: result.period.year, month: result.period.month, timeZone: result.period.timeZone,
         startDate: result.period.startDate, endDateExclusive: result.period.endDateExclusive },
-      parent: result.parent ? { id: result.parent.id, singletonKey: result.parent.singletonKey } : null,
+      parent: result.parent ? { id: result.parent.id, singletonKey: result.parent.singletonKey, ...('name' in result.parent && typeof result.parent.name === 'string' ? {name: result.parent.name} : {}), ...('currency' in result.parent && typeof result.parent.currency === 'string' ? {currency: result.parent.currency} : {}) } : null,
       status: result.status, readyForDraft: result.readyForDraft, creationRequiresRevalidation: true,
       exceptions: result.exceptions.map(e => ({ code: e.code, message: e.message,
         ...("employeeId" in e ? { employeeId: e.employeeId } : {}), ...("category" in e ? { category: e.category } : {}) })),

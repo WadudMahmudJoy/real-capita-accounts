@@ -3,7 +3,7 @@ import {PermissionButton} from "../../_components/permission-controls";
 import Link from 'next/link';
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {getCompanies,toErrorMessage} from '@/lib/api';
+import {toErrorMessage} from '@/lib/api';
 import {previewPayroll,createPayrollDraft,deductionCategories,deductionLabels,type PayrollInput,type PayrollPreview} from '@/lib/payroll-workflow-api';
 import {Card,Field,Notice,PageIntro,Select,TextInput} from '../../_components/ui';
 import {formatPayrollMoney} from '../_components/payroll-document-view';
@@ -27,7 +27,7 @@ export default function NewPayrollPage(){
  }
  async function assess(){setBusy(true);setError('');try{
    const result=await previewPayroll(input());setPreview(result);setRoster(result.employees);
-   const companies=await getCompanies(),owner=companies.companies.find(c=>c.id===result.parent?.id&&c.singletonKey==='PRIMARY'&&c.isActive);setParent(owner?.name??'Active PRIMARY unavailable');setCurrency(owner?.currency??'');
+   setParent(result.parent?.singletonKey==='PRIMARY' ? result.parent.name??'Central company' : 'Active PRIMARY unavailable');setCurrency(result.parent?.currency??'');
    setForms(current=>Object.fromEntries(result.employees.map(e=>[e.employeeId,current[e.employeeId]??blank()])));
  }catch(e){setPreview(null);setError(toErrorMessage(e));}finally{setBusy(false);}}
  function confirmZeros(){setForms(current=>Object.fromEntries(Object.entries(current).map(([id,f])=>[id,{...f,amounts:f.amounts.map(a=>a||'0.00'),confirmed:f.amounts.map(a=>!a||/^0(\.0{1,2})?$/.test(a))}])));setPreview(null);}

@@ -1,4 +1,5 @@
 import {HttpException,Injectable,ServiceUnavailableException} from '@nestjs/common';
+import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {request} from 'node:https';
 import {createSecureContext} from 'node:tls';
@@ -15,16 +16,46 @@ export class OnboardingGateway{
   const tls={cert:readFileSync(cert),key:readFileSync(key),ca:readFileSync(ca),rejectUnauthorized:true,minVersion:'TLSv1.3' as const};
   createSecureContext(tls);return {endpoint,tls};
  }
- private async send(path:string,body?:unknown):Promise<Record<string,unknown>>{
+ // End-to-end deadlines, not just socket inactivity. Mutations include pool/SQL,
+ // COMMIT, the provider's 10s deadline and separate delivery bookkeeping.
+ // This headroom reduces false timeouts; no finite deadline proves rollback.
+ protected requestDeadlineMs(path:string):number{return path==='/commands'||path==='/claim'?120000:15000;}
+ private outcomeUnknown(body?:Record<string,unknown>){
+  const nonce=(body?.proof as {claims?:{nonce?:unknown}}|undefined)?.claims?.nonce;
+  const reconciliationId=typeof nonce==='string'&&/^[A-Za-z0-9_-]{24,128}$/.test(nonce)?createHash('sha256').update(nonce).digest('hex'):undefined;
+  return new ServiceUnavailableException({status:'OUTCOME_UNKNOWN',retryable:false,recovery:'AUTHORIZED_READ_ONLY_RECONCILIATION_REQUIRED',...(reconciliationId?{reconciliationId}:{}),message:'The private operation may have committed. Do not retry or reissue automatically. Request authorized read-only reconciliation before any further mutation.'});
+ }
+ private async send(path:string,body?:Record<string,unknown>):Promise<Record<string,unknown>>{
   try{
-   const {endpoint,tls}=this.config();const payload=body===undefined?undefined:JSON.stringify(body);
+   const {endpoint,tls}=this.config();const payload=body===undefined?undefined:JSON.stringify(body),deadline=this.requestDeadlineMs(path);
    return await new Promise((resolve,reject)=>{
-    const req=request(new URL(path,endpoint),{...tls,method:payload?'POST':'GET',headers:{'Content-Type':'application/json',...(payload?{'Content-Length':Buffer.byteLength(payload)}:{})},timeout:10000},response=>{
-     let data='';response.setEncoding('utf8');response.on('data',(chunk:string)=>{data+=chunk;if(data.length>65536){response.destroy();reject(new Error());}});
-     response.on('end',()=>{try{if(response.statusCode!==200&&response.statusCode!==201){if([400,401,403,409,429].includes(response.statusCode??0)){reject(new HttpException('Onboarding request denied. Verify current authority, evidence and record version.',response.statusCode!));return;}throw new Error();}const result:unknown=JSON.parse(data);if(!result||typeof result!=='object'||Array.isArray(result))throw new Error();resolve(result as Record<string,unknown>);}catch{reject(new Error());}});response.on('error',()=>reject(new Error()));
-    });req.on('timeout',()=>req.destroy());req.on('error',()=>reject(new Error()));req.end(payload);
+    let settled=false;
+    const finish=(error?:unknown,value?:Record<string,unknown>)=>{if(settled)return;settled=true;clearTimeout(timer);if(error)reject(error instanceof Error?error:new Error('GATEWAY_RESPONSE_INVALID'));else resolve(value!);};
+    const req=request(new URL(path,endpoint),{...tls,method:payload?'POST':'GET',headers:{'Content-Type':'application/json',...(payload?{'Content-Length':Buffer.byteLength(payload)}:{})},timeout:deadline},response=>{
+     let data='';response.setEncoding('utf8');
+     response.on('data',(chunk:string)=>{data+=chunk;if(data.length>65536){finish(new Error());response.destroy();}});
+     response.on('aborted',()=>finish(new Error()));response.on('error',error=>finish(error));
+     response.on('close',()=>{if(!response.complete)finish(new Error());});
+     response.on('end',()=>{
+      try{
+       if(response.statusCode!==200&&response.statusCode!==201){
+        // Only a complete explicit rejection establishes a known denial. 5xx and
+        // transport/parse failures can follow a committed private operation.
+        if([400,401,403,409,429].includes(response.statusCode??0))throw new HttpException('Onboarding request denied. Verify current authority, evidence and record version.',response.statusCode!);
+        throw new Error();
+       }
+       const result:unknown=JSON.parse(data);if(!result||typeof result!=='object'||Array.isArray(result))throw new Error();finish(undefined,result as Record<string,unknown>);
+      }catch(error){finish(error);}
+     });
+    });
+    const expire=()=>{finish(new Error());req.destroy();};
+    const timer=setTimeout(expire,deadline);req.on('timeout',expire);req.on('error',error=>finish(error));req.end(payload);
    });
-  }catch(error){if(error instanceof HttpException)throw error;throw new ServiceUnavailableException('Trusted onboarding service is unavailable. No authority was granted.');}
+  }catch(error){
+   if(error instanceof HttpException)throw error;
+   if(path==='/commands'||path==='/claim')throw this.outcomeUnknown(body);
+   throw new ServiceUnavailableException('Trusted onboarding service is unavailable.');
+  }
  }
  async ready(){try{const r=await this.send('/readiness');return r.ready===true&&r.providerReady===true&&r.executorReady===true;}catch{return false;}}
  async prepare(envelope:Record<string,unknown>){
@@ -38,6 +69,11 @@ export class OnboardingGateway{
   // Return reviewed mutation identifiers only; private command results can carry
   // internal delivery routing data and must never become a general JSON proxy.
   const safe:Record<string,unknown>={status:'ACCEPTED'};
+  if(envelope.command==='INVITE'){
+   if(result.status!=='ISSUED'||!['ACCEPTED','UNKNOWN'].includes(String(result.deliveryStatus))||typeof result.deliveryRecorded!=='boolean')throw this.outcomeUnknown(envelope);
+   safe.status='ISSUED';safe.deliveryStatus=result.deliveryStatus;safe.deliveryRecorded=result.deliveryRecorded;
+   if(result.deliveryStatus==='UNKNOWN'||!result.deliveryRecorded)safe.recovery='RECONCILE_OR_EXPLICIT_CANCEL_AND_REISSUE';
+  }
   for(const key of ['id','requestId','version','authorizationId','attestationId','invitationId','userId'])if(typeof result[key]==='string'||typeof result[key]==='number')safe[key]=result[key];
   return safe;
  }

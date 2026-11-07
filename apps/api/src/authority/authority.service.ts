@@ -16,20 +16,20 @@ export class AuthorityService {
   const installed=await this.db.$queryRaw<{installed:string|null}[]>`SELECT to_regclass('public.authority_mandates')::text installed`;
   if(!installed[0]?.installed)return {status:'UNAVAILABLE',permissions:[] as string[],registry:PERMISSION_REGISTRY,activated:false,delegationCeiling:[] as string[],reason:'AUTHORITY_MIGRATION_NOT_DEPLOYED'};
   const state=await businessAuthority(this.db,actor);
-  const ceilings=await this.db.$queryRaw<{ceiling:string[]}[]>`SELECT ceiling FROM authority_mandates m WHERE m."userId"=${actor} AND authority_live_mandate(m)`;
+  const ceilings=await this.db.$queryRaw<{id:string;kind:string;version:number;expiresAt:Date|null;ceiling:string[]}[]>`SELECT id,kind,version,"expiresAt",ceiling FROM authority_mandates m WHERE m."userId"=${actor} AND authority_live_mandate(m)`;
   const user=await this.db.user.findUnique({where:{id:actor},select:{roles:{select:{role:{select:{code:true}}}}}});
   const accountant=await effectiveAccountant(this.db,actor,user?.roles.some(r=>r.role.code==='ACCOUNTANT')??false);
   const [admin,hr,employee]=await Promise.all([permission(this.db,actor,'SYSTEM_ADMIN'),permission(this.db,actor,'HR_ADMIN'),binding(this.db,actor)]);
   const allowedPermissions=state.permissions.filter(code=>{
    const entry=PERMISSION_REGISTRY.find(p=>p.code===code);
-   if(entry?.prerequisite.includes('ACCOUNTANT')&&!accountant)return false;
+   if(entry?.prerequisite.includes('ACCOUNTANT')&&!accountant&&!(code.startsWith('attendance.')&&hr))return false;
    if(code.startsWith('users.')&&!admin)return false;
    if(code.startsWith('leave.')&&!hr&&!employee)return false;
    if(['leave.review','leave.categories.manage','leave.recommend'].includes(code)&&!hr)return false;
    return true;
   });
   if(employee)allowedPermissions.push(...['leave.view','leave.create','leave.withdraw','leave.history.view'].filter(p=>!allowedPermissions.includes(p)));
-  return {status:'AVAILABLE',...state,allowedPermissions,delegationCeiling:[...new Set(ceilings.flatMap(m=>m.ceiling))],registry:PERMISSION_REGISTRY,reason:'PRIVATE_EXECUTOR_AND_IDENTITY_PROVIDER_REQUIRED_FOR_WRITES'};
+  return {status:'AVAILABLE',...state,allowedPermissions,delegationCeiling:[...new Set(ceilings.flatMap(m=>m.ceiling))],delegations:ceilings.filter(m=>m.kind==='DELEGATE').map(m=>({id:m.id,version:m.version,expiresAt:m.expiresAt?.toISOString()??null})),registry:PERMISSION_REGISTRY,reason:'PRIVATE_EXECUTOR_AND_IDENTITY_PROVIDER_REQUIRED_FOR_WRITES'};
  }
  private async require(actor:string,code:string){const access=await this.access(actor);if(access.status==='UNAVAILABLE')throw new ServiceUnavailableException(access.reason);if(!access.permissions.includes(code))throw new ForbiddenException(`Explicit ${code} authority required.`);}
  private async parent(){const p=await this.db.company.findUnique({where:{singletonKey:'PRIMARY'},select:{id:true,isActive:true}});if(!p?.isActive)throw new ForbiddenException('PRIMARY_UNAVAILABLE');return p.id;}

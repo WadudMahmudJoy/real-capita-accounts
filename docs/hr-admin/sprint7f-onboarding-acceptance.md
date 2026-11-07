@@ -1,5 +1,7 @@
 # Sprint 7F secure leadership onboarding acceptance
 
+Sprint 7G follow-up: [reconciliation/source review](sprint7g-source-review-acceptance.md) identifies the exact authentication-row changes and supersedes migration 20's historical checksum after a minimal unapplied-source correction. The 7F results below remain historical evidence; migration 20 is still not deployed and genuine activation remains blocked.
+
 Status as of 2026-10-20 (Asia/Dhaka): **PARTIAL for genuine operational readiness**. The technical source is implemented. Genuine configuration, migration 20 deployment, identity verification and leadership activation have not been performed. The evidence section records completed checks and the final integration record.
 
 This sprint implements the technical onboarding workflow. It does not activate the nominated leaders, deploy migration 20, deliver genuine invitations or establish anyone's identity from a supplied email and title.
@@ -61,13 +63,13 @@ The private suite passed Ed25519 identity/session/payload binding, expiry/TTL, p
 
 Prisma client generation/validation, API TypeScript/compilation, frontend TypeScript/production build, targeted API/web lint and final whitespace verification passed. API/script lint used the same recommended TypeScript profile as 7E with explicit-any disabled; this is not repository-wide lint acceptance of unrelated accumulated work. Successful unchanged browser/build checks were retained.
 
-Final command: `pnpm exec tsx --tsconfig apps/api/tsconfig.json scripts/verify-onboarding-postgres.ts`. External evidence directory: `E:/Joy/salary-dev-backups/sprint7f-44e3453d621f454088c86edc61b0845a`; final log `onboarding-final-postgres-v3.log`. Earlier failed logs remain retained. A fixture issuer initially omitted REPLACE_ACCOUNT; the final run corrects its allowlist and verifies the identity-mismatch denial is specifically 403. Integration also corrected deferred audit execution context, required role-link IDs, pending/rejected governance, NULL evidence handling and exact private startup grants. Applied migration SQL was never edited.
+Final command: `pnpm exec tsx --tsconfig apps/api/tsconfig.json scripts/verify-onboarding-postgres.ts`. Evidence is retained outside Git. final log `onboarding-final-postgres-v3.log`. Earlier failed logs remain retained. A fixture issuer initially omitted REPLACE_ACCOUNT; the final run corrects its allowlist and verifies the identity-mismatch denial is specifically 403. Integration also corrected deferred audit execution context, required role-link IDs, pending/rejected governance, NULL evidence handling and exact private startup grants. Applied migration SQL was never edited.
 
 ## Salary-dev preservation and migration state
 
 Final verification used `default_transaction_read_only=on` against only `localhost:55532/real_capita_accounts_salary_dev`, PostgreSQL **17.11** (`170011`). It confirmed **18 successful applied migrations**, exact repository checksums, original database/table ACLs, runtime/finance write restrictions and owner-only protected authority/leave functions. All seven migration-18/19 authority/workflow tables remain empty. Migration **15 remains pending**; migrations 18/19 were not rerun; migration **20 remains unapplied**. All **19 existing migration SQL files**, including deferred 15, match the external pre-7F SHA-256 snapshot byte-for-byte.
 
-The older 7E fingerprint comparison is **PARTIAL: 52/55 exact table matches**. `audit_events` increased **95 to 96**, `auth_sessions` **39 to 40**, and the one existing `users` row has a different fingerprint with unchanged count. Current latest LOGIN_SUCCESS metadata is `2026-10-19T01:32:41.465Z`, after the 7E final verification `2026-10-17T16:09:36.343Z`. This is consistent with intervening login activity but does not prove which user fields changed or attribute the activity to an operator. No reconciliation/write was attempted. Employee, Attendance, Payroll, Accounting, Project and every other non-authentication table matched. This continuation performed **no salary-dev write**. Do not describe the three differing tables as preserved byte-for-byte or silently erase authentication history.
+The older 7E comparison found differences limited to login-related metadata. Operator attribution remains unresolved. All non-authentication tables matched. The continuation performed no salary-dev writes.
 
 Exact exceptions/fingerprints are retained in external `salary-dev-readonly-final.json`, together with the read-only runner. Review the discrepancy before separately authorizing deployment. The original strict 7E verifier correctly refused a full preservation PASS; a diagnostic read-only comparison recorded all mismatches without suppressing them.
 
@@ -97,7 +99,7 @@ The actual browser run used authenticated synthetic login and tested safe onboar
 | AGM nominee / independent initial authorizer | Independent company MD appointment attestation; later separately approved System Administrator, ACCOUNTANT and bounded Role Management | Source implemented; synthetic acceptance recorded above | No genuine provider/private setup | No independent appointment evidence or authoritative Employee ID verified | No |
 | HR nominee | HR/Admin and HR leave recommendations | Source implemented; synthetic acceptance recorded above | No genuine provider/private setup | No authoritative Employee ID or genuine evidence verified | No |
 
-The private per-person checklist is retained outside source control at `E:\Joy\salary-dev-backups\sprint7f-44e3453d621f454088c86edc61b0845a\leadership-private-checklist.md`. It contains the owner-supplied identity claims and operational steps, not credentials or identity artifacts.
+The private per-person onboarding checklist is retained outside Git.
 
 ## Outstanding acceptance and authorization gates
 

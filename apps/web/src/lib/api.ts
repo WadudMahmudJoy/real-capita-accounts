@@ -1033,7 +1033,7 @@ export type UpdateVoucherInput = {
 export class ApiError extends Error {
   readonly status: number;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, readonly isOutcomeUnknown = false, readonly reconciliationId?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -1126,7 +1126,13 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    throw new ApiError(await readApiError(response), response.status);
+    let isOutcomeUnknown = false, reconciliationId: string | undefined;
+    try {
+      const details = await response.clone().json() as {status?: unknown; reconciliationId?: unknown};
+      isOutcomeUnknown = details.status === 'OUTCOME_UNKNOWN';
+      if (typeof details.reconciliationId === 'string' && /^[a-f0-9]{64}$/.test(details.reconciliationId)) reconciliationId = details.reconciliationId;
+    } catch { /* Preserve the existing sanitized error-message fallback. */ }
+    throw new ApiError(await readApiError(response), response.status, isOutcomeUnknown, reconciliationId);
   }
 
   if (response.status === 204) {

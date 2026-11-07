@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { enforceBusinessPermission } from '../business-permissions';
+import {permission} from '../hr-access';
 import {effectiveAccountant} from '../onboarding-access';
 import { JwtService } from "@nestjs/jwt";
 import {
@@ -152,6 +153,8 @@ export class AuthGuard implements CanActivate {
     }
     request.businessPermission = await enforceBusinessPermission(this.prisma, request.user.id,
       controllerPath, handlerPath, request.method ?? 'GET');
+    // HR attendance needs both a current operational permission and the independently approved HR_ADMIN grant.
+    request.hrAttendanceAuthorized = !accountant && Boolean(request.businessPermission?.startsWith('attendance.')) && Boolean(await permission(this.prisma, request.user.id, 'HR_ADMIN'));
     return true;
   }
 

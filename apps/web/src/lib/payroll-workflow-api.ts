@@ -4,7 +4,7 @@ export const deductionCategories = ['attendanceDeduction','providentFundDeductio
 export const deductionLabels = ['Attendance deduction','Provident fund','Loan / salary advance','AIT'] as const;
 export type DeductionEntry = {amount:string;zeroConfirmed:boolean};
 export type PayrollInput = {year:number;month:number;deductions:({employeeId:string;year:number;month:number;otherApprovedDeductions:(DeductionEntry&{description:string})[];otherDeductionsZeroConfirmed:boolean}&Record<typeof deductionCategories[number],DeductionEntry>)[]};
-export type PayrollPreview = {status:'READY'|'BLOCKED';readyForDraft:boolean;parent:{id:string;singletonKey:string}|null;
+export type PayrollPreview = {status:'READY'|'BLOCKED';readyForDraft:boolean;parent:{id:string;singletonKey:string;name?:string;currency?:string}|null;
   period:{year:number;month:number;timeZone:string};exceptions:{code:string;message:string;employeeId?:string;category?:string}[];
   employees:{employeeId:string;employeeCode:string;fullName:string;sourceStatus:string;designation:string|null;departmentName:string|null;
     earnings:{code:string;name:string;percentage:string;amount:string}[];attendance:{coverage:string};financial:{status:string;amounts:PayrollDocumentAmounts|null}}[];

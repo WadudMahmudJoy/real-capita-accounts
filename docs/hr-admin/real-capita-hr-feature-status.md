@@ -1,5 +1,16 @@
 # Real Capita Group HR-Admin feature status — Sprint 1
 
+## Current: final HR and payroll closeout, 2026-11-07
+
+The [consolidated closeout report](hr-payroll-final-closeout.md) supersedes the
+historical matrices below. Approved technical scope is implemented/tested with
+focused functional fixes and genuine synthetic payroll documents. Genuine
+operational verdict is PARTIAL: migration20 remains unapplied, private enrollment
+and personal/company verification remain prerequisites, a second real independent
+ACCOUNTANT is needed, and durable DRAFT correction remains explicitly deferred.
+No real account/payroll activation, salary-dev write or deployment occurred.
+
+
 ## Sprint 7F — current source readiness and genuine activation boundary
 
 Secure individual claiming, independent MD onboarding, private signed execution,

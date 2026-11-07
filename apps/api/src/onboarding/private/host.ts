@@ -9,6 +9,8 @@ import {startOnboardingBroker} from './broker';
 import {IndependentEvidenceCollector} from './collector';
 import {assertSafePrivateNodeEnvironment} from './runtime';
 interface HostConfiguration {repository:string;apiSid:string;executorSid:string;databaseRole:string;port:number;audience:string;from:string;claimUrl:string;serverKeyFile:string;serverCertFile:string;clientCaFile:string;clientFingerprints:string[];proofIssuers:ProofConfiguration['issuers'];collector?:{endpoint:string;allowedOrigins:string[];keyFile:string;certFile:string;caFile:string};}
+// Launch only through authority-onboarding-worker.ps1: it validates the OS-derived
+// SystemRoot/PowerShell path and release ACLs before exposing private credentials.
 async function main(){
  if(process.platform!=='win32'||!process.env.PRIVATE_ONBOARDING_CONFIGURATION||!process.env.PRIVATE_ONBOARDING_SECRET)throw new Error();
  const config=JSON.parse(readFileSync(process.env.PRIVATE_ONBOARDING_CONFIGURATION,'utf8')) as HostConfiguration;
