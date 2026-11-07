@@ -571,10 +571,10 @@ payment confirmation or migration 15 deployment was started automatically.
 
 ## Sprint 7 — existing-user verification and conditional onboarding
 
-**BLOCKED genuine onboarding; technical acceptance PASS.** The owner nominated AGM
-Abdus Salam ([private onboarding email]) for SYSTEM_ADMIN and A H M Tareq
-([private onboarding email]) for HR_ADMIN, subject to independent identity and bootstrap
-authorization. Restricted read-only exact-email discovery found neither account.
+**BLOCKED genuine onboarding; technical acceptance PASS.** The owner nominated the
+AGM for SYSTEM_ADMIN and the HR Administrator for HR_ADMIN, subject to independent
+identity and bootstrap authorization. Restricted read-only exact-email discovery
+found neither account.
 One unrelated existing User and ACCOUNTANT role exist; permission grants, bindings,
 administration events, categories, leave requests and payroll runs remain empty.
 Neither candidate's authentication identity or independent reviewing authority was
@@ -649,8 +649,9 @@ authorizing/operator identity. UsersService.create requires an existing authoriz
 System Administrator, while the private first-grant contract assumes existing User
 IDs; neither path authorizes silently creating missing candidates. After valid
 bootstrap, use normal Users UI for separate HR_ADMIN assignment and documented
-global Employee binding. Salam's own binding requires another designated System
-Administrator; Tareq is not automatically one. The owner must specify actual leave
+global Employee binding. The AGM's own binding requires another designated System
+Administrator. The HR Administrator does not hold that authority by default.
+The owner must specify actual leave
 category names/codes before activation. Do not infer quotas or payroll deductions.
 No further sprint or privileged operation is started automatically.
 
@@ -745,28 +746,29 @@ independent human authorizer required by the existing first-grant contract.
 11. docs/hr-admin/real-capita-hr-feature-status.md
 
 No Prisma schema, migration, runtime credential or database role configuration was
-changed. Branch Joy and accumulated unrelated work were preserved. Read-only final
-evidence is outside Git at
-`E:\Joy\salary-dev-backups\hr-sprint6-9888f0007cab4c36983f1536b46bb28a\hr-final-sprint-seven-a.json`.
+changed. Branch Joy and accumulated unrelated work were preserved. The final
+read-only evidence is retained with the private external backup.
 
-Remaining genuine actions: privately verify Salam, Tareq and a distinct authorized
-initial onboarding operator; complete a reviewed initial-account/claim ceremony
-with secure private credentials and durable independent authorization; then appoint
-Salam and separately grant Tareq HR_ADMIN through supported workflows. No shared
+Remaining genuine actions include privately verifying the AGM, the HR Administrator
+and a distinct authorized initial onboarding operator. Complete a reviewed
+initial-account/claim ceremony with secure private credentials and durable
+independent authorization. Then appoint the AGM and separately grant HR_ADMIN to
+the HR Administrator through supported workflows. No shared
 mailbox, seed login or claimed role substitutes for that proof. Supply verified
 personnel identifiers before binding, and actual approved category codes/names
-before activation. Salam's own binding needs another authorized Administrator.
+before activation. The AGM's own binding needs another authorized Administrator.
 Do not send passwords or identity documents in chat. No further sprint, migration
 deployment or genuine privilege operation is started automatically.
 
 ## Sprint 7B — MD-first authority and dynamic role foundation
 
 **PARTIAL implementation; genuine onboarding and deployment remain BLOCKED.**
-Arifuzzaman Babu is the intended highest initial MD authority, superseding the
-historical Salam-first assumption. Salam's administration follows MD delegation;
-Tareq's HR authority remains separate. No MD email/verified account, independent
-real authorizer, claim provider or private authority broker was supplied. No genuine
-identity, role, binding or business record was created or activated.
+The Managing Director is the intended highest initial authority, superseding the
+earlier AGM-first assumption. The AGM's administrative authority follows MD
+delegation. The HR Administrator's authority remains separate. No MD email/verified
+account, independent real authorizer, claim provider or private authority broker
+was supplied. No genuine identity, role, binding or business record was created
+or activated.
 
 The new /app/roles UI and /authority API support managed-role search/pagination,
 creation, metadata/activation changes, canonical permission selection, protected
@@ -790,7 +792,8 @@ closed until their MD adapters are implemented. The HR-to-MD leave decision rule
 overlaps the old HR-only decision contract: both service and SQL block that final
 transition after MD initialization until the combined rule is explicitly resolved
 and implemented. Payroll keeps its accepted independent ACCOUNTANT approval rule.
-No Bill domain was found; approved Salam-or-MD eligibility is documented only, not
+No Bill domain was found. Approved eligibility for the AGM or Managing Director
+is documented only, not
 implemented by treating vouchers as bills or creating disbursements.
 
 | Module | Current technical scope | Genuine operating boundary |
@@ -839,11 +842,9 @@ or privileged live onboarding is claimed.
 
 See [the authority matrix](real-capita-authority-matrix.md) for the complete approved
 versus implemented contract, exact 31-file Sprint 7B source manifest, privilege/trust
-limits and genuine MD onboarding steps. Final evidence is retained outside Git at
-`E:\Joy\salary-dev-backups\hr-sprint6-9888f0007cab4c36983f1536b46bb28a\hr-final-sprint-seven-b.json`.
-The final post-smoke preservation report is `hr-final-sprint-seven-b-complete.json`
-and the runtime smoke report is `hr-sprint-seven-b-runtime-smoke.json` in that same
-outside-Git evidence directory.
+limits and genuine MD onboarding steps. The final evidence, post-smoke
+preservation report and runtime smoke report are retained with the private
+external backup.
 
 Next required work is review and completion of the real first-account/claim/private
 broker, legacy permission adapters, broader module permissions and the combined
